@@ -169,6 +169,8 @@ class Options:
                 if (self.days_old_max >= 10000):
                     user_error("argument to -d must be less than 10000")
             if o in ('-o', '--output-dir'):
+                if not os.path.isdir(a):
+                    user_error("output directory does not exist: '%s'" % a)
                 self.output_dir = a
             if o in ('-h', '-?', '--help'):
                 print usage
@@ -459,15 +461,15 @@ mailbox manageable.
 
 Options are as follows:
   -d, --days=<days>    archive messages older than <days> days (default: %d)
-  -s, --suffix=NAME    suffix for archive filename (default: '%s')
-  -m, --modify-time    use file last-modified time as date for maildir messages
-  -n, --dry-run        don't write to anything - just show what would be done
   -o, --output-dir=DIR directory where archive files go (default: current)
+  -s, --suffix=NAME    suffix for archive filename (default: '%s')
+  -n, --dry-run        don't write to anything - just show what would be done
   -z, --gzip           compress the archive(s) using gzip (default) 
   -I, --bzip2          compress the archive(s) using bzip2
   -Z, --compress       compress the archive(s) using compress
       --delete         delete rather than archive old mail (use with caution!)
       --warn-duplicate warn about duplicate Message-IDs in the same mailbox
+  -m, --modify-time    use file last-modified time as date for maildir messages
   -v, --verbose        report lots of extra debugging information
   -q, --quiet          quiet mode - print no statistics (suitable for crontab)
   -V, --version        display version information
