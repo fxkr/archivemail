@@ -51,6 +51,11 @@ or later, because we use the PyUnit 'unittest' module. Sorry.
 
 INSTALLATION:
 
+If you want to test archivemail:
+    cp archivemail archivemail.py
+    python test_archivemail.py
+    (NOTE: This could take over 90 seconds on slower systems)
+
 To install archivemail, run:
     python setup.py install
 
@@ -68,5 +73,6 @@ The archivemail website is at: http://archivemail.sourceforge.net/
 
 If you have any feedback or bug reports about archivemail, you are very
 welcome to email me.
+
 
 -- Paul Rodger <paul@paulrodger.com>
