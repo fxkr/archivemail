@@ -1,16 +1,16 @@
 
-add Maildir support
+test exclusive locking works with another test process
 
-add MH support
-
-start using private variables?
+add MH mailbox support
 
 finish man page
 
 add option to archive depending on mailbox size threshold 
     + is this a good idea?
+add option to archive depending on number of messages
+    + is this a good idea?
 
-perserve atime of mailbox properly
+perserve atime of original mailbox properly
 
 lock any original .gz files (?)
 
