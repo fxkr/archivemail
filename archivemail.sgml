@@ -158,6 +158,17 @@ Delete rather than archive old mail. Use this option with caution!
 
 <VarListEntry>
 <Term>
+    <Option>--include-flagged</Option>
+</Term>
+<ListItem><Para>
+Normally messages that are flagged important are not archived or deleted. If
+you specify this option, these messages can be archived or deleted just like
+any other message.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
     <Option>--no-compress</Option>
 </Term>
 <ListItem><Para>
@@ -226,6 +237,8 @@ When reading an <application/mbox/-format mailbox, <command/archivemail/ will
 create a lockfile with the extension <filename>.lock</filename> so that
 procmail will not deliver to the mailbox while it is being processed. It will
 also create an advisory lock on the mailbox using &flock;.
+<command/archivemail/ will also complain and abort if a 3rd-party modifies the
+mailbox while it is being read.
 </Para>
 
 <Para>

@@ -17,7 +17,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ############################################################################
 """
-Archive and compress old mail in mbox or maildir-format mailboxes.
+Archive and compress old mail in mbox, MH or maildir-format mailboxes.
 Website: http://archivemail.sourceforge.net/
 """
 
@@ -540,10 +540,10 @@ Options are as follows:
   -V, --version         display version information
   -h, --help            display this message
 
-Example: %s linux-devel
+Example: %s linux-kernel
   This will move all messages older than %s days to a 'mbox' mailbox called 
-  'linux-devel_archive.gz', deleting them from the original 'linux-devel'
-  mailbox. If the 'linux-devel_archive.gz' mailbox already exists, the 
+  'linux-kernel_archive.gz', deleting them from the original 'linux-kernel'
+  mailbox. If the 'linux-kernel_archive.gz' mailbox already exists, the 
   newly archived messages are appended.
 
 Website: http://archivemail.sourceforge.net/ """ %   \

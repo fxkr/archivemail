@@ -1,5 +1,5 @@
 
-Version 0.4.1   - ???
+Version 0.4.1   - 21 April 2002
   * Don't archive messages that are flagged important unless we are given the
     --include-flagged option. 
   * Fixed a bug where when archiving messages from maildir mailboxes, we were
@@ -9,6 +9,9 @@ Version 0.4.1   - ???
   * We now complain if an mbox-format mailbox that is being read changes in 
     size -- this should not happen, since we have locked these files, but it
     is a good sanity check.
+  * Changed from using the mailbox.PortableUnixMailbox class to read mbox 
+    mailboxes to the mailbox.UnixMailbox class. This fixes bugs where unquoted
+    'From ' lines in the body of messages were confusing archivemail.
 
 Version 0.4.0   - 17 April 2002
   * Added an option --no-compress to make archives but not compress them with  
