@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 
 import sys
-from distutils.core import setup
 
-# check version
-if sys.version_info[0] < 2:
-    print "Python versions below 2.0 not supported"
-    sys.exit(1)
+def check_python_version(): 
+    """Abort if we are running on python < v2.0"""
+    too_old_error = "This program requires python v2.0 or greater."
+    try: 
+        version = sys.version_info  # we might not even have this function! :)
+        if (version[0] < 2):
+            print too_old_error
+            sys.exit(1)
+    except AttributeError:
+        print too_old_error
+        sys.exit(1)
+
+check_python_version()  # define & run this early because 'distutils.core' is new
+
+
+from distutils.core import setup
 
 setup(name="archivemail",
       version="0.3.0",
