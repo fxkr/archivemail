@@ -219,9 +219,9 @@ class Options:
             user_error("argument to -d must be less than 10000")
 
 
-class Mbox(mailbox.PortableUnixMailbox):
+class Mbox(mailbox.UnixMailbox):
     """Class that allows read/write access to a 'mbox' mailbox. 
-    Subclasses the mailbox.PortableUnixMailbox class.
+    Subclasses the mailbox.UnixMailbox class.
     """
     mbox_file = None   # file handle for the mbox file
     mbox_file_name = None   # GzipFile class has no .name variable
@@ -233,7 +233,7 @@ class Mbox(mailbox.PortableUnixMailbox):
 
     def __init__(self, path, mode="r"):
         """Constructor for opening an existing 'mbox' mailbox.
-        Extends constructor for mailbox.PortableUnixMailbox()
+        Extends constructor for mailbox.UnixMailbox()
 
         Named Arguments:
         path -- file name of the 'mbox' file to be opened
@@ -250,7 +250,7 @@ class Mbox(mailbox.PortableUnixMailbox):
         except IOError, msg:
             unexpected_error(msg)
         self.mbox_file_name = path
-        mailbox.PortableUnixMailbox.__init__(self, self.mbox_file)
+        mailbox.UnixMailbox.__init__(self, self.mbox_file)
 
     def write(self, msg):
         """Write a rfc822 message object to the 'mbox' mailbox.
