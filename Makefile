@@ -1,6 +1,7 @@
 
 VERSION=0.4.0
 VERSION_TAG=v$(subst .,_,$(VERSION))
+TARFILE=archivemail-$(VERSION).tar.gz
 
 
 default:
@@ -24,6 +25,9 @@ tag:
 	cvs tag $(VERSION_TAG)
 
 doc: archivemail.1 archivemail.html
+
+upload:
+	(cd dist && lftp -c 'open upload.sf.net && cd incoming && put $(TARFILE)')
 
 archivemail.1: archivemail.sgml
 	nsgmls archivemail.sgml | sgmlspl docbook2man-spec.pl 

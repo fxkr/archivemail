@@ -25,8 +25,10 @@ TODO: add tests for:
     * messages with corrupted date headers
     * archiving maildir-format mailboxes
     * archiving MH-format mailboxes
-    * appending to mbox archive files already existing 
-    * add tests where we run archivemail via os.system()
+    * running archivemail via os.system()
+    * test the include_flagged option works
+    * preservation of status information from maildir to mbox
+    * a 3rd party process changing the mbox file being read
 
 """
 
