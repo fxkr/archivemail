@@ -223,10 +223,12 @@ class Options:
             if is_world_writable(self.output_dir):
                 unexpected_error(("output directory is world-writable: " + \
                     "%s -- I feel nervous!") % self.output_dir)
-        if (self.days_old_max < 1):
+        if self.days_old_max < 1:
             user_error("argument to -d must be greater than zero")
-        if (self.days_old_max >= 10000):
+        if self.days_old_max >= 10000:
             user_error("argument to -d must be less than 10000")
+        if self.quiet and self.verbose:
+            user_error("you cannot use both the --quiet and --verbose options")
 
     def date_argument(self, string):
         """Converts a date argument string into seconds since the epoch"""
@@ -868,6 +870,7 @@ def archive(mailbox_name):
                 os.path.basename(final_archive_name))
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
 
+    old_temp_dir = tempfile.tempdir
     tempfile.tempdir = choose_temp_dir(mailbox_name)
     assert(tempfile.tempdir)
     vprint("set tempfile directory to '%s'" % tempfile.tempdir)
@@ -905,6 +908,7 @@ def archive(mailbox_name):
         vprint("changing effective groupid and userid back to root")
         os.setegid(0)
         os.seteuid(0)
+    tempfile.tempdir = old_temp_dir
 
 
 def _archive_mbox(mailbox_name, final_archive_name):
@@ -965,7 +969,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
         if options.delete_old_mail:
             # we will never have an archive file
             if retain:
-                retain.finalise(mailbox_name)
+                retain.finalise()
             else:
                 # nothing was retained - everything was deleted
                 original.leave_empty()
