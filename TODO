@@ -1,5 +1,5 @@
 
-Goals for next minor release (0.5.1):
+Goals for next minor release 
 -------------------------------------
 * When you get a file-not-found in the 6th mailbox of 10, it aborts the whole
   run. Better to fail gracefully and keep going.
