@@ -625,7 +625,7 @@ def archive(mailbox_name):
     final_archive_name = mailbox_name + _options.archive_suffix
     if _options.output_dir:
         final_archive_name = os.path.join(_options.output_dir, 
-            final_archive_name)
+            os.path.basename(final_archive_name))
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
 
     if os.path.islink(mailbox_name):
