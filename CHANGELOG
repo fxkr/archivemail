@@ -5,6 +5,7 @@ Version 0.3.1   - 12 April 2002
     complexity without adding much, and needed to be called externally.
     Maybe when python gets a bzip2 library I will add back an option to 
     compress archives using bzip2.
+  * Included a man page & sgml docbook source.
 
 Version 0.3.0   - 11 April 2002
   * We now preserve the last-accessed and last-modified timestamps correctly

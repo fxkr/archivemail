@@ -1,14 +1,10 @@
 
-Goals for next minor release (0.3.2):
--------------------------------------
-* Finish docbook sgml documentation & man page
-
 Goals for next major release (0.4.0):
 -------------------------------------
 * Lock any original .gz files 
   - is this necessary?
 * Check for symlink attacks for tempfiles (although we don't use /var/tmp)
-* Add a lot more unit test. (see top of test_archivemail.py)
+* Add a lot more unit tests. (see top of test_archivemail.py)
 
 Longer Term goals:
 ------------------
