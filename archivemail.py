@@ -16,11 +16,18 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ############################################################################
-
 """
 Archive and compress old mail in mbox or maildir-format mailboxes.
 Website: http://archivemail.sourceforge.net/
 """
+
+# global administrivia 
+__version__ = "archivemail v0.3.0"
+__cvs_id__ = "$Id$"
+__copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
+This is free software; see the source for copying conditions. There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
+
 
 import sys
 
@@ -51,15 +58,6 @@ import string
 import tempfile
 import time
 
-# global administrivia 
-__version__ = "archivemail v0.2.1"
-__cvs_id__ = "$Id$"
-__copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
-This is free software; see the source for copying conditions. There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
-
-_stale = None    # list of files to delete on abnormal exit
-
 ############## class definitions ###############
 
 class Stats:
@@ -83,7 +81,8 @@ class Stats:
         assert(final_archive_name)
         self.__start_time = time.time()
         self.__mailbox_name = mailbox_name
-        self.__archive_name = final_archive_name + _options.compressor_extension
+        self.__archive_name = final_archive_name + \
+            _options.compressor_extension()
 
     def another_message(self):
         """Add one to the internal count of total messages processed"""
@@ -138,8 +137,7 @@ class StaleFiles:
 class Options:
     """Class to store runtime options, including defaults"""
     archive_suffix       = "_archive"
-    compressor           = None
-    compressor_extension = None
+    compressor           = "gzip"
     days_old_max         = 180
     delete_old_mail      = 0
     dry_run              = 0
@@ -171,6 +169,8 @@ class Options:
                              "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
+
+        chosen_compressor = None
         for o, a in opts:
             if o == '--delete':
                 self.delete_old_mail = 1
@@ -195,25 +195,22 @@ class Options:
                 print __version__ + "\n\n" + __copyright__
                 sys.exit(0)
             if o in ('-z', '--gzip'):
-                if (self.compressor):
+                if (chosen_compressor):
                     user_error("conflicting compression options")
                 self.compressor = "gzip"
+                chosen_compressor = 1
             if o in ('-Z', '--compress'):
-                if (self.compressor):
+                if (chosen_compressor):
                     user_error("conflicting compression options")
                 self.compressor = "compress"
+                chosen_compressor = 1
             if o in ('-I', '--bzip2'):
-                if (self.compressor):
+                if (chosen_compressor):
                     user_error("conflicting compression options")
                 self.compressor = "bzip2"
+                chosen_compressor = 1
         if not self.compressor:
             self.compressor = "gzip"
-        extensions = {
-            "compress" : ".Z",
-            "gzip"     : ".gz",
-            "bzip2"    : ".bz2",
-            }
-        self.compressor_extension = extensions[self.compressor]
         return args
 
     def sanity_check(self):
@@ -233,6 +230,15 @@ class Options:
         if (self.days_old_max >= 10000):
             user_error("argument to -d must be less than 10000")
 
+    def compressor_extension(self):
+        extensions = {
+            "compress" : ".Z",
+            "gzip"     : ".gz",
+            "bzip2"    : ".bz2",
+            }
+        return extensions[self.compressor]
+
+
 
 class Mbox(mailbox.PortableUnixMailbox):
     """Class that allows read/write access to a 'mbox' mailbox. 
@@ -240,18 +246,23 @@ class Mbox(mailbox.PortableUnixMailbox):
     """
    
     mbox_file = None   # file handle for the mbox file
+    original_atime = None # last-accessed timestamp
+    original_mtime = None # last-modified timestamp
 
-    def __init__(self, path_name):
+    def __init__(self, path, mode="r"):
         """Constructor for opening an existing 'mbox' mailbox.
         Extends constructor for mailbox.PortableUnixMailbox()
 
-        Arguments:
-        path_name -- file name of the 'mbox' file to be opened
+        Named Arguments:
+        path -- file name of the 'mbox' file to be opened
+        mode -- mode to open the file in (default is read-only)
 
         """
-        assert(path_name)
+        assert(path)
         try:
-            self.mbox_file = open(path_name, "r")
+            self.original_atime = os.path.getatime(path)
+            self.original_mtime = os.path.getmtime(path)
+            self.mbox_file = open(path, mode)
         except IOError, msg:
             unexpected_error(msg)
         mailbox.PortableUnixMailbox.__init__(self, self.mbox_file)
@@ -266,6 +277,8 @@ class Mbox(mailbox.PortableUnixMailbox):
 
         """
         assert(msg)
+        assert(self.mbox_file)
+
         vprint("saving message to file '%s'" % self.mbox_file.name)
         unix_from = msg.unixfrom
         if not unix_from:
@@ -300,6 +313,14 @@ class Mbox(mailbox.PortableUnixMailbox):
             vprint("closing file '%s'" % self.mbox_file.name)
             self.mbox_file.close()
 
+    def reset_time_stamps(self):
+        """Set the file timestamps to the original value"""
+        assert(self.original_atime)
+        assert(self.original_mtime)
+        assert(self.mbox_file.name)
+        os.utime(self.mbox_file.name, (self.original_atime,  \
+            self.original_mtime)) 
+
     def exclusive_lock(self):
         """Set an advisory lock on the 'mbox' mailbox"""
         vprint("obtaining exclusive lock on file '%s'" % self.mbox_file.name)
@@ -322,9 +343,11 @@ class Mbox(mailbox.PortableUnixMailbox):
                 unexpected_error("Giving up waiting for procmail lock '%s'" 
                     % lock_name)
         vprint("writing lockfile '%s'" % lock_name)
+        old_umask = os.umask(022) # is this dodgy?
         lock = open(lock_name, "w")
         _stale.procmail_lock = lock_name
         lock.close()
+        old_umask = os.umask(old_umask)
 
     def procmail_unlock(self):
         """Delete the procmail lockfile on the 'mbox' mailbox"""
@@ -342,11 +365,9 @@ class Mbox(mailbox.PortableUnixMailbox):
         completely deleted."""
         assert(os.path.isfile(self.mbox_file.name))
         vprint("turning '%s' into a zero-length file" % self.mbox_file.name)
-        atime = os.path.getatime(self.mbox_file.name)
         mtime = os.path.getmtime(self.mbox_file.name)
         blank_file = open(self.mbox_file.name, "w")
         blank_file.close()
-        os.utime(self.mbox_file.name, (atime, mtime)) # to original timestamps
 
 
 class RetainMbox(Mbox):
@@ -377,8 +398,14 @@ class RetainMbox(Mbox):
         """Overwrite the original mailbox with this temporary mailbox."""
         assert(self.__final_name)
         self.close()
+
+        # make sure that the retained mailbox has the same timestamps and 
+        # permission as the original mailbox
         atime = os.path.getatime(self.__final_name)
         mtime = os.path.getmtime(self.__final_name)
+        mode =  os.stat(self.__final_name)[stat.ST_MODE]
+        os.chmod(self.mbox_file.name, mode)
+
         vprint("renaming '%s' to '%s'" % (self.mbox_file.name, self.__final_name))
         os.rename(self.mbox_file.name, self.__final_name)
         os.utime(self.__final_name, (atime, mtime)) # reset to original timestamps
@@ -414,7 +441,7 @@ class ArchiveMbox(Mbox):
         """
         assert(final_name)
         compressor = _options.compressor
-        compressedfilename = final_name + _options.compressor_extension
+        compressedfilename = final_name + _options.compressor_extension()
        
         if os.path.isfile(final_name):
             unexpected_error("""There is already a file named '%s'!
@@ -445,13 +472,14 @@ manually, and try running me again.""" % final_name)
         self.close()
         compressor = _options.compressor
         compressed_archive_name = self.mbox_file.name +  \
-            _options.compressor_extension
+            _options.compressor_extension()
         compress = compressor + " " + self.mbox_file.name
         vprint("running compressor: '%s'" % compress)
         _stale.compressed_archive = compressed_archive_name
         system_or_die(compress)
         _stale.archive = None
-        compressed_final_name = self.__final_name + _options.compressor_extension
+        compressed_final_name = self.__final_name + \
+            _options.compressor_extension()
         vprint("renaming '%s' to '%s'" % (compressed_archive_name, 
             compressed_final_name))
         os.rename(compressed_archive_name, compressed_final_name)
@@ -478,6 +506,7 @@ class IdentityCache:
 
 # global class instances
 _options = Options()  # the run-time options object
+_stale = StaleFiles() # remember what we have to delete on abnormal exit
 
 
 def main(args = sys.argv[1:]):
@@ -519,17 +548,6 @@ Website: http://archivemail.sourceforge.net/ """ %   \
         sys.exit(1)
 
     _options.sanity_check()
-    os.umask(077) # saves setting permissions on mailboxes/tempfiles
-
-    # Make sure we clean up nicely - we don't want to leave stale procmail
-    # lockfiles about if something bad happens to us. This is quite 
-    # important, even though procmail will delete stale files after a while.
-    _stale = StaleFiles() # remember what we have to delete
-    atexit.register(clean_up) # delete stale files on exceptions/normal exit
-    signal.signal(signal.SIGHUP, clean_up_signal)   # signal 1
-    # SIGINT (signal 2) is handled as a python exception
-    signal.signal(signal.SIGQUIT, clean_up_signal)  # signal 3
-    signal.signal(signal.SIGTERM, clean_up_signal)  # signal 15
 
     for mailbox_path in args:
         archive(mailbox_path)
@@ -599,7 +617,7 @@ def guess_delivery_time(message):
         if date:
             try:
                 time_message = time.mktime(date)
-                assert(time_message, 'time.mktime() returned false')
+                assert(time_message)
                 vprint("using valid time found from '%s' header" % header)
                 return time_message
             except (ValueError, OverflowError): pass
@@ -612,7 +630,7 @@ def guess_delivery_time(message):
         if date:
             try:
                 time_message = time.mktime(date)
-                assert(time_message, 'time.mktime() returned false')
+                assert(time_message)
                 vprint("using valid time found from unix 'From_' header")
                 return time_message
             except (ValueError, OverflowError): pass
@@ -634,7 +652,7 @@ def guess_delivery_time(message):
     return time_message
        
 
-def is_too_old(time_message):
+def is_too_old(time_message, max_days):
     """Return true if a message is too old (and should be archived), 
     false otherwise.
 
@@ -643,12 +661,14 @@ def is_too_old(time_message):
                     since the epoch
        
     """
-    assert(time_message)
+    assert(time_message > 0)
+    assert(max_days >= 1)
+
     time_now = time.time()
     if time_message > time_now:
         vprint("warning: message has date in the future")
         return 0
-    secs_old_max = (_options.days_old_max * 24 * 60 * 60)
+    secs_old_max = (max_days * 24 * 60 * 60)
     days_old = (time_now - time_message) / 24 / 60 / 60
     vprint("message is %.2f days old" % days_old)
     if ((time_message + secs_old_max) < time_now):
@@ -669,6 +689,9 @@ def archive(mailbox_name):
 
     """
     assert(mailbox_name) 
+
+    set_signal_handlers()
+    os.umask(077) # saves setting permissions on mailboxes/tempfiles
 
     final_archive_name = mailbox_name + _options.archive_suffix
     if _options.output_dir:
@@ -730,7 +753,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
     archive = None
     retain = None
     stats = Stats(mailbox_name, final_archive_name)
-    original = Mbox(mailbox_name)
+    original = Mbox(path=mailbox_name)
     cache = IdentityCache(mailbox_name)
 
     original.procmail_lock()
@@ -742,7 +765,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
         if _options.warn_duplicates:
             cache.warn_if_dupe(msg)             
         time_message = guess_delivery_time(msg)
-        if is_too_old(time_message):
+        if is_too_old(time_message, _options.days_old_max):
             stats.another_archived()
             if _options.delete_old_mail:
                 vprint("decision: delete message")
@@ -762,6 +785,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
     vprint("finished reading messages") 
     original.exclusive_unlock()
     original.close()
+    original.reset_time_stamps()
     if not _options.dry_run:
         if retain: retain.close()
         if archive: archive.close()
@@ -772,6 +796,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
             else:
                 # nothing was retained - everything was deleted
                 original.leave_empty()
+                original.reset_time_stamps()
         elif archive:
             archive.finalise()
             if retain:
@@ -779,6 +804,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
             else:
                 # nothing was retained - everything was deleted
                 original.leave_empty()
+                original.reset_time_stamps()
         else:
             # There was nothing to archive
             if retain:
@@ -816,7 +842,7 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         if _options.warn_duplicates:
             cache.warn_if_dupe(msg)             
         time_message = guess_delivery_time(msg)
-        if is_too_old(time_message):
+        if is_too_old(time_message, _options.days_old_max):
             stats.another_archived()
             if _options.delete_old_mail:
                 vprint("decision: delete message")
@@ -867,6 +893,16 @@ def choose_temp_dir(mailbox_name):
             temp_dir)
     return temp_dir
 
+
+def set_signal_handlers():
+    # Make sure we clean up nicely - we don't want to leave stale procmail
+    # lockfiles about if something bad happens to us. This is quite 
+    # important, even though procmail will delete stale files after a while.
+    atexit.register(clean_up) # delete stale files on exceptions/normal exit
+    signal.signal(signal.SIGHUP, clean_up_signal)   # signal 1
+    # SIGINT (signal 2) is handled as a python exception
+    signal.signal(signal.SIGQUIT, clean_up_signal)  # signal 3
+    signal.signal(signal.SIGTERM, clean_up_signal)  # signal 15
 
 def clean_up():
     """Delete stale files -- to be registered with atexit.register()"""

@@ -1,3 +1,11 @@
+Version 0.3.0   - ???
+  * We now preserve the last-accessed and last-modified timestamps correctly
+  * Fixed a bug where lockfiles were being created that were not
+    world-readable
+  * Made archivemail work better when used as a python module so it can
+    integrate better with unittest.
+  * Budled a unit testing script for archivemail.
+
 Version 0.2.1   - 4 April 2002
   * Since we might not have a parse-able 'Date-Received' or 'Date' field,
     use 5 different ways to guess the date of a message. 
