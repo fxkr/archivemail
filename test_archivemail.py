@@ -32,6 +32,7 @@ TODO: add tests for:
 
 """
 
+import sys
 import fcntl
 import filecmp
 import os
@@ -41,7 +42,15 @@ import tempfile
 import time
 import unittest
 
-import archivemail
+try:
+    import archivemail
+except ImportError:
+    print "The archivemail script needs to be called 'archivemail.py'"
+    print "and should be in the current directory in order to be imported"
+    print "and tested. Sorry."
+    if os.path.isfile("archivemail"):
+        print "Try renaming it from 'archivemail' to 'archivemail.py'."
+    sys.exit(1)
 
 
 

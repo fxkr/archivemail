@@ -1,5 +1,15 @@
 
+-----------------------------------------------------------
 archivemail - archive and compress old mail in your mailbox
+-----------------------------------------------------------
+
+INSTALLATION:
+
+To install archivemail, run:
+    python setup.py install
+
+
+USE:
 
 'archivemail' is a tool written in Python for organising and storing old
 email choking any of your mailboxes. It can move messages older than a
