@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.8"
+__version__ = "archivemail v0.4.9"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -679,7 +679,6 @@ def guess_delivery_time(message):
             date = message.getdate(header)
             if date:
                 time_message = time.mktime(date)
-                assert(time_message)
                 vprint("using valid time found from '%s' header" % header)
                 return time_message
         except (IndexError, ValueError, OverflowError): pass
@@ -913,6 +912,12 @@ def archive(mailbox_name):
                           already exists
 
     """
+    assert(mailbox_name) 
+
+    # strip any trailing slash (we could be archiving a maildir or MH format
+    # mailbox and somebody was pressing <tab> in bash) - we don't want to use
+    # the trailing slash in the archive name
+    mailbox_name = re.sub("/$", "", mailbox_name)
     assert(mailbox_name) 
 
     set_signal_handlers()

@@ -1,3 +1,9 @@
+Version 0.4.9   - 18 August 2002
+  * Fixed a bug where an exception was thrown if a message was dated exactly
+    on the Unix epoch.
+  * Fixed a bug where trailing slashes on the end of maildir/MH mailbox
+    arguments were being used in the archive name.
+
 Version 0.4.8   - 20 May 2002
   * Call mkdir() to create a container directory in which we can place any
     created tempfiles 

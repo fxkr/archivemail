@@ -1,0 +1,7 @@
+
+1. Why doesn't archivemail support bzip2 compression in addition to gzip?
+-------------------------------------------------------------------------
+
+I am quite happy to add bzip2 support to archivemail as soon as a 'bzip2'
+module (similar to the gzip module) is available for python.  
+[ Hint hint ;) ]
