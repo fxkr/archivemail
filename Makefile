@@ -1,5 +1,5 @@
 
-VERSION=0.4.6
+VERSION=0.4.7
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 
@@ -21,6 +21,12 @@ sdist: clobber doc
 	cp archivemail.py archivemail
 	fakeroot python setup.py sdist
 	rm archivemail
+
+bdist_rpm: clobber doc
+	cp archivemail.py archivemail
+	fakeroot python setup.py bdist_rpm
+	rm archivemail
+
 tag:
 	cvs tag -F current
 	cvs tag -F $(VERSION_TAG)

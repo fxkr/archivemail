@@ -563,6 +563,15 @@ This is after the ^From line"""
                 'Date' : None,
                 'Resent-Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
             },
+            {   # completely blank dates were crashing < version 0.4.7
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
+                'Date'  : '',
+            },
+            {   # completely blank dates were crashing < version 0.4.7
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
+                'Date'  : '',
+                'Resent-Date'  : '',
+            },
         )
         for headers in weird_headers:
             self.setUp()

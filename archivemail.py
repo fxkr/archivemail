@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.6"
+__version__ = "archivemail v0.4.7"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -670,14 +670,14 @@ def guess_delivery_time(message):
     # try to guess the delivery date from various headers
     # get more desparate as we go through the array
     for header in ('Delivery-date', 'Date', 'Resent-Date'):
-        date = message.getdate(header)
-        if date:
-            try:
+        try:
+            date = message.getdate(header)
+            if date:
                 time_message = time.mktime(date)
                 assert(time_message)
                 vprint("using valid time found from '%s' header" % header)
                 return time_message
-            except (ValueError, OverflowError): pass
+        except (IndexError, ValueError, OverflowError): pass
     # as a second-last resort, try the date from the 'From_' line (ugly)
     # this will only work from a mbox-format mailbox
     if (message.unixfrom):
