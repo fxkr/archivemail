@@ -1007,7 +1007,10 @@ def archive(mailbox_name):
 
     # check to see if we are running as root -- if so, change our effective
     # userid and groupid to that of the original mailbox
+
+    former_gid = None # groupid doesn't have to be '0' for root on solaris 8?
     if (os.getuid() == 0) and os.path.exists(mailbox_name):
+        former_gid = os.getgid(); # remember this so we can change back
         mailbox_user = os.stat(mailbox_name)[stat.ST_UID]
         mailbox_group = os.stat(mailbox_name)[stat.ST_GID]
         vprint("changing effective group id to: %d" % mailbox_group)
@@ -1054,7 +1057,7 @@ def archive(mailbox_name):
     # if we are running as root, revert the seteuid()/setegid() above
     if (os.getuid() == 0):
         vprint("changing effective groupid and userid back to root")
-        os.setegid(0)
+        os.setegid(former_gid)
         os.seteuid(0)
 
 
