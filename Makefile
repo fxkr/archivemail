@@ -23,7 +23,7 @@ sdist: clobber doc
 	rm archivemail
 tag:
 	cvs tag -F current
-	cvs tag $(VERSION_TAG)
+	cvs tag -F $(VERSION_TAG)
 
 upload:
 	(cd dist && lftp -c 'open upload.sf.net && cd incoming && put $(TARFILE)')
