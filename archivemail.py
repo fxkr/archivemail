@@ -678,6 +678,16 @@ def archive(mailbox_name):
             os.path.basename(final_archive_name))
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
 
+    # check to see if we are running as root -- if so, change our effective
+    # userid and groupid to that of the original mailbox
+    if (os.getuid() == 0) and os.path.exists(mailbox_name):
+        mailbox_user = os.stat(mailbox_name)[stat.ST_UID]
+        mailbox_group = os.stat(mailbox_name)[stat.ST_GID]
+        vprint("changing effective group id to: %d" % mailbox_group)
+        os.setegid(mailbox_group)
+        vprint("changing effective user id to: %d" % mailbox_user)
+        os.seteuid(mailbox_user)
+
     if os.path.islink(mailbox_name):
         unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
             mailbox_name)
@@ -695,6 +705,12 @@ def archive(mailbox_name):
             _archive_dir(mailbox_name, final_archive_name, "mh")
     else:
         user_error("'%s': no such file or directory" % mailbox_name)
+
+    # if we are running as root, revert the seteuid()/setegid() above
+    if (os.getuid() == 0):
+        vprint("changing effective groupid and userid back to root")
+        os.setegid(0)
+        os.seteuid(0)
 
 
 def _archive_mbox(mailbox_name, final_archive_name):
