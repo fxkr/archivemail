@@ -1,0 +1,21 @@
+
+archivemail - archive and compress old mail in your mailbox
+
+'archivemail' is a tool written in Python for organising and storing old
+email choking any of your mailboxes. It can move messages older than a
+certain number of days to a separate 'archive' mailbox which can be
+compressed with bzip2, gzip or compress. 
+
+For example, have you been subscribing to the 'linux-kernel' mailing list
+for the last 6 years and ended up with an 160-meg mailbox that 'mutt' is
+taking a long time to load?  'archivemail' can move all messages that are
+older than 6 months to a separate compressed mailbox, and leave you with
+just the most recent messages. 
+
+'archivemail' can save a lot of disk space and will significantly reduce
+overhead on your mail reader. The number of days before mail is considered
+'old' is up to you, but the default is 180 days.
+
+'archivemail' currently works on mbox-format mailboxes, and requires python
+v2.0 or greater. It also supports deleting old mail instead of archiving
+it. It currently only works on Unix platforms.

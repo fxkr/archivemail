@@ -1,0 +1,26 @@
+
+add Maildir support
+
+add MH support
+
+start using private variables?
+
+finish man page
+
+add option to archive depending on mailbox size threshold 
+    + is this a good idea?
+
+perserve atime of mailbox properly
+
+lock any original .gz files (?)
+
+check for symlink attacks for tempfiles (although we don't use /var/tmp)
+
+test for write permission before doing anything
+
+test for missing compression programs 
+    + is this a waste of time?
+
+add option - do not compress (?)
+
+Add Makefile with "make install" target ?
