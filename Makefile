@@ -20,3 +20,4 @@ tag:
 
 archivemail.1: archivemail.sgml
 	nsgmls archivemail.sgml | sgmlspl docbook2man-spec.pl 
+	chmod 644 archivemail.1

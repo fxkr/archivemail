@@ -28,4 +28,5 @@ setup(name="archivemail",
       author="Paul Rodger",
       author_email="paul@paulrodger.com",
       scripts=["archivemail"],
+      data_files=[("man/man1", ["archivemail.1"])],
       )
