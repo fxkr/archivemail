@@ -582,18 +582,29 @@ def make_mbox_from(message):
         vprint("make_mbox_from: no Return-path -- using 'From:' instead!")
         address_header = message.get('From')
     (name, address) = rfc822.parseaddr(address_header)
-    date = rfc822.parsedate(message.get('Delivery-date'))
+
+    date = None
+    delivery_date_header = message.get('Delivery-date')
+    if delivery_date_header:
+        date = rfc822.parsedate(delivery_date_header)
     if not date:
-        date = rfc822.parsedate(message.get('Date'))
+        date_header = message.get('Date')
+        if not date_header:
+            unexpected_error("message has no 'Date' header")
+        date = rfc822.parsedate(date_header)
+        if not date:
+            unexpected_error("message has no valid 'Date' header")
     date_string = time.asctime(date)
     mbox_from = "From %s %s\n" % (address, date_string)
     return mbox_from
+
 
 def get_date_mtime(message):
     """Return the delivery date of an rfc822 message in a maildir mailbox""" 
     assert(message)
     vprint("using last-modification time of message file")
     return os.path.getmtime(message.fp.name)
+
 
 def get_date_headers(message):
     """Return the delivery date of an rfc822 message in a mbox mailbox""" 
