@@ -1,5 +1,5 @@
 
-VERSION=0.5.1
+VERSION=0.6.0
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 
@@ -37,7 +37,7 @@ upload:
 doc: archivemail.1 archivemail.html
 
 archivemail.1: archivemail.sgml
-	nsgmls archivemail.sgml | sgmlspl docbook2man-spec.pl 
+	docbook2man archivemail.sgml
 	chmod 644 archivemail.1
 
 archivemail.html: archivemail.sgml

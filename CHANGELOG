@@ -1,4 +1,7 @@
 
+Version 0.6.0   - 3 October 2002
+  * Added IMAP mailbox support. (Thanks Mark Roach)
+
 Version 0.5.1   - 18 September 2002
   * Fixed a bug where when running archivemail as root on a non-root mailbox,
     the temporary container directory would be created as root before the

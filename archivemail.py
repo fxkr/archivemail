@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.5.1"
+__version__ = "archivemail v0.6.0"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -32,8 +32,8 @@ import sys
 
 def check_python_version(): 
     """Abort if we are running on python < v2.0"""
-    too_old_error = """This program requires python v2.0 or greater. 
-Your version of python is: %s""" % sys.version
+    too_old_error = "This program requires python v2.0 or greater. " + \
+      "Your version of python is:\n%s""" % sys.version
     try: 
         version = sys.version_info  # we might not even have this function! :)
         if (version[0] < 2):
@@ -575,7 +575,7 @@ def main(args = sys.argv[1:]):
 
     # this usage message is longer than 24 lines -- bad idea?
     usage = """Usage: %s [options] mailbox [mailbox...]
-Moves old mail in mbox, MH or maildir-format mailboxes to an mbox-format
+Moves old mail in IMAP, mbox, MH or maildir-format mailboxes to an mbox-format
 mailbox compressed with gzip. 
 
 Options are as follows:
@@ -600,6 +600,9 @@ Example: %s linux-kernel
   'linux-kernel_archive.gz', deleting them from the original 'linux-kernel'
   mailbox. If the 'linux-kernel_archive.gz' mailbox already exists, the 
   newly archived messages are appended.
+
+To archive IMAP mailboxes, format your mailbox argument like this:
+  imap://username:password@server/mailbox
 
 Website: http://archivemail.sourceforge.net/ """ %   \
     (options.script_name, options.days_old_max, options.archive_suffix,
@@ -768,6 +771,38 @@ def add_status_headers(message):
         vprint("converting maildir status into X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
 
+def add_status_headers_imap(message, flags):
+    """Add Status and X-Status headers to a message from an imap mailbox."""
+    status = ""
+    x_status = ""
+    flags = list(flags) # convert from tuple
+    for flag in flags: 
+        if flag == "\\Draft": # (draft): the user considers this message a draft
+            pass # does this make any sense in mbox? 
+        elif flag == "\\Flagged": # (flagged): user-defined 'important' flag
+            x_status = x_status + "F"
+        elif flag == "\\Answered": # (replied): the user has replied to this message
+            x_status = x_status + "A"
+        elif flag == "\\Seen": # (seen): the user has viewed this message
+            status = status + "R"
+        elif flag == "\\Deleted": # (trashed): user has moved this message to trash
+            pass # is this Status: D ? 
+        else:
+            pass # no whingeing here, although it could be a good experiment
+    if flags.count("\\Seen") == 0:
+        if flags.count("\\Recent") == 1:
+            status = status + "N"
+        else:
+            status = status + "O" 
+
+    # As with maildir folders, preserve Status and X-Status headers 
+    # if they exist (they shouldn't)
+    if not message.get('Status') and status:
+        vprint("converting imap status into Status header '%s'" % status)
+        message['Status'] = status
+    if not message.get('X-Status') and x_status:
+        vprint("converting imap status into X-Status header '%s'" % x_status)
+        message['X-Status'] = x_status
 
 def is_flagged(message):
     """return true if the message is flagged important, false otherwise"""
@@ -909,6 +944,30 @@ def is_older_than_days(time_message, max_days):
         return 1
     return 0
 
+def build_imap_filter():
+    """Return an imap filter string"""
+
+    filter = []
+    old = 0
+    if options.date_old_max == None:
+        time_now = time.time()
+        secs_old_max = (options.days_old_max * 24 * 60 * 60)
+        time_old = time.gmtime(time_now - secs_old_max)
+        time_str = time.strftime('%d-%b-%Y', time_old)
+        filter.append("BEFORE %s" % time_str)
+    else:
+        time_old = time.gmtime(options.date_old_max)
+        time_str = time.strftime('%d-%b-%Y', time_old)
+        filter.append("BEFORE %s" % time_str)
+
+    if not options.include_flagged:
+        filter.append("UNFLAGGED")
+    if options.min_size:
+        filter.append("BIGGER %d" % options.min_size)
+    if options.preserve_unread:
+        filter.append("SEEN")
+
+    return '(' + string.join(filter, ' ') + ')'
 
 ###############  mailbox operations ###############
 
@@ -937,7 +996,10 @@ def archive(mailbox_name):
     parsed_suffix = time.strftime(options.archive_suffix, 
         time.localtime(time.time()))
 
-    final_archive_name = mailbox_name + parsed_suffix
+    if mailbox_name[:7].lower() == 'imap://':
+        final_archive_name = mailbox_name.split('/')[-1] + parsed_suffix
+    else:
+        final_archive_name = mailbox_name + parsed_suffix
     if options.output_dir:
         final_archive_name = os.path.join(options.output_dir, 
                 os.path.basename(final_archive_name))
@@ -966,6 +1028,9 @@ def archive(mailbox_name):
     if os.path.islink(mailbox_name):
         unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
             mailbox_name)
+    elif mailbox_name[:7].lower() == 'imap://':
+        vprint("guessing mailbox is of type: imap")
+        _archive_imap(mailbox_name, final_archive_name)
     elif os.path.isfile(mailbox_name):
         vprint("guessing mailbox is of type: mbox")
         _archive_mbox(mailbox_name, final_archive_name)
@@ -1128,7 +1193,65 @@ def _archive_dir(mailbox_name, final_archive_name, type):
     if not options.quiet:
         stats.display()
 
+def _archive_imap(mailbox_name, final_archive_name):
+    """Archive an imap mailbox - used by archive_mailbox()"""
+    assert(mailbox_name)
+    assert(final_archive_name)
+    import imaplib
+    import cStringIO
 
+    archive = None
+    stats = Stats(mailbox_name, final_archive_name)
+    imap_str = mailbox_name[7:]
+    filter = build_imap_filter()
+    vprint("imap filter: '%s'" % filter)
+    try:
+        imap_username, imap_str = imap_str.split(':', 1)
+        imap_password, imap_str = imap_str.split('@', 1)
+        imap_server, imap_folder = imap_str.split('/', 1)
+    except:
+        unexpected_error("you must provide a properly formatted \
+        IMAP connection string")
+    imap_srv = imaplib.IMAP4(imap_server)
+    vprint("connected to server %s" % imap_server)
+    result, response = imap_srv.login(imap_username, imap_password)
+    if result != 'OK': unexpected_error("authentication failure")
+    vprint("logged in to server as %s" % imap_username)
+    result, response = imap_srv.select(imap_folder)
+    if result != 'OK': unexpected_error("cannot select imap folder")
+    vprint("selected imap folder %s" % imap_folder)
+    result, response = imap_srv.search(None, filter)
+    if result != 'OK': unexpected_error("imap search failed")
+    message_list_str = response[0]
+    message_list = response[0].split()
+    vprint("%d messages found matching filter" % len(message_list))
+
+    for msg_id in message_list:
+        result, response = imap_srv.fetch(msg_id, '(RFC822 FLAGS)')
+        if result != 'OK': unexpected_error("Failed to fetch message")
+        msg_str = response[0][1]
+        msg_flags = imaplib.ParseFlags(response[1])
+        msg = rfc822.Message(cStringIO.StringIO(msg_str))
+        add_status_headers_imap(msg, msg_flags)
+        vprint("processing message '%s'" % msg.get('Message-ID'))
+        if options.warn_duplicates:
+            cache.warn_if_dupe(msg)             
+        if not options.dry_run:
+            if not archive:
+                archive = ArchiveMbox(final_archive_name)
+            archive.write(msg)
+            stats.another_archived()
+    
+    if not options.dry_run:
+        if archive:
+            archive.close()
+            archive.finalise()
+            vprint("Deleting messages")
+            imap_srv.store(string.join(message_list, ','),
+                '+FLAGS.SILENT', '\\Deleted')
+        imap_srv.close()
+        imap_srv.logout()
+    
 ###############  misc  functions  ###############
 
 
