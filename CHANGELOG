@@ -1,5 +1,5 @@
 
-Version 0.4.2   - ???
+Version 0.4.2   - 24 April 2002
   * Added the ability to archive messages older than a given absolute date 
     with the new option '--date'.
   * Fixed a bug where archivemail would complain about messages older than 

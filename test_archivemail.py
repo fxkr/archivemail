@@ -25,11 +25,9 @@ TODO: add tests for:
     * messages with corrupted date headers
     * archiving maildir-format mailboxes
     * archiving MH-format mailboxes
-    * running archivemail via os.system()
+    * more tests running archivemail via os.system()
     * preservation of status information from maildir to mbox
     * a 3rd party process changing the mbox file being read
-    * test to make sure the --date option works
-    * test to make sure archiving dates < 1970 works
 
 """
 
@@ -352,17 +350,32 @@ class TestArchiveMbox(unittest.TestCase):
         self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.copy_name = tempfile.mktemp()
         shutil.copyfile(self.mbox_name, self.copy_name)
-
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
         self.assertEqual(os.path.getsize(self.mbox_name), 0)
         new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.assertEqual(self.mbox_mode, new_mode)
-
         archive_name = self.mbox_name + "_archive.gz"
         assert(os.path.exists(archive_name))
         self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
 
+    def testOldFromInBody(self):
+        """archiving an old mailbox with 'From ' in the body"""
+        body = """This is a message with ^From at the start of a line
+From is on this line
+This is after the ^From line"""
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), body=body)
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        self.assertEqual(os.path.getsize(self.mbox_name), 0)
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
         archive_name = self.mbox_name + "_archive"
         assert(os.path.exists(archive_name))
         assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
