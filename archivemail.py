@@ -654,6 +654,52 @@ def guess_delivery_time(message):
     return time_message
    
 
+def add_status_headers(message):
+    """
+    Add Status and X-Status headers to a message from a maildir mailbox.
+
+    Maildir messages store their information about being read/replied/etc in
+    the suffix of the filename rather than in Status and X-Status headers in
+    the message. In order to archive maildir messages into mbox format, it is
+    nice to preserve this information by putting it into the status headers.
+
+    """
+    status = ""
+    x_status = ""
+    match = re.search(":2,(.+)$", message.fp.name)
+    if match:
+        flags = match.group(1)
+        for flag in flags: 
+            if flag == "D": # (draft): the user considers this message a draft
+                pass # does this make any sense in mbox? 
+            elif flag == "F": # (flagged): user-defined 'important' flag
+                x_status = x_status + "F"
+            elif flag == "R": # (replied): the user has replied to this message
+                x_status = x_status + "A"
+            elif flag == "S": # (seen): the user has viewed this message
+                status = status + "R"
+            elif flag == "T": # (trashed): user has moved this message to trash
+                pass # is this Status: D ? 
+            else:
+                pass # no whingeing here, although it could be a good experiment
+
+    # files in the maildir 'cur' directory are no longer new,
+    # they are the same as messages with 'Status: O' headers in mbox
+    (None, last_dir) = os.path.split(os.path.dirname(message.fp.name))
+    if last_dir == "cur":
+        status = status + "O" 
+
+    # Maildir messages should not already have 'Status' and 'X-Status'
+    # headers, although I have seen it done. If they do already have them, just
+    # preserve them rather than trying to overwrite/verify them.
+    if not message.get('Status') and status:
+        vprint("converting maildir status into Status header '%s'" % status)
+        message['Status'] = status
+    if not message.get('X-Status') and x_status:
+        vprint("converting maildir status into X-Status header '%s'" % x_status)
+        message['X-Status'] = x_status
+
+
 def is_flagged(message):
     """return true if the message is flagged important, false otherwise"""
     # MH and mbox mailboxes use the 'X-Status' header to indicate importance
@@ -908,8 +954,10 @@ def _archive_dir(mailbox_name, final_archive_name, type):
             else:
                 vprint("decision: archive message")
                 if not options.dry_run:
-                    if (not archive):
+                    if not archive:
                         archive = ArchiveMbox(final_archive_name)
+                    if type == "maildir":
+                        add_status_headers(msg)
                     archive.write(msg)
             if not options.dry_run: delete_queue.append(msg.fp.name) 
         else:
