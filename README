@@ -57,7 +57,7 @@ To install archivemail, run:
 
 USE:
 
-For more detailed information, look at the archivemail man page.
+For more detailed information and examples, look at the archivemail man page.
 
 The best way to run archivemail is from cron, giving the '-q' option to
 archivemail to make it quiet, only printing messages if something went wrong.
