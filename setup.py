@@ -19,7 +19,7 @@ check_python_version()  # define & run this early - 'distutils.core' is new
 from distutils.core import setup
 
 setup(name="archivemail",
-      version="0.4.3",
+      version="0.4.4",
       description="archive and compress old email",
       license="GNU GPL",
       url="http://archivemail.sourceforge.net/",

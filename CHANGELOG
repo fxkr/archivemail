@@ -1,4 +1,12 @@
 
+Version 0.4.4   - 27 April 2002
+  * Fixed a bug where the long --suffix option was not working (although the 
+    short option, '-s' was).
+  * Added time-based format directives to the --suffix option, so that you 
+    can do things like specify --suffix='%B%Y' to create archives named
+    after the current month and year
+  * Added some more tests to test_archivemail.py
+
 Version 0.4.3   - 26 April 2002
   * Fixed a couple of bugs where I was using python version 2.2 syntax that
     was giving errors in python v2.0 and v2.1. 

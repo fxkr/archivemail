@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.3"
+__version__ = "archivemail v0.4.4"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -165,7 +165,7 @@ class Options:
             opts, args = getopt.getopt(args, '?D:Vd:hno:qs:uv', 
                              ["date=", "days=", "delete", "dry-run", "help",
                              "include-flagged", "no-compress", "output-dir=", 
-                             "preserve-unread", "quiet", "suffix", "verbose", 
+                             "preserve-unread", "quiet", "suffix=", "verbose", 
                              "version", "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
@@ -858,7 +858,11 @@ def archive(mailbox_name):
     set_signal_handlers()
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
 
-    final_archive_name = mailbox_name + options.archive_suffix
+    # allow the user to embed time formats such as '%B' in the suffix string
+    parsed_suffix = time.strftime(options.archive_suffix, 
+        time.localtime(time.time()))
+
+    final_archive_name = mailbox_name + parsed_suffix
     if options.output_dir:
         final_archive_name = os.path.join(options.output_dir, 
                 os.path.basename(final_archive_name))

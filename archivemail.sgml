@@ -125,11 +125,66 @@ read.
     <Option>-s <Replaceable/NAME/, --suffix=<Replaceable/NAME/</Option>
 </Term>
 <ListItem><Para>
-Use the suffix <Replaceable/NAME/ to create the filename used for archive
-mailboxes.  The default is <filename>_archive</filename>. For example, if you
+Use the suffix <Replaceable/NAME/ to create the filename used for archives.  
+The default is <filename>_archive</filename>. For example, if you
 run <Command/archivemail/ on a mailbox called
-<filename>exsouthrock</filename>, any archive mailbox file will be created
+<filename>exsouthrock</filename>, the archive will be created
 with the filename <filename>exsouthrock_archive.gz</filename>.
+</Para>
+
+<Para>
+<Replaceable/NAME/ is run through the &python; <application/time.strftime()/
+function, which means that you can specify any of the following special
+directives in <Replaceable/NAME/ to make archives named after the current
+date:
+
+<itemizedlist>
+    <listitem><para><option>%a</option> 
+    Locale's abbreviated weekday name.</para></listitem>
+    <listitem><para><option>%A</option> 
+    Locale's full weekday name.</para></listitem>
+    <listitem><para><option>%b</option> 
+    Locale's abbreviated month name.</para></listitem>
+    <listitem><para><option>%B</option> 
+    Locale's full month name.</para></listitem>
+    <listitem><para><option>%c</option> 
+    Locale's appropriate date and time representation.</para></listitem>
+    <listitem><para><option>%d</option> 
+    Day of the month as a decimal number [01,31].</para></listitem>
+    <listitem><para><option>%H</option> 
+    Hour (24-hour clock) as a decimal number [00,23].</para></listitem>
+    <listitem><para><option>%I</option> 
+    Hour (12-hour clock) as a decimal number [01,12].</para></listitem>
+    <listitem><para><option>%j</option> 
+    Day of the year as a decimal number [001,366].</para></listitem>
+    <listitem><para><option>%m</option> 
+    Month as a decimal number [01,12].</para></listitem>
+    <listitem><para><option>%M</option> 
+    Minute as a decimal number [00,59].</para></listitem>
+    <listitem><para><option>%p</option> 
+    Locale's equivalent of either AM or PM.</para></listitem>
+    <listitem><para><option>%S</option> 
+    Second as a decimal number [00,61]. (1)</para></listitem>
+    <listitem><para><option>%U</option> 
+    Week number of the year (Sunday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Sunday are considered to be in week 0.</para></listitem>
+    <listitem><para><option>%w</option> 
+    Weekday as a decimal number [0(Sunday),6].</para></listitem>
+    <listitem><para><option>%W</option> 
+    Week number of the year (Monday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Sunday are considered to be in week 0.</para></listitem>
+    <listitem><para><option>%x</option> 
+    Locale's appropriate date representation.</para></listitem>
+    <listitem><para><option>%X</option> 
+    Locale's appropriate time representation.</para></listitem>
+    <listitem><para><option>%y</option> 
+    Year without century as a decimal number [00,99].</para></listitem>
+    <listitem><para><option>%Y</option> 
+    Year with century as a decimal number.</para></listitem>
+    <listitem><para><option>%Z</option> 
+    Time zone name (or by no characters if no time zone exists).</para></listitem>
+    <listitem><para><option>%%</option> 
+    A literal "%" character.</para></listitem>
+</itemizedlist>
+
 </Para></ListItem>
 </VarListEntry>
 
@@ -293,6 +348,16 @@ are older than 180 days to a compressed mailbox called
 <filename>debian-user_archive.gz</filename> in the current directory: 
 <screen>
 <prompt>bash$ </prompt><userinput>archivemail debian-user</userinput>
+</screen>
+</Para>
+
+<Para>
+To archive all messages in the mailbox <filename>debian-user</filename> that
+are older than 180 days to a compressed mailbox called
+<filename>debian-user_April_2002.gz</filename> (where the current month and
+year is April, 2002) in the current directory: 
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail --suffix '_%B_%Y' debian-user</userinput>
 </screen>
 </Para>
 

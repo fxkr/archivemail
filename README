@@ -30,7 +30,7 @@ module, although the zlib module comes with most python installations.  If you
 are compiling your own version of python < version 2.2, make sure you
 uncomment the 'zlib' moduile in Modules/Setup in the python source directory.
 
-You can check to see if you version of python has the 'zlib' module by 
+You can check to see if your version of python has the 'zlib' module by 
 trying this:
 
     flare:~$ python
