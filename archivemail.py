@@ -993,8 +993,13 @@ def archive(mailbox_name):
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
 
     # allow the user to embed time formats such as '%B' in the suffix string
+    if options.date_old_max == None:
+        parsed_suffix_time = time.time() - options.days_old_max*24*60*60
+    else:
+        parsed_suffix_time = options.date_old_max
+
     parsed_suffix = time.strftime(options.archive_suffix, 
-        time.localtime(time.time()))
+        time.localtime(parsed_suffix_time))
 
     if mailbox_name[:7].lower() == 'imap://':
         final_archive_name = mailbox_name.split('/')[-1] + parsed_suffix

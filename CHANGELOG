@@ -1,4 +1,8 @@
 
+Version 0.6.2   - ???
+  * Use the archive cut date rather than the actual time with the --suffix
+    option. (Thanks Manuel Estrada Sainz)
+
 Version 0.6.1   - 31 October 2002
   * Removed a test rule that we could archive messages older than the 
     Unix epoch. Newer versions of python now give an overflow error calling

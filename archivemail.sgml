@@ -135,8 +135,8 @@ with the filename <filename>exsouthrock_archive.gz</filename>.
 <Para>
 <Replaceable/NAME/ is run through the &python; <application/time.strftime()/
 function, which means that you can specify any of the following special
-directives in <Replaceable/NAME/ to make archives named after the current
-date:
+directives in <Replaceable/NAME/ to make archives named after the archive
+cut-off date:
 
 <itemizedlist mark='none'>
     <listitem><para><option>%a</option> 
@@ -369,7 +369,7 @@ are older than 180 days to a compressed mailbox called
 <Para>
 To archive all messages in the mailbox <filename>debian-user</filename> that
 are older than 180 days to a compressed mailbox called
-<filename>debian-user_April_2002.gz</filename> (where the current month and
+<filename>debian-user_October_2001.gz</filename> (where the current month and
 year is April, 2002) in the current directory: 
 <screen>
 <prompt>bash$ </prompt><userinput>archivemail --suffix '_%B_%Y' debian-user</userinput>
