@@ -5,6 +5,8 @@ Version 0.2.0   - 3 April 2002
   * Clamped down with lots of assert()s checking function parameters
   * Complain earlier if we do not have permission to write to the output
     directory
+  * Use the 'Date' field of a message when constructing the 'From_' line
+    from a maildir/MH mailbox if there is no 'Delivery-Date' field.
 
 Version 0.1.0   - 31 March 2002
   * Initial release
