@@ -1,5 +1,5 @@
 
-Goals for next minor release (0.5.0):
+Goals for next minor release (0.5.1):
 -------------------------------------
 * When you get a file-not-found in the 6th mailbox of 10, it aborts the whole
   run. Better to fail gracefully and keep going.
@@ -21,7 +21,3 @@ Longer Term goals:
   - is this a good idea?
 * Add option to archive depending on number of messages
   - is this a good idea?
-* Test for missing compression programs 
-  - is this a waste of time?
-* IMAP support
-  - is this outside our scope?

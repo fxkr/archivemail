@@ -5,3 +5,12 @@
 I am quite happy to add bzip2 support to archivemail as soon as a 'bzip2'
 module (similar to the gzip module) is available for python.  
 [ Hint hint ;) ]
+
+
+2. Can you add a switch to archive mailboxes greater than a certain size?
+-------------------------------------------------------------------------
+
+If you are using mbox format mailboxes instead, use the find(1) command instead, it is more flexible:
+
+    find $HOME/Mail -type f ! -name '*archive*' 
+

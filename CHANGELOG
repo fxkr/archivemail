@@ -1,3 +1,11 @@
+
+Version 0.5.0   - 15 September 2002
+  * Fixed a bug where mailbox locking would fail under Solaris. (Thanks Mark
+    Sheller)
+  * Fixed a bug where archiving maildir mailboxes without a 'Received Date' or
+    'From' header would fail. (Thanks Hugo van der Merwe)
+  * Removed yet another bug where messages dated on the Unix epoch would fail.
+
 Version 0.4.9   - 18 August 2002
   * Fixed a bug where an exception was thrown if a message was dated exactly
     on the Unix epoch.

@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.9"
+__version__ = "archivemail v0.5.0"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -51,6 +51,7 @@ import getopt
 import gzip
 import mailbox
 import os
+import pwd
 import re
 import rfc822
 import shutil
@@ -274,13 +275,13 @@ class Mbox(mailbox.UnixMailbox):
     original_mode = None # file permissions to preserve
     starting_size = None # file size of mailbox on open
 
-    def __init__(self, path, mode="r"):
+    def __init__(self, path, mode="r+"):
         """Constructor for opening an existing 'mbox' mailbox.
         Extends constructor for mailbox.UnixMailbox()
 
         Named Arguments:
         path -- file name of the 'mbox' file to be opened
-        mode -- mode to open the file in (default is read-only)
+        mode -- mode to open the file in (default is read-write)
 
         """
         assert(path)
@@ -653,20 +654,30 @@ def make_mbox_from(message):
 
     """
     assert(message)
-    address_header = message.get('Return-path')
-    if not address_header:
-        vprint("make_mbox_from: no Return-path -- using 'From:' instead!")
-        address_header = message.get('From')
-    (name, address) = rfc822.parseaddr(address_header)
-
+    address = guess_return_path(message)
     time_message = guess_delivery_time(message)
-    assert(time_message)
     gm_date = time.gmtime(time_message)
     assert(gm_date)
     date_string = time.asctime(gm_date)
-
     mbox_from = "From %s %s\n" % (address, date_string)
     return mbox_from
+
+
+def guess_return_path(message):
+    """Return a guess at the Return Path address of an rfc822 message"""
+    assert(message)
+
+    for header in ('Return-path', 'From'):
+        address_header = message.get('header')
+        if address_header:
+            (name, address) = rfc822.parseaddr(address_header)
+            if address:
+                return address
+    # argh, we can't find any valid 'Return-path' guesses - just 
+    # just use the current unix username like mutt does
+    login = pwd.getpwuid(os.getuid())[0]
+    assert(login)
+    return login
 
 
 def guess_delivery_time(message):
@@ -691,7 +702,6 @@ def guess_delivery_time(message):
         if date:
             try:
                 time_message = time.mktime(date)
-                assert(time_message)
                 vprint("using valid time found from unix 'From_' header")
                 return time_message
             except (ValueError, OverflowError): pass
