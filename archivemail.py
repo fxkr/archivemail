@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.4"
+__version__ = "archivemail v0.4.5"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -147,6 +147,7 @@ class Options:
     quiet                = 0
     read_buffer_size     = 8192
     script_name          = os.path.basename(sys.argv[0])
+    min_size             = None
     verbose              = 0
     warn_duplicates      = 0
 
@@ -162,11 +163,11 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?D:Vd:hno:qs:uv', 
+            opts, args = getopt.getopt(args, '?D:S:Vd:hno:qs:uv', 
                              ["date=", "days=", "delete", "dry-run", "help",
-                             "include-flagged", "no-compress", "output-dir=", 
-                             "preserve-unread", "quiet", "suffix=", "verbose", 
-                             "version", "warn-duplicate"])
+                             "include-flagged", "no-compress", "output-dir=",
+                             "preserve-unread", "quiet", "size=", "suffix=",
+                             "verbose", "version", "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
 
@@ -202,6 +203,8 @@ class Options:
                 self.quiet = 1
             if o in ('-s', '--suffix'):
                 self.archive_suffix = a
+            if o in ('-S', '--size'):
+                self.min_size = string.atoi(a)
             if o in ('-u', '--preserve-unread'):
                 self.preserve_unread = 1
             if o in ('-v', '--verbose'):
@@ -224,9 +227,11 @@ class Options:
                 unexpected_error(("output directory is world-writable: " + \
                     "%s -- I feel nervous!") % self.output_dir)
         if self.days_old_max < 1:
-            user_error("argument to -d must be greater than zero")
+            user_error("--days argument must be greater than zero")
         if self.days_old_max >= 10000:
-            user_error("argument to -d must be less than 10000")
+            user_error("--days argument must be less than 10000")
+        if self.min_size is not None and self.min_size < 1:
+            user_error("--size argument must be greater than zero")
         if self.quiet and self.verbose:
             user_error("you cannot use both the --quiet and --verbose options")
 
@@ -563,6 +568,7 @@ Options are as follows:
   -D, --date=DATE       archive messages older than DATE
   -o, --output-dir=DIR  directory to store archives (default: same as original)
   -s, --suffix=NAME     suffix for archive filename (default: '%s')
+  -S, --size=NUM        only archive messages NUM bytes or larger
   -n, --dry-run         don't write to anything - just show what would be done
   -u, --preserve-unread never archive unread messages
       --delete          delete rather than archive old mail (use with caution!)
@@ -780,6 +786,42 @@ def is_unread(message):
     return 1
 
 
+def is_smaller(message, size):
+    """Return true if the message is smaller than size bytes, false otherwise"""
+    assert(message)
+    assert(size > 0)
+    file_name = None
+    message_size = None
+    try:
+        file_name = message.fp.name
+    except AttributeError:
+        pass
+    if file_name:
+        # with maildir and MH mailboxes, we can just use the file size
+        message_size = os.path.getsize(file_name)
+    else:
+        # with mbox mailboxes, not so easy
+        message_size = 0
+        if message.unixfrom:
+            message_size = message_size + len(message.unixfrom)
+        for header in message.headers:
+            message_size = message_size + len(header)
+        message_size = message_size + 1 # the blank line after the headers
+        start_offset = message.fp.tell()
+        message.fp.seek(0, 2) # seek to the end of the message
+        end_offset = message.fp.tell()
+        message.rewindbody()
+        message_size = message_size + (end_offset - start_offset)
+    if message_size < size:
+        vprint("message is too small (%d bytes), minimum bytes : %d" % \
+            (message_size, size))
+        return 1
+    else:
+        vprint("message is not too small (%d bytes), minimum bytes: %d" % \
+            (message_size, size))
+        return 0
+
+
 def should_archive(message):
     """Return true if we should archive the message, false otherwise"""
     old = 0
@@ -794,6 +836,8 @@ def should_archive(message):
     if not old:
         return 0
     if not options.include_flagged and is_flagged(message):
+        return 0
+    if options.min_size and is_smaller(message, options.min_size):
         return 0
     if options.preserve_unread and is_unread(message):
         return 0

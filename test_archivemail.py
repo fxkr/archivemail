@@ -1216,6 +1216,75 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
                 os.remove(name)
 
 
+class TestArchiveSize(unittest.TestCase):
+    """check that the 'size' argument works"""
+    def testSmaller(self):
+        """giving a size argument smaller than the message"""
+        for execute in ("package", "system_long", "system_short"):
+            self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
+            size_arg = os.path.getsize(self.mbox_name) - 1
+            self.copy_name = tempfile.mktemp()
+            shutil.copyfile(self.mbox_name, self.copy_name)
+            if execute == "package":
+                archivemail.options.quiet = 1
+                archivemail.options.min_size = size_arg
+                archivemail.archive(self.mbox_name)
+            elif execute == "system_long":
+                run = "./archivemail.py --size=%d --quiet %s" % \
+                    (size_arg, self.mbox_name)
+                self.assertEqual(os.system(run), 0)
+            elif execute == "system_short":
+                run = "./archivemail.py -S%d --quiet %s" % \
+                    (size_arg, self.mbox_name)
+                self.assertEqual(os.system(run), 0)
+            else:
+                sys.exit(1)
+            assert(os.path.exists(self.mbox_name))
+            self.assertEqual(os.path.getsize(self.mbox_name), 0)
+            archive_name = self.mbox_name + "_archive.gz"
+            assert(os.path.exists(archive_name))
+            self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+            archive_name = self.mbox_name + "_archive"
+            assert(os.path.exists(archive_name))
+            assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+            self.tearDown()
+
+    def testBigger(self):
+        """giving a size argument bigger than the message"""
+        for execute in ("package", "system_long", "system_short"):
+            self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
+            size_arg = os.path.getsize(self.mbox_name) + 1
+            self.copy_name = tempfile.mktemp()
+            shutil.copyfile(self.mbox_name, self.copy_name)
+            if execute == "package":
+                archivemail.options.quiet = 1
+                archivemail.options.min_size = size_arg
+                archivemail.archive(self.mbox_name)
+            elif execute == "system_long":
+                run = "./archivemail.py --size=%d --quiet %s" % \
+                    (size_arg, self.mbox_name)
+                self.assertEqual(os.system(run), 0)
+            elif execute == "system_short":
+                run = "./archivemail.py -S%d --quiet %s" % \
+                    (size_arg, self.mbox_name)
+                self.assertEqual(os.system(run), 0)
+            else:
+                sys.exit(1)
+            assert(os.path.exists(self.mbox_name))
+            assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
+            archive_name = self.mbox_name + "_archive.gz"
+            assert(not os.path.exists(archive_name))
+            self.tearDown()
+
+    def tearDown(self):
+        archivemail.options.quiet = 0
+        archivemail.options.min_size = None
+        archive = self.mbox_name + "_archive"
+        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
+            if name and os.path.exists(name):
+                os.remove(name)
+
+
 class TestArchiveMboxMode(unittest.TestCase):
     """file mode (permissions) of the original mbox should be preserved"""
     def testOld(self):
