@@ -16,8 +16,20 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ############################################################################
+# $Id$
 """
-Test archivemail works correctly using 'pyunit'.
+Unit-test archivemail using 'PyUnit'.
+
+You will need all three of 'gzip', 'bzip2' and 'compress' in your path to 
+(hopefully) pass all tests.
+
+TODO: add tests for:
+    * procmail locks already existing
+    * messages with corrupted date headers
+    * archiving maildir-format mailboxes
+    * archiving MH-format mailboxes
+    * appending to mbox archive files already existing 
+
 """
 
 import fcntl
@@ -31,7 +43,7 @@ import unittest
 
 import archivemail
 
-__version__ = """$Id$"""
+
 
 ############ Mbox Class testing ##############
 
@@ -51,10 +63,9 @@ class TestMboxIsEmpty(unittest.TestCase):
         assert(not mbox.is_empty())
 
     def tearDown(self):
-        if os.path.exists(self.empty_name):
-            os.remove(self.empty_name)
-        if os.path.exists(self.not_empty_name):
-            os.remove(self.not_empty_name)
+        for name in (self.empty_name, self.not_empty_name):
+            if os.path.exists(name):
+                os.remove(name)
 
 
 class TestMboxLeaveEmpty(unittest.TestCase):
@@ -90,8 +101,6 @@ class TestMboxProcmailLock(unittest.TestCase):
         assert(is_world_readable(lock))
         self.mbox.procmail_unlock()
         assert(not os.path.isfile(lock))
-
-    # TODO: add a test where the lock already exists
 
     def tearDown(self):
         if os.path.exists(self.mbox_name):
@@ -156,10 +165,9 @@ class TestMboxNext(unittest.TestCase):
         self.assertEqual(msg, None)
 
     def tearDown(self):
-        if os.path.exists(self.not_empty_name):
-            os.remove(self.not_empty_name)
-        if os.path.exists(self.empty_name):
-            os.remove(self.empty_name)
+        for name in (self.not_empty_name, self.empty_name):
+            if os.path.exists(name):
+                os.remove(name)
 
 
 class TestMboxWrite(unittest.TestCase):
@@ -176,7 +184,7 @@ class TestMboxWrite(unittest.TestCase):
             write.write(msg)
         read.close()
         write.close()
-        assert(filecmp.cmp(self.mbox_read, self.mbox_write))
+        assert(filecmp.cmp(self.mbox_read, self.mbox_write, shallow=0))
 
     def testWriteNone(self):
         """calling mbox.write() with no message should raise AssertionError"""
@@ -185,11 +193,9 @@ class TestMboxWrite(unittest.TestCase):
         self.assertRaises(AssertionError, write.write, None)
 
     def tearDown(self):
-        if os.path.exists(self.mbox_write):
-            os.remove(self.mbox_write)
-        if os.path.exists(self.mbox_read):
-            os.remove(self.mbox_read)
-
+        for name in (self.mbox_write, self.mbox_read):
+            if os.path.exists(name):
+                os.remove(name)
 
 
 class TestOptionDefaults(unittest.TestCase):
@@ -317,6 +323,31 @@ class TestArchiveMboxTimestampNew(unittest.TestCase):
         archivemail.options.quiet = 0
 
 
+class TestArchiveMboxTimestampMixed(unittest.TestCase):
+    def setUp(self):
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mtime = os.path.getmtime(self.mbox_name) - 66
+        self.atime = os.path.getatime(self.mbox_name) - 88
+        os.utime(self.mbox_name, (self.atime, self.mtime))
+        archivemail.options.quiet = 1
+
+    def testTime(self):
+        """mbox timestamps should not change after semi-archival"""
+        archivemail.options.compressor = "gzip"
+        archive_name = self.mbox_name + "_archive.gz"
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        new_atime = os.path.getatime(self.mbox_name)
+        new_mtime = os.path.getmtime(self.mbox_name)
+        self.assertEqual(self.mtime, new_mtime)
+        self.assertEqual(self.atime, new_atime)
+
+    def tearDown(self):
+        for name in (self.mbox_name, self.mbox_name + "_archive.gz"):
+            if os.path.exists(name):
+                os.remove(name)
+        archivemail.options.quiet = 0
+
 class TestArchiveMboxTimestampOld(unittest.TestCase):
     def setUp(self):
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
@@ -337,11 +368,9 @@ class TestArchiveMboxTimestampOld(unittest.TestCase):
         self.assertEqual(self.atime, new_atime)
 
     def tearDown(self):
-        if os.path.exists(self.mbox_name):
-            os.remove(self.mbox_name)
-        for ext in (".gz", ".bz2", ".Z"):
-            if os.path.exists(self.mbox_name + ext):
-                os.remove(self.mbox_name + ext)
+        for name in (self.mbox_name, self.mbox_name + "_archive.gz"):
+            if os.path.exists(name):
+                os.remove(name)
         archivemail.options.quiet = 0
 
 
@@ -368,9 +397,7 @@ class TestArchiveMboxOld(unittest.TestCase):
 
         archive_name = self.mbox_name + "_archive"
         assert(os.path.exists(archive_name))
-        assert(filecmp.cmp(archive_name, self.copy_name))
-        self.tearDown()
-        self.setUp()
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
 
     def testArchiveOldBzip2(self):
         """archiving an old mailbox with bzip2 should create a valid archive"""
@@ -387,37 +414,86 @@ class TestArchiveMboxOld(unittest.TestCase):
 
         archive_name = self.mbox_name + "_archive"
         assert(os.path.exists(archive_name))
-        assert(filecmp.cmp(archive_name, self.copy_name))
-        self.tearDown()
-        self.setUp()
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
 
     def testArchiveOldCompress(self):
-        """archiving an old mailbox with compress should create a valid archive"""
+        """archiving a mixed mailbox with compress should make an archive"""
         archivemail.options.compressor = "compress"
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
         self.assertEqual(os.path.getsize(self.mbox_name), 0)
         new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.assertEqual(self.mbox_mode, new_mode)
-
         archive_name = self.mbox_name + "_archive.Z"
         assert(os.path.exists(archive_name))
         os.system("compress -d " + archive_name)
-
         archive_name = self.mbox_name + "_archive"
         assert(os.path.exists(archive_name))
-        assert(filecmp.cmp(archive_name, self.copy_name))
-        self.tearDown()
-        self.setUp()
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
 
     def tearDown(self):
-        if os.path.exists(self.mbox_name):
-            os.remove(self.mbox_name)
-        for ext in (".gz", ".bz2", ".Z"):
-            if os.path.exists(self.mbox_name + ext):
-                os.remove(self.mbox_name + ext)
-        if os.path.exists(self.copy_name):
-            os.remove(self.copy_name)
+        archive = self.mbox_name + "_archive"
+        for name in (self.mbox_name, self.copy_name, archive, \
+            archive + ".gz", archive + ".bz2", archive + ".Z"):
+            if os.path.exists(name):
+                os.remove(name)
+        archivemail.options.quiet = 0
+
+
+class TestArchiveMboxMixed(unittest.TestCase):
+    def setUp(self):
+        self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
+        self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mixed_mbox = tempfile.mktemp()
+        shutil.copyfile(self.new_mbox, self.mixed_mbox)
+        append_file(self.old_mbox, self.mixed_mbox)
+        archivemail.options.quiet = 1
+
+    def testArchiveMixedGzip(self):
+        """archiving a mixed mailbox with gzip should make an archive"""
+        archivemail.options.compressor = "gzip"
+        archivemail.archive(self.mixed_mbox)
+        assert(os.path.exists(self.mixed_mbox))
+        assert(filecmp.cmp(self.new_mbox, self.mixed_mbox, shallow=0))
+        archive_name = self.mixed_mbox + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        os.system("gzip -d " + archive_name)
+        archive_name = self.mixed_mbox + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.old_mbox, shallow=0))
+
+    def testArchiveMixedBzip2(self):
+        """archiving a mixed mailbox with bzip2 should make an archive"""
+        archivemail.options.compressor = "bzip2"
+        archivemail.archive(self.mixed_mbox)
+        assert(os.path.exists(self.mixed_mbox))
+        assert(filecmp.cmp(self.new_mbox, self.mixed_mbox, shallow=0))
+        archive_name = self.mixed_mbox + "_archive.bz2"
+        assert(os.path.exists(archive_name))
+        os.system("bzip2 -d " + archive_name)
+        archive_name = self.mixed_mbox + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.old_mbox, shallow=0))
+
+    def testArchiveMixedCompress(self):
+        """archiving a mixed mailbox with compress should make an archive"""
+        archivemail.options.compressor = "compress"
+        archivemail.archive(self.mixed_mbox)
+        assert(os.path.exists(self.mixed_mbox))
+        assert(filecmp.cmp(self.new_mbox, self.mixed_mbox, shallow=0))
+        archive_name = self.mixed_mbox + "_archive.Z"
+        assert(os.path.exists(archive_name))
+        os.system("compress -d " + archive_name)
+        archive_name = self.mixed_mbox + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.old_mbox, shallow=0))
+
+    def tearDown(self):
+        archive = self.mixed_mbox + "_archive"
+        for name in (self.mixed_mbox, self.old_mbox, self.new_mbox, archive, \
+            archive + ".gz", archive + ".bz2", archive + ".Z"):
+            if os.path.exists(name):
+                os.remove(name)
         archivemail.options.quiet = 0
 
 
@@ -433,7 +509,7 @@ class TestArchiveMboxNew(unittest.TestCase):
         """archiving a not-old-enough mailbox should not create an archive""" 
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
-        assert(filecmp.cmp(self.mbox_name, self.copy_name))
+        assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
         new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.assertEqual(self.mbox_mode, new_mode)
         
@@ -442,39 +518,48 @@ class TestArchiveMboxNew(unittest.TestCase):
 
     def tearDown(self):
         archivemail.options.quiet = 0
-        if os.path.exists(self.mbox_name):
-            os.remove(self.mbox_name)
-        if os.path.exists(self.copy_name):
-            os.remove(self.copy_name)
+        for name in (self.mbox_name, self.copy_name):
+            if os.path.exists(name):
+                os.remove(name)
 
 
 class TestArchiveMboxMode(unittest.TestCase):
     def setUp(self):
         archivemail.options.quiet = 1
-        self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
 
-    def testArchiveMboxMode(self):
-        """test that archive files are written with the original mode"""
-        for user in (0700, 0600):
-            for group in (070, 060, 050, 040, 030, 020, 010, 000):
-                for other in (07, 06, 05, 04, 03, 02, 01, 00):
-                    mode = user + group + other
-                    os.chmod(self.mbox_name, mode)
-                    archivemail.archive(self.mbox_name)
-                    archive_name = self.mbox_name + "_archive.gz"
-                    assert(os.path.exists(self.mbox_name))
-                    assert(os.path.exists(archive_name))
-                    new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-                    self.assertEqual(mode, stat.S_IMODE(new_mode))
-                    os.remove(archive_name)
-                    self.tearDown()
-                    self.setUp()
+    def testArchiveMboxModeOld(self):
+        """after archiving, the original mbox mode should be preserved"""
+        for mode in (0666, 0664, 0660, 0640, 0600):
+            self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
+            os.chmod(self.mbox_name, mode)
+            archivemail.archive(self.mbox_name)
+            archive_name = self.mbox_name + "_archive.gz"
+            assert(os.path.exists(self.mbox_name))
+            assert(os.path.exists(archive_name))
+            new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+            self.assertEqual(mode, stat.S_IMODE(new_mode))
+            archive_mode = os.stat(archive_name)[stat.ST_MODE]
+            self.assertEqual(0600, stat.S_IMODE(archive_mode))
+            os.remove(archive_name)
+            os.remove(self.mbox_name)
+
+    def testArchiveMboxModeNew(self):
+        """after no archiving, the original mbox mode should be preserved"""
+        for mode in (0666, 0664, 0660, 0640, 0600):
+            self.mbox_name = make_mbox(messages=1, hours_old=(24 * 179))
+            os.chmod(self.mbox_name, mode)
+            archivemail.archive(self.mbox_name)
+            archive_name = self.mbox_name + "_archive.gz"
+            assert(not os.path.exists(archive_name))
+            assert(os.path.exists(self.mbox_name))
+            new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+            self.assertEqual(mode, stat.S_IMODE(new_mode))
+            os.remove(self.mbox_name)
 
     def tearDown(self):
         archivemail.options.quiet = 0
         if os.path.exists(self.mbox_name):
             os.remove(self.mbox_name)
-
 
 ########## helper routines ############
 
@@ -493,6 +578,16 @@ It's very exciting.
 
 
 """ % (time_string, time_string)
+
+def append_file(source, dest):
+    """appends the file named 'source' to the file named 'dest'"""
+    assert(os.path.isfile(source))
+    assert(os.path.isfile(dest))
+    read = open(source, "r")
+    write = open(dest, "a+")
+    write.writelines(read.readlines())
+    read.close()
+    write.close()
 
 def make_mbox(messages=1, hours_old=0):
     name = tempfile.mktemp()
