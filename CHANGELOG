@@ -1,3 +1,9 @@
+Version 0.3.1   - 13 April 2002
+  * Added a lot more information to the manpage, including examples and 
+    notes.
+  * Fixed up the README file and archivemail usage message.
+  * Added an example archivemail shell script that I run from crontab.
+
 Version 0.3.1   - 12 April 2002
   * Stopped calling 'gzip' externally and started using the gzip library
     so that we can append to a copy of the gzip archive directly. 

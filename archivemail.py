@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.3.1"
+__version__ = "archivemail v0.3.2"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -476,8 +476,8 @@ def main(args = sys.argv[1:]):
     global _stale
 
     usage = """Usage: %s [options] mailbox [mailbox...]
-Moves old mail messages in mbox or maildir-format mailboxes to gzipped
-'mbox' mailbox archives. This is useful for saving space and keeping your
+Moves old mail in mbox, MH or maildir-format mailboxes to an mbox-format
+mailbox compressed with gzip. This is useful for saving space and keeping your
 mailbox manageable.
 
 Options are as follows:

@@ -20,7 +20,7 @@ check_python_version()  # define & run this early because 'distutils.core' is ne
 from distutils.core import setup
 
 setup(name="archivemail",
-      version="0.3.1",
+      version="0.3.2",
       description="archive and compress old email",
       platforms="POSIX",
       license="GNU GPL",

@@ -1,7 +1,19 @@
 <!DOCTYPE RefEntry PUBLIC "-//Davenport//DTD DocBook V3.0//EN" [
 
+<!ENTITY flock "<CiteRefEntry>
+<RefEntryTitle><Command/flock/</RefEntryTitle>
+<ManVolNum/2/</CiteRefEntry>">
+
 <!ENTITY gzip "<CiteRefEntry>
 <RefEntryTitle><Command/gzip/</RefEntryTitle>
+<ManVolNum/1/</CiteRefEntry>">
+
+<!ENTITY mutt "<CiteRefEntry>
+<RefEntryTitle><Command/mutt/</RefEntryTitle>
+<ManVolNum/1/</CiteRefEntry>">
+
+<!ENTITY procmail "<CiteRefEntry>
+<RefEntryTitle><Command/procmail/</RefEntryTitle>
 <ManVolNum/1/</CiteRefEntry>">
 
 <!ENTITY python "<CiteRefEntry>
@@ -53,15 +65,15 @@ compressing old email in mailboxes.
 <Para>
 By default it will read the mailbox <Replaceable/MAILBOX/, moving messages
 that are older that the specified number of days (180 by default) to a
-<Replaceable/mbox/-format mailbox in the same directory that is compressed
+<application/mbox/-format mailbox in the same directory that is compressed
 with &gzip;.  
 </Para>
 
 <Para>
-<Command/archivemail/ supports reading <Replaceable/Maildir/,
-<Replaceable/MH/ and <Replaceable/mbox/-format mailboxes, but it will
-always write archive files in <Replaceable/mbox/-format mailboxes, 
-compressed with &gzip;.
+<Command/archivemail/ supports reading <application/Maildir/,
+<application/MH/ and <application/mbox/-format mailboxes, but it will
+always write archive files to <application/mbox/-format mailboxes that 
+are compressed with &gzip;.
 </Para>
 
 <Para>
@@ -101,9 +113,10 @@ read.
 </Term>
 <ListItem><Para>
 Use the suffix <Replaceable/NAME/ to create the filename used for archive
-mailboxes.  The default is `_archive'. For example, if you run
-<Command/archivemail/ on a mailbox called `exsouthrock', any archive
-mailbox file will be created with the filename `exsouthrock_archive.gz'.
+mailboxes.  The default is <filename>_archive</filename>. For example, if you
+run <Command/archivemail/ on a mailbox called
+<filename>exsouthrock</filename>, any archive mailbox file will be created
+with the filename <filename>exsouthrock_archive.gz</filename>.
 </Para></ListItem>
 </VarListEntry>
 
@@ -131,8 +144,8 @@ Delete rather than archive old mail. Use this option with caution!
     <Option>--warn-duplicate</Option>
 </Term>
 <ListItem><Para>
-Warn about duplicate Message-IDs that appear in the input mailbox.
-</Para></ListItem>
+Warn about duplicate <application/Message-ID/s that appear in the input
+mailbox.</Para></ListItem>
 </VarListEntry>
 
 <VarListEntry>
@@ -149,9 +162,9 @@ Reports lots of extra debugging information about what is going on.
     <Option>-q, --quiet</Option>
 </Term>
 <ListItem><Para>
-Turns on <Replaceable/quiet mode/. Do not print any statistics about how
-many messages were archived. This should be used if you are running
-<Command/archivemail/ from cron.
+Turns on quiet mode. Do not print any statistics about how many messages were
+archived. This should be used if you are running <Command/archivemail/ from
+cron.
 </Para></ListItem>
 </VarListEntry>
 
@@ -179,39 +192,120 @@ Display brief summary information about how to run <Command/archivemail/.
 <RefSect1>
 <Title>Notes</Title>
 <Para>
-<Command/archivemail/ will always attempt to preserve the mode,
-last-access and last-modify times of the input mailbox.
+<Command/archivemail/ requires &python; version 2.0 or later.
 </Para>
 
 <Para>
-Probably the best way to run <Command/archivemail/ is from your &crontab;
-file, using the <Option>-q</Option> option.
+When reading an <application/mbox/-format mailbox, <command/archivemail/ will
+create a lockfile with the extension <filename>.lock</filename> so that
+procmail will not deliver to the mailbox while it is being processed. It will
+also create an advisory lock on the mailbox using &flock;.
+</Para>
+
+<Para>
+<Command/archivemail/ will always attempt to preserve the mode,
+last-access and last-modify times of the input mailbox. However, archive
+mailboxes are always created with a mode of <application/0600/.
+</Para>
+
+<Para>
+If <Command/archivemail/ finds a pre-existing archive mailbox it
+will append rather than overwrite that archive.
 </Para>
 
 <Para>
 <Command/archivemail/ attempts to find the delivery date of a message by
 looking for valid dates in the following headers, in order of precedence: 
-<Replaceable/Delivery-date/,
-<Replaceable/Date/ and
-<Replaceable/Resent-Date/.
+<application/Delivery-date/,
+<application/Date/ and
+<application/Resent-Date/.
 If it cannot find any valid date in these headers, it
-will use the last-modified file timestamp on <Replaceable/MH/ and
-<Replaceable/Maildir/ format mailboxes, or the date on the 
-<Replaceable/From/ line on <Replaceable/mbox/-format mailboxes.
+will use the last-modified file timestamp on <application/MH/ and
+<application/Maildir/ format mailboxes, or the date on the 
+<application/From/ line on <application/mbox/-format mailboxes.
+</Para>
+</RefSect1>
+
+<RefSect1>
+<Title>Examples</Title>
+
+<Para>
+To archive all messages in the mailbox <filename>debian-user</filename> that
+are older than 180 days to a compressed mailbox called
+<filename>debian-user_archive.gz</filename> in the current directory: 
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail debian-user</userinput>
+</screen>
+</Para>
+
+<Para>
+To delete all messages in the mailbox <filename>spam</filename> that
+are older than 30 days:
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail --delete --days=30 spam</userinput>
+</screen>
+</Para>
+
+<Para>
+To archive all mailboxes in the directory <filename>$HOME/Mail</filename> 
+that are older than 90 days to compressed mailboxes in the
+<filename>$HOME/Mail/Archive</filename> directory:
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail -d90 -o $HOME/Mail/Archive $HOME/Mail/*</userinput>
+</screen>
+</Para>
+
+</RefSect1>
+
+<RefSect1>
+<Title>Tips</Title>
+<Para>
+Probably the best way to run <Command/archivemail/ is from your &crontab;
+file, using the <Option>--quiet</Option> option.
+</Para>
+
+<Para>
+Don't forget to try the <Option>--dry-run</Option> option for non-destructive
+testing.
 </Para>
 </RefSect1>
 
 <RefSect1>
 <Title>Exit Status</Title>
-<SimPara>Normally the exit status is 0, and nonzero on an unexpected errors.
+<SimPara>Normally the exit status is 0. Nonzero indicates an unexpected error.
+</SimPara>
+</RefSect1>
+
+<RefSect1>
+<Title>Bugs</Title>
+<SimPara>
+There is no support yet for reading <application/MMDF/ or
+<application/Babyl/-format mailboxes. In fact, <Command/archivemail/ will
+probably think it is reading an <application/mbox/-format mailbox and cause
+all sorts of problems.
+</SimPara>
+
+<SimPara>
+<Command/archivemail/ is still too slow, but if you are running from &crontab;
+you won't care. Archiving <application/maildir/-format mailboxes should be
+a lot quicker than <application/mbox/-format mailboxes since it is less
+painful for the original mailbox to be reconstructed after selective message 
+removal.
 </SimPara>
 </RefSect1>
 
 <RefSect1>
 <Title>See Also</Title>
 <SimpleList>
-<Member> &python;, &gzip; </Member>
+<Member> &python;, &gzip;, &mutt;, &procmail;</Member>
 </SimpleList>
+</RefSect1>
+
+<RefSect1>
+<Title>Url</Title>
+<SimPara>The <Command/archivemail/ home page is currently hosted at 
+<ulink type="http" url="http://archivemail.sourceforge.net">sourceforge</ulink>
+</SimPara>
 </RefSect1>
 
 <RefSect1>
