@@ -21,9 +21,11 @@ from distutils.core import setup
 
 setup(name="archivemail",
       version="0.3.0",
-      description="archivemail - archive and compress old email",
+      description="archive and compress old email",
+      platforms="POSIX",
+      license="GNU GPL",
+      url="http://archivemail.sourceforge.net/",
       author="Paul Rodger",
       author_email="paul@paulrodger.com",
-      url="http://archivemail.sourceforge.net/",
       scripts=["archivemail"],
       )
