@@ -1,7 +1,7 @@
 
-test exclusive locking works with another test process
+build a testing framework
 
-add MH mailbox support
+test exclusive locking works with another test process
 
 finish man page
 
