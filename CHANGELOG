@@ -1,5 +1,5 @@
 
-Version 0.4.7   - ???
+Version 0.4.7   - 9 May 2002
   * Fixed a bug where archivemail would abort if it received a date header
     with a completely blank value.
 
