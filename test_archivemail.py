@@ -49,6 +49,7 @@ def check_python_version():
 
 check_python_version()  # define & run this early because 'unittest' is new
 
+import copy
 import fcntl
 import filecmp
 import os
@@ -334,6 +335,283 @@ class TestChooseTempDir(unittest.TestCase):
 
 ########## acceptance testing ###########
 
+class TestArchiveMbox(unittest.TestCase):
+    """archiving should work based on the date of messages given"""
+    old_mbox = None
+    new_mbox = None
+    mixed_mbox = None
+    copy_name = None
+    mbox_name = None
+
+    def setUp(self):
+        archivemail.options.quiet = 1
+
+    def testOld(self):
+        """archiving an old mailbox should create an exact archive"""
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        self.assertEqual(os.path.getsize(self.mbox_name), 0)
+        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.assertEqual(self.mbox_mode, new_mode)
+
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+
+    def testOldSystem(self):
+        """archiving an old mailbox via system should create an archive"""
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+
+        run = "./archivemail.py --quiet %s" % self.mbox_name
+        self.assertEqual(os.system(run), 0)
+        assert(os.path.exists(self.mbox_name))
+        self.assertEqual(os.path.getsize(self.mbox_name), 0)
+        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.assertEqual(self.mbox_mode, new_mode)
+
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+
+    def testDateSystem(self):
+        """test that the --date option works as expected"""
+        test_headers = (
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
+                'Date' : None,
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Delivery-date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Resent-Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+        )
+        for headers in test_headers:
+            for option in ('--date=2000-07-29', '-D2000-07-29', 
+                '--date="29 Jul 2000"', '--date="29 July 2000"'):
+                self.mbox_name = make_mbox(messages=3, headers=headers)
+                self.copy_name = tempfile.mktemp()
+                shutil.copyfile(self.mbox_name, self.copy_name)
+                run = "./archivemail.py -q %s %s" % (option, self.mbox_name)
+                self.assertEqual(os.system(run), 0)
+                assert(os.path.exists(self.mbox_name))
+                self.assertEqual(os.path.getsize(self.mbox_name), 0)
+                archive_name = self.mbox_name + "_archive.gz"
+                assert(os.path.exists(archive_name))
+                self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+                archive_name = self.mbox_name + "_archive"
+                assert(os.path.exists(archive_name))
+                assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+                self.tearDown()
+            for option in ('--date=2000-07-27', '-D2000-07-27', 
+                '--date="27 Jul 2000"', '--date="27 July 2000"'):
+                self.mbox_name = make_mbox(messages=3, headers=headers)
+                self.copy_name = tempfile.mktemp()
+                shutil.copyfile(self.mbox_name, self.copy_name)
+                run = "./archivemail.py -q %s %s" % (option, self.mbox_name)
+                self.assertEqual(os.system(run), 0)
+                assert(os.path.exists(self.mbox_name))
+                assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
+                archive_name = self.mbox_name + "_archive.gz"
+                assert(not os.path.exists(archive_name))
+                self.tearDown()
+
+    def testMixed(self):
+        """archiving a mixed mailbox should make a mixed-archive"""
+        self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
+        self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mbox_name = tempfile.mktemp()
+        shutil.copyfile(self.new_mbox, self.mbox_name)
+        append_file(self.old_mbox, self.mbox_name)
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        assert(filecmp.cmp(self.new_mbox, self.mbox_name, shallow=0))
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.old_mbox, shallow=0))
+
+    def testMixedSystem(self):
+        """archiving a mixed mailbox via system should make a mixed-archive"""
+        self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
+        self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mbox_name = tempfile.mktemp()
+        shutil.copyfile(self.new_mbox, self.mbox_name)
+        append_file(self.old_mbox, self.mbox_name)
+        run = "./archivemail.py --quiet %s" % self.mbox_name
+        self.assertEqual(os.system(run), 0)
+        assert(os.path.exists(self.mbox_name))
+        assert(filecmp.cmp(self.new_mbox, self.mbox_name, shallow=0))
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.old_mbox, shallow=0))
+
+    def testNew(self):
+        """archiving a new mailbox should not create an archive""" 
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
+        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
+        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.assertEqual(self.mbox_mode, new_mode)
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(not os.path.exists(archive_name))
+
+    def testNewSystem(self):
+        """archiving a new mailbox via system should not create an archive""" 
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
+        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+        run = "./archivemail.py --quiet %s" % self.mbox_name
+        self.assertEqual(os.system(run), 0)
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
+        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.assertEqual(self.mbox_mode, new_mode)
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(not os.path.exists(archive_name))
+
+    def testOldExisting(self):
+        """archiving an old mailbox with an existing archive"""
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.copy_name = tempfile.mktemp()
+        archive_name = self.mbox_name + "_archive"
+        shutil.copyfile(self.mbox_name, self.copy_name) 
+        shutil.copyfile(self.mbox_name, archive_name) # archive has 3 msgs
+        append_file(self.mbox_name, self.copy_name) # copy now has 6 msgs
+        self.assertEqual(os.system("gzip %s" % archive_name), 0)
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        self.assertEqual(os.path.getsize(self.mbox_name), 0)
+        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.assertEqual(self.mbox_mode, new_mode)
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+
+    def testOldExistingSystem(self):
+        """archiving an old mailbox via system with an existing archive"""
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
+        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.copy_name = tempfile.mktemp()
+        archive_name = self.mbox_name + "_archive"
+        shutil.copyfile(self.mbox_name, self.copy_name) 
+        shutil.copyfile(self.mbox_name, archive_name) # archive has 3 msgs
+        append_file(self.mbox_name, self.copy_name) # copy now has 6 msgs
+        self.assertEqual(os.system("gzip %s" % archive_name), 0)
+        run = "./archivemail.py --quiet %s" % self.mbox_name
+        self.assertEqual(os.system(run), 0)
+        assert(os.path.exists(self.mbox_name))
+        self.assertEqual(os.path.getsize(self.mbox_name), 0)
+        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+        self.assertEqual(self.mbox_mode, new_mode)
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+
+    def testOldWeirdHeaders(self):
+        """old mailboxes with weird headers should create an exact archive"""
+        weird_headers = (
+            {   # we should archive even though date < epoch
+                'From_' : 'sender@dummy.domain Sat Feb 09 02:35:07 1962',
+                'Date'  : 'Fri, 08 Feb 1962 07:22:54 -0500',
+            },
+            {   # we should archive because of the date on the 'From_' line
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
+                'Date'  : 'Friskhdfkjkh, 28 Jul 2002 1line noise6:11:36 +1000',
+            },
+            {   # we should archive because of the date on the 'From_' line
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
+                'Date'  : None,
+            },
+            {   # we should archive because of the date in 'Delivery-date'
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date'  : 'Frcorruptioni, 28 Jul 20line noise00 16:6 +1000',
+                'Delivery-date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {   # we should archive because of the date in 'Delivery-date'
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Delivery-date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {   # we should archive because of the date in 'Resent-Date'
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date'  : 'Frcorruptioni, 28 Jul 20line noise00 16:6 +1000',
+                'Resent-Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {   # we should archive because of the date in 'Resent-Date'
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Resent-Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+        )
+        for headers in weird_headers:
+            self.setUp()
+            self.mbox_name = make_mbox(messages=3, headers=headers)
+            self.copy_name = tempfile.mktemp()
+            shutil.copyfile(self.mbox_name, self.copy_name)
+            archivemail.archive(self.mbox_name)
+            assert(os.path.exists(self.mbox_name))
+            self.assertEqual(os.path.getsize(self.mbox_name), 0)
+            archive_name = self.mbox_name + "_archive.gz"
+            assert(os.path.exists(archive_name))
+            self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+            archive_name = self.mbox_name + "_archive"
+            assert(os.path.exists(archive_name))
+            assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+            self.tearDown()
+
+    def tearDown(self):
+        archivemail.options.quiet = 0
+        archive = self.mbox_name + "_archive"
+        for name in (self.mbox_name, self.old_mbox, self.new_mbox, 
+            self.copy_name, archive, archive + ".gz"):
+            if name and os.path.exists(name):
+                os.remove(name)
+
+
 class TestArchiveMboxTimestamp(unittest.TestCase):
     """original mbox timestamps should always be preserved"""
     def setUp(self):
@@ -387,102 +665,6 @@ class TestArchiveMboxTimestamp(unittest.TestCase):
                 os.remove(name)
 
 
-class TestArchiveMbox(unittest.TestCase):
-    """archiving should work based on the date of messages given"""
-    old_mbox = None
-    new_mbox = None
-    mixed_mbox = None
-    copy_name = None
-    mbox_name = None
-
-    def setUp(self):
-        archivemail.options.quiet = 1
-
-    def testOld(self):
-        """archiving an old mailbox should create an exact archive"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.copy_name = tempfile.mktemp()
-        shutil.copyfile(self.mbox_name, self.copy_name)
-
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.assertEqual(self.mbox_mode, new_mode)
-
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(os.path.exists(archive_name))
-        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
-
-        archive_name = self.mbox_name + "_archive"
-        assert(os.path.exists(archive_name))
-        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
-
-    def testMixed(self):
-        """archiving a mixed mailbox should make a mixed-archive"""
-        self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
-        self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
-        self.mbox_name = tempfile.mktemp()
-        shutil.copyfile(self.new_mbox, self.mbox_name)
-        append_file(self.old_mbox, self.mbox_name)
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        assert(filecmp.cmp(self.new_mbox, self.mbox_name, shallow=0))
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(os.path.exists(archive_name))
-        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
-        archive_name = self.mbox_name + "_archive"
-        assert(os.path.exists(archive_name))
-        assert(filecmp.cmp(archive_name, self.old_mbox, shallow=0))
-
-    def testNew(self):
-        """archiving a new mailbox should not create an archive""" 
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
-        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.copy_name = tempfile.mktemp()
-        shutil.copyfile(self.mbox_name, self.copy_name)
-
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
-        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.assertEqual(self.mbox_mode, new_mode)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(not os.path.exists(archive_name))
-
-    def testOldExisting(self):
-        """archiving an old mailbox with an existing archive"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.copy_name = tempfile.mktemp()
-        archive_name = self.mbox_name + "_archive"
-        shutil.copyfile(self.mbox_name, self.copy_name) 
-        shutil.copyfile(self.mbox_name, archive_name) # archive has 3 msgs
-        append_file(self.mbox_name, self.copy_name) # copy now has 6 msgs
-        self.assertEqual(os.system("gzip %s" % archive_name), 0)
-
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.assertEqual(self.mbox_mode, new_mode)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(os.path.exists(archive_name))
-        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
-        archive_name = self.mbox_name + "_archive"
-        assert(os.path.exists(archive_name))
-        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
-
-    def tearDown(self):
-        archivemail.options.quiet = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.old_mbox, self.new_mbox, 
-            self.copy_name, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
-
-
 class TestArchiveMboxPreserveStatus(unittest.TestCase):
     """make sure the 'preserve_unread' option works"""
     def setUp(self):
@@ -492,7 +674,7 @@ class TestArchiveMboxPreserveStatus(unittest.TestCase):
     def testOldRead(self):
         """archiving an old read mailbox should create an archive"""
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
-            status="RO")
+            headers={"Status":"RO"})
         self.copy_name = tempfile.mktemp()
         shutil.copyfile(self.mbox_name, self.copy_name)
 
@@ -536,7 +718,7 @@ class TestArchiveMboxFlagged(unittest.TestCase):
         """by default, old flagged messages should not be archived"""
         archivemail.options.include_flagged = 0
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
-            x_status="F")
+            headers={"X-Status":"F"})
         self.copy_name = tempfile.mktemp()
         shutil.copyfile(self.mbox_name, self.copy_name)
 
@@ -550,7 +732,7 @@ class TestArchiveMboxFlagged(unittest.TestCase):
         """new flagged messages should not be archived with include_flagged"""
         archivemail.options.include_flagged = 1
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179), \
-            x_status="F")
+            headers={"X-Status":"F"})
         self.copy_name = tempfile.mktemp()
         shutil.copyfile(self.mbox_name, self.copy_name)
 
@@ -564,7 +746,7 @@ class TestArchiveMboxFlagged(unittest.TestCase):
         """old flagged messages should be archived with include_flagged"""
         archivemail.options.include_flagged = 1
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
-            x_status="F")
+            headers={"X-Status":"F"})
         self.copy_name = tempfile.mktemp()
         shutil.copyfile(self.mbox_name, self.copy_name)
 
@@ -587,8 +769,7 @@ class TestArchiveMboxFlagged(unittest.TestCase):
                 os.remove(name)
 
 
-
-class TestArchiveMboxUncompressedOld(unittest.TestCase):
+class TestArchiveMboxUncompressed(unittest.TestCase):
     """make sure that the 'no_compress' option works"""
     mbox_name = None
     new_mbox = None
@@ -718,43 +899,31 @@ class TestArchiveMboxMode(unittest.TestCase):
 
 ########## helper routines ############
 
-def make_message(body=None, date=None, delivery_date=None, from_address=None, 
-    hours_old=0, resent_date=None, status=None, subject=None, to_address=None,
-    unix_from=None, x_status=None):
-
-    if not date:
+def make_message(body=None, default_headers={}, hours_old=None):
+    headers = copy.copy(default_headers)
+    if not headers:
+        headers = {}
+    if 'Date' not in headers:
         time_message = time.time() - (60 * 60 * hours_old)
-        date = time.asctime(time.localtime(time_message))
-    if not from_address:
-        from_address = "sender@dummy.domain"        
-    if not to_address:
-        to_address = "receipient@dummy.domain"        
-    if not subject:
-        subject = "This is the subject"
-    if not unix_from:
-        unix_from = "From %s %s" % (from_address, date)
+        headers['Date'] = time.asctime(time.localtime(time_message))
+    if 'From' not in headers:
+        headers['From'] = "sender@dummy.domain"        
+    if 'To' not in headers:
+        headers['To'] = "receipient@dummy.domain"        
+    if 'Subject' not in headers:
+        headers['Subject'] = "This is the subject"
+    if 'From_' not in headers:
+        headers['From_'] = "%s %s" % (headers['From'], headers['Date'])
     if not body:
         body = "This is the message body"
 
     msg = ""
-    if unix_from:
-        msg = msg + ("%s\n" % unix_from)
-    if date:
-        msg = msg + ("Date: %s\n" % date)
-    if delivery_date:
-        msg = msg + ("Delivery-Date: %s\n" % delivery_date)
-    if resent_date:
-        msg = msg + ("Resent-Date: %s\n" % resent_date)
-    if status:
-        msg = msg + ("Status: %s\n" % status)
-    if x_status:
-        msg = msg + ("X-Status: %s\n" % x_status)
-    if from_address:
-        msg = msg + ("From: %s\n" % from_address)
-    if to_address:
-        msg = msg + ("To: %s\n" % to_address)
-    if subject:
-        msg = msg + ("Subject: %s\n" % subject)
+    if 'From_' in headers:
+        msg = msg + ("From %s\n" % headers['From_'])
+        del headers['From_']
+    for key in headers.keys():
+        if headers[key] is not None:
+            msg = msg + ("%s: %s\n" % (key, headers[key]))
     msg = msg + "\n\n" + body + "\n\n"
     return msg
 
@@ -769,12 +938,13 @@ def append_file(source, dest):
     read.close()
     write.close()
 
-def make_mbox(messages=1, hours_old=0, status=None, x_status=None):
+def make_mbox(body=None, headers=None, hours_old=0, messages=1):
     name = tempfile.mktemp()
     file = open(name, "w")
     for count in range(messages):
-        file.write(make_message(hours_old=hours_old, status=status, \
-            x_status=x_status))
+        msg = make_message(body=body, default_headers=headers, 
+            hours_old=hours_old)
+        file.write(msg)
     file.close()
     return name
     

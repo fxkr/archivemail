@@ -6,6 +6,7 @@ Version 0.4.2   - ???
     1970. Yes, someone had a 'Date' header with 1967 :)
   * Complain if the mailbox to be read does not look like a valid mbox-format
     mailbox.
+  * Added a few more tests to test_archivemail.py
 
 Version 0.4.1   - 21 April 2002
   * Don't archive messages that are flagged important unless we are given the

@@ -537,7 +537,7 @@ class IdentityCache:
         assert(msg)
         message_id = msg.get('Message-ID')
         assert(message_id)
-        if self.seen_ids.has_key(message_id):
+        if message_id in self.seen_ids:
             user_warning("duplicate message id: '%s' in mailbox '%s'" % 
                 (message_id, self.mailbox_name))
         self.seen_ids[message_id] = 1
