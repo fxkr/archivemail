@@ -924,6 +924,8 @@ def _archive_mbox(mailbox_name, final_archive_name):
     original.procmail_lock()
     original.exclusive_lock()
     msg = original.next()
+    if not msg and (original.starting_size > 0):
+        user_error("'%s' is not a valid mbox-format mailbox" % mailbox_name)
     while (msg):
         stats.another_message()
         vprint("processing message '%s'" % msg.get('Message-ID'))

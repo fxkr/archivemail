@@ -4,6 +4,8 @@ Version 0.4.2   - ???
     with the new option '--date'.
   * Fixed a bug where archivemail would complain about messages older than 
     1970. Yes, someone had a 'Date' header with 1967 :)
+  * Complain if the mailbox to be read does not look like a valid mbox-format
+    mailbox.
 
 Version 0.4.1   - 21 April 2002
   * Don't archive messages that are flagged important unless we are given the
