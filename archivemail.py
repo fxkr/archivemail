@@ -101,20 +101,20 @@ class StaleFiles:
         """Delete any temporary files or lockfiles that exist"""
         if self.procmail_lock:
             vprint("removing stale procmail lock '%s'" % self.procmail_lock)
-            try: os.unlink(self.procmail_lock)
+            try: os.remove(self.procmail_lock)
             except (IOError, OSError): pass
         if self.retain:
             vprint("removing stale retain file '%s'" % self.retain)
-            try: os.unlink(self.retain)
+            try: os.remove(self.retain)
             except (IOError, OSError): pass
         if self.archive:
             vprint("removing stale archive file '%s'" % self.archive)
-            try: os.unlink(self.archive)
+            try: os.remove(self.archive)
             except (IOError, OSError): pass
         if self.compressed_archive:
             vprint("removing stale compressed archive file '%s'" %
                 self.compressed_archive)
-            try: os.unlink(self.compressed_archive)
+            try: os.remove(self.compressed_archive)
             except (IOError, OSError): pass
 
 
@@ -256,12 +256,12 @@ class Mbox(mailbox.PortableUnixMailbox):
                 break
             self.mbox_file.write(body)
 
-    def unlink(self):
+    def remove(self):
         """Close and delete the 'mbox' mailbox file"""
         file_name = self.mbox_file.name
         self.close()
-        vprint("unlinking file '%s'" % self.mbox_file.name)
-        os.unlink(file_name)
+        vprint("removing file '%s'" % self.mbox_file.name)
+        os.remove(file_name)
 
     def is_empty(self):
         """Return true if the 'mbox' file is empty, false otherwise"""
@@ -304,7 +304,7 @@ class Mbox(mailbox.PortableUnixMailbox):
         assert(self.mbox_file.name)
         lock_name = self.mbox_file.name + _options.lockfile_extension
         vprint("removing lockfile '%s'" % lock_name)
-        os.unlink(lock_name)
+        os.remove(lock_name)
         _stale.procmail_lock = None
 
     def leave_empty(self):
@@ -357,9 +357,9 @@ class RetainMbox(Mbox):
         os.utime(self.__final_name, (atime, mtime)) # reset to original timestamps
         _stale.retain = None
 
-    def unlink(self):
-        """Delete this temporary mailbox. Overrides Mbox.unlink()"""
-        Mbox.unlink(self)
+    def remove(self):
+        """Delete this temporary mailbox. Overrides Mbox.remove()"""
+        Mbox.remove(self)
         _stale.retain = None
 
 
@@ -390,8 +390,9 @@ class ArchiveMbox(Mbox):
         compressedfilename = final_name + _options.compressor_extension
        
         if os.path.isfile(final_name):
-            unexpected_error("There is already a file named '%s'!" % 
-                final_name)
+            unexpected_error("""There is already a file named '%s'!
+Have you been reading this archive? You probably should re-compress it
+manually, and try running me again.""" % final_name)
 
         temp_name = tempfile.mktemp("archivemail_archive")
 
@@ -478,9 +479,9 @@ Example: %s linux-devel
   mailbox. If the 'linux-devel_archive.gz' mailbox already exists, the 
   newly archived messages are appended.
 
-Report bugs to <paul@paulrodger.com>. """ %  (_options.script_name, 
-    _options.days_old_max, _options.archive_suffix, _options.script_name, 
-    _options.days_old_max)
+Website: http://archivemail.sourceforge.net/ """ %   \
+    (_options.script_name, _options.days_old_max, _options.archive_suffix,
+    _options.script_name, _options.days_old_max)
 
     check_python_version()
 
@@ -661,6 +662,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
     stats = Stats(mailbox_name, final_archive_name)
     original = Mbox(mailbox_name)
     cache = IdentityCache(mailbox_name)
+
     original.procmail_lock()
     original.exclusive_lock()
     msg = original.next()
@@ -711,7 +713,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
             # There was nothing to archive
             if retain:
                 # retain will be the same as original mailbox 
-                retain.unlink()
+                retain.remove()
     original.procmail_unlock()
     if not _options.quiet:
         stats.display()
@@ -721,12 +723,12 @@ def _archive_maildir(mailbox_name, final_archive_name):
     """Archive a 'maildir' style mailbox - used by archive_mailbox()"""
     archive = None
     stats = Stats(mailbox_name, final_archive_name)
-    original = mailbox.Maildir(mailbox_name)
-    cache = IdentityCache(mailbox_name)
-    assert(original)
-    msg = original.next()
-    assert(msg)
     delete_queue = []
+    original = mailbox.Maildir(mailbox_name)
+    assert(original)
+    cache = IdentityCache(mailbox_name)
+
+    msg = original.next()
     while (msg):
         stats.another_message()
         vprint("processing message '%s'" % msg.get('Message-ID'))
@@ -756,14 +758,9 @@ def _archive_maildir(mailbox_name, final_archive_name):
             archive.close()
             archive.finalise()
         for file_name in delete_queue:
-            try:
-                os.unlink(file_name)
-            except (OSError), msg:
-                # This could happen -- a person could be deleting messages
-                # with a mail reader while this script is running. That 
-                # should be ok. How about permission denied problems though?
-                if not _options.quiet:
-                    print "unlink warning: %s" % msg
+            if os.path.isfile(file_name):
+                vprint("removing original message: '%s'" % file_name)
+                os.remove(file_name)
     if not _options.quiet:
         stats.display()
 
