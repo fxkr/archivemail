@@ -1,0 +1,160 @@
+<html>
+<head>
+    <title>archivemail - a tool for archiving and compressing old email</title>
+    <link title="archivemail style" rel=stylesheet href="style.css" 
+    type="text/css">
+</head>
+<body>
+   
+<center>
+<h1>archivemail</h1>
+</center>
+<p>
+
+<h2>Description</h2>
+
+<strong>archivemail</strong> is a tool written in <a
+href="http://www.python.org/">Python</a> for archiving and compressing old
+email in mailboxes. It can move messages older than the specified number of
+days to a separate <a href="http://www.qmail.org/man/man5/mbox.html">mbox
+format</a> mailbox that is compressed with <a
+href="http://www.gzip.org/">gzip</a>, or optionally just delete old email.
+<p>
+
+<h2>Why should I use it?</h2>
+Maybe some of your mailboxes are quite large (eg, over 10,000 messages) and
+they are taking a while to load in your mail reader. Perhaps they are taking
+up too much space on your disk. Archiving old messages to a separate,
+compressed mailbox will mean: 
+<ol>
+<li>Your mail reader will get a huge performance boost loading and reading
+    your mail.
+<li>You will be taking up less disk space, since old mail will be compressed.
+    (Mail usually compresses quite nicely.)
+<li>You won't be confronted with semi-obsolete mail all the time.
+</ol>
+<p>
+
+If you would prefer to just delete old email rather than archive it,
+<strong>archivemail</strong> can do that too.
+<p>
+
+
+<h2>Features</h2>
+
+<ul>
+<li>Support for archiving 
+    <a href="http://www.imap.org/">IMAP</a>,
+    <a href="http://www.qmail.org/man/man5/mbox.html">mbox</a>,
+    <a href="http://www.faqs.org/faqs/mail/mh-faq/">MH</a> and 
+    <a href="http://www.qmail.org/man/man5/maildir.html">maildir</a> format
+    mailboxes.
+<li>You can configure the amount of days before mail is considered old -- 
+    with the default being 180 days.
+<li>Messages that are flagged important are not archived or deleted unless you
+    specify the <em>--include-flagged</em> option.
+<li>Optionally warn about duplicate Message-IDs in a mailbox.
+<li>You can specify an option so that unread mail is never archived.
+<li>Allows you to store the compressed archive mailboxes in a directory of
+    your choice, with an extension of your choice.
+<li>Support for deleting old mail rather than archiving it.
+<li>Optional ability to archive messages older than an absolute date with the
+    <em>--date</em> option.
+<li>Ability to only archive messages over a certain byte size.
+</ul>
+<p>
+
+<h2>Documentation</h2>
+<ul>
+<li> <a href="manpage.html">HTML version of the archivemail manpage</a>
+<li> <a href="README">README</a> file
+<li> <a href="CHANGELOG">CHANGELOG</a> 
+<li> <a href="TODO">TODO</a> list
+</ul>
+<p>
+
+
+<h2>Articles</h2>
+<ul>
+<li> Emmanuel Seyman wrote an 
+<a href="http://muttfr.org/gen.php3/2002/11/20/108,1,0,0,1.php3">article</a>
+about archivemail for <a href="http://www.muttfr.org/">muttfr.org</a>, a
+French website about <a href="http://www.mutt.org/">mutt</a>.
+</ul>
+<p>
+
+<h2>License</h2>
+This software is licensed under the 
+<a href="http://www.gnu.org/licenses/licenses.html#GPL">GNU GPL</a>. 
+See the file <a href="COPYING">COPYING</a> for more information. 
+<p>
+
+<h2>Requirements</h2>
+<strong>archivemail</strong> requires python version 2.0 or later, with the
+optional <a href="http://www.python.org/doc/current/lib/module-zlib.html">zlib
+module</a>, although the zlib module comes with most python installations.  If
+you are compiling your own version of python less than version 2.2, make sure
+you uncomment the 'zlib' moduile in Modules/Setup in the python source
+directory.  
+<p>
+
+You can check to see if your version of python has the 'zlib' module by trying
+this:
+<p>
+
+<pre>
+    flare:~$ python
+    Python 2.1 (#1, Apr 26 2002, 11:22:45)
+    [GCC 2.95.2 20000220 (Debian GNU/Linux)] on linux2
+    Type "copyright", "credits" or "license" for more information.
+    &gt;&gt;&gt; import zlib
+    &gt;&gt;&gt;
+</pre>
+
+If you get an ImportError, then the zlib python module has not been installed.
+Try upgrading your python distribution.
+<p>
+
+Python is available from 
+<a href="http://www.python.org/">http://www.python.org/</a>
+<p>
+
+If you want to run the bundled test script, you will need python version 2.1
+or later, because we use the 
+<a href="http://pyunit.sourceforge.net/">PyUnit unittest module</a>. Sorry.
+<p>
+
+<h2>Download</h2>
+<strong>archivemail</strong> can be downloaded from the 
+<a href="http://sourceforge.net/project/showfiles.php?group_id=49630">archivemail 
+download area on Sourceforge</a> or via 
+<a href="http://sourceforge.net/cvs/?group_id=49630">CVS</a>. There is also a 
+<a href="http://packages.debian.org/unstable/mail/archivemail.html">debian
+package</a>.
+<p>
+
+<h2>Support</h2>
+<ul>
+<li><a href="http://sourceforge.net/tracker/?group_id=49630">Browse/submit 
+     bug reports.</a>
+<li>The <a href="http://lists.sourceforge.net/lists/listinfo/archivemail-user">archivemail-user</a> mailing list.
+<li><a href="http://sourceforge.net/projects/archivemail/">Project page
+    for archivemail</a> on Sourceforge.
+</ul>
+<p>
+
+<h2>Credits</h2>
+<strong>archivemail</strong> was written by Paul Rodger
+&lt;<u>paul</u> <em>at</em> <u>paulrodger</u> <em>dot</em> <u>com</u>&gt;
+<p>
+
+<hr>
+<p>
+<center>
+<!-- sourceforge logo start --> 
+<a href="http://sourceforge.net"><img src="http://sourceforge.net/sflogo.php?group_id=49630&type=3" width="125" height="37" border="0" alt="SourceForge.net Logo"></a>
+<!-- sourceforge logo end --> 
+</center>
+
+</body>
+</html>
