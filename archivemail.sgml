@@ -138,7 +138,7 @@ function, which means that you can specify any of the following special
 directives in <Replaceable/NAME/ to make archives named after the current
 date:
 
-<itemizedlist>
+<itemizedlist mark='none'>
     <listitem><para><option>%a</option> 
     Locale's abbreviated weekday name.</para></listitem>
     <listitem><para><option>%A</option> 

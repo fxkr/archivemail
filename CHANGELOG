@@ -1,4 +1,10 @@
 
+Version 0.4.5   - 28 April 2002
+  * Fixed a bug where if you used the '--delete' option to completely clean
+    an mbox mailbox you would get a python error.
+  * Added a lot more testing to test_archivemail.py (test_archivemail.py is
+    now 37% bigger than archivemail -- scary)
+
 Version 0.4.4   - 27 April 2002
   * Fixed a bug where the long --suffix option was not working (although the 
     short option, '-s' was).
