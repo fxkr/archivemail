@@ -1,5 +1,5 @@
 
-VERSION=0.3.2
+VERSION=0.4.0
 VERSION_TAG=v$(subst .,_,$(VERSION))
 
 
@@ -9,10 +9,13 @@ default:
 clean:
 	rm -f *.pyc manpage.links manpage.refs manpage.log
 
+test:
+	python test_archivemail.py
+
 clobber: clean
 	rm -rf build dist
 
-sdist: clobber
+sdist: clobber doc
 	cp archivemail.py archivemail
 	fakeroot python setup.py sdist
 	rm archivemail

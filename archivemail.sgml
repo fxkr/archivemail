@@ -132,10 +132,36 @@ useful for testing to see how many messages would have been archived.
 
 <VarListEntry>
 <Term>
+    <Option>-u, --preserve-unread</Option>
+</Term>
+<ListItem><Para>
+Do not archive any messages that have not yet been read. <command/archivemail/
+determines if a message in a <application/mbox/-format or
+<application/MH/-format mailbox has been read by looking at the
+<application/Status/ header (if it exists). If the status
+header is equal to 'RO' or 'OR' then <application/archivemail/ assumes the
+message has been read. <command/archivemail/ determines if a
+<application/maildir/ message has
+been read by looking at the filename. If the filename contains an 'S' after 
+<filename>:2,</filename> then it assumes the message has been read.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
     <Option>--delete</Option>
 </Term>
 <ListItem><Para>
 Delete rather than archive old mail. Use this option with caution!
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>--no-compress</Option>
+</Term>
+<ListItem><Para>
+Do not compress any archives using &gzip;.
 </Para></ListItem>
 </VarListEntry>
 
@@ -224,6 +250,12 @@ will use the last-modified file timestamp on <application/MH/ and
 <application/Maildir/ format mailboxes, or the date on the 
 <application/From/ line on <application/mbox/-format mailboxes.
 </Para>
+
+<Para>
+<Command/archivemail/ will refuse to operate on mailboxes that are symbolic 
+links or create tempfiles or archives in world-writable directories.
+</Para>
+
 </RefSect1>
 
 <RefSect1>
@@ -243,6 +275,24 @@ To delete all messages in the mailbox <filename>spam</filename> that
 are older than 30 days:
 <screen>
 <prompt>bash$ </prompt><userinput>archivemail --delete --days=30 spam</userinput>
+</screen>
+</Para>
+
+<Para>
+To archive all read messages in the mailbox <filename>incoming</filename> that
+are older than 180 days to a compressed mailbox called
+<filename>incoming_archive.gz</filename> in the current directory: 
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail --preserve-unread incoming</userinput>
+</screen>
+</Para>
+
+<Para>
+To archive all messages in the mailbox <filename>received</filename> that
+are older than 180 days to an uncompressed mailbox called 
+<filename>received_archive</filename> in the current directory:
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail --no-compress received</userinput>
 </screen>
 </Para>
 

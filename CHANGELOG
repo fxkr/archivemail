@@ -1,4 +1,10 @@
-Version 0.3.1   - 13 April 2002
+Version 0.4.0   - 17 April 2002
+  * Added an option --no-compress to make archives but not compress them with  
+    gzip.
+  * Added an option --preserve-unread to not archive unread messages.
+  * Added a few more unittests.
+
+Version 0.3.2   - 13 April 2002
   * Added a lot more information to the manpage, including examples and 
     notes.
   * Fixed up the README file and archivemail usage message.

@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.3.2"
+__version__ = "archivemail v0.4.0"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -138,8 +138,12 @@ class Options:
     lockfile_attempts    = 5  
     lockfile_extension   = ".lock"
     lockfile_sleep       = 1 
+    no_compress          = 0
+    only_archive_read    = 0
     output_dir           = None
+    preserve_unread      = 0
     quiet                = 0
+    read_buffer_size     = 8192
     script_name          = os.path.basename(sys.argv[0])
     verbose              = 0
     warn_duplicates      = 0
@@ -156,16 +160,21 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?Vd:hno:qs:v', 
-                             ["days=", "delete", "dry-run", "help", 
-                             "output-dir=", "quiet", "suffix", "verbose", 
-                             "version", "warn-duplicate"])
+            opts, args = getopt.getopt(args, '?Vd:hno:qs:uv', 
+                             ["days=", "delete", "dry-run", "help",
+                             "preserve-unread", "no-compress", "output-dir=",
+                             "quiet", "suffix", "verbose", "version",
+                             "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
 
         for o, a in opts:
             if o == '--delete':
                 self.delete_old_mail = 1
+            if o in ('-u', '--preserve-unread'):
+                self.preserve_unread = 1
+            if o == '--no-compress':
+                self.no_compress = 1
             if o == '--warn-duplicate':
                 self.warn_duplicates = 1
             if o in ('-n', '--dry-run'):
@@ -210,10 +219,9 @@ class Mbox(mailbox.PortableUnixMailbox):
     """Class that allows read/write access to a 'mbox' mailbox. 
     Subclasses the mailbox.PortableUnixMailbox class.
     """
-   
     mbox_file = None   # file handle for the mbox file
-    mbox_file_name = None   # GzipFile has no .name variable
-    mbox_file_closed = 0   # GzipFile has no .closed variable
+    mbox_file_name = None   # GzipFile class has no .name variable
+    mbox_file_closed = 0   # GzipFile class has no .closed variable
     original_atime = None # last-accessed timestamp
     original_mtime = None # last-modified timestamp
     original_mode = None # file permissions to preserve
@@ -261,8 +269,9 @@ class Mbox(mailbox.PortableUnixMailbox):
 
         # The following while loop is about twice as fast in 
         # practice to 'self.mbox_file.writelines(msg.fp.readlines())'
+        assert(options.read_buffer_size > 0)
         while 1:
-            body = msg.fp.read(8192)
+            body = msg.fp.read(options.read_buffer_size)
             if not body:
                 break
             self.mbox_file.write(body)
@@ -395,7 +404,7 @@ class RetainMbox(Mbox):
 class ArchiveMbox(Mbox):
     """Class for holding messages that will be archived from the original
     mailbox (ie. the messages that are considered 'old'). Extends the 'Mbox'
-    class. This 'mbox' file starts off as a temporary file, extracted from any
+    class. This 'mbox' file starts off as a temporary file, copied from any
     pre-existing archive. It will eventually overwrite the original archive
     mailbox if everything is OK. 
     
@@ -415,24 +424,45 @@ class ArchiveMbox(Mbox):
 
         """
         assert(final_name)
+        if options.no_compress:
+            self.__init_uncompressed(final_name)
+        else:
+            self.__init_compressed(final_name)
+        self.__final_name = final_name
+
+    def __init_uncompressed(self, final_name):
+        """Used internally by __init__ when archives are uncompressed"""
+        assert(final_name)
+        compressed_archive = final_name + ".gz"
+        if os.path.isfile(compressed_archive):
+            unexpected_error("""There is already a file named '%s'!
+Have you been previously compressing this archive? You probably should 
+uncompress it manually, and try running me again.""" % compressed_archive)
+        temp_name = tempfile.mktemp("archivemail_archive")
+        if os.path.isfile(final_name):
+            vprint("file already exists that is named: %s" % final_name)
+            shutil.copy2(final_name, temp_name)
+        _stale.archive = temp_name
+        self.mbox_file = open(temp_name, "a")
+        self.mbox_file_name = temp_name
+
+    def __init_compressed(self, final_name):
+        """Used internally by __init__ when archives are compressed"""
+        assert(final_name)
         compressed_filename = final_name + ".gz"
-       
         if os.path.isfile(final_name):
             unexpected_error("""There is already a file named '%s'!
 Have you been reading this archive? You probably should re-compress it
 manually, and try running me again.""" % final_name)
 
         temp_name = tempfile.mktemp("archivemail_archive.gz")
-
         if os.path.isfile(compressed_filename):
             vprint("file already exists that is named: %s" %  \
                 compressed_filename)
             shutil.copy2(compressed_filename, temp_name)
-
         _stale.archive = temp_name
         self.mbox_file = gzip.GzipFile(temp_name, "a")
         self.mbox_file_name = temp_name
-        self.__final_name = final_name
 
     def finalise(self):
         """Close the archive and rename this archive temporary file to the
@@ -442,22 +472,27 @@ manually, and try running me again.""" % final_name)
         """
         assert(self.__final_name)
         self.close()
-        compressed_final_name = self.__final_name + ".gz"
+        final_name = self.__final_name
+        if not options.no_compress:
+            final_name = final_name + ".gz"
         vprint("renaming '%s' to '%s'" % (self.mbox_file_name, 
-            compressed_final_name))
-        os.rename(self.mbox_file_name, compressed_final_name)
+            final_name))
+        os.rename(self.mbox_file_name, final_name)
         _stale.archive = None
 
 
 class IdentityCache:
+    """Class used to remember Message-IDs and warn if they are seen twice"""
     seen_ids = {}
     mailbox_name = None
 
     def __init__(self, mailbox_name):
+        """Constructor: takes the mailbox name as an argument"""
         assert(mailbox_name)
         self.mailbox_name = mailbox_name
 
     def warn_if_dupe(self, msg):
+        """Print a warning message if the message has already appeared"""
         assert(msg)
         message_id = msg.get('Message-ID')
         assert(message_id)
@@ -475,22 +510,24 @@ _stale = StaleFiles() # remember what we have to delete on abnormal exit
 def main(args = sys.argv[1:]):
     global _stale
 
+    # this usage message is longer than 24 lines -- bad idea?
     usage = """Usage: %s [options] mailbox [mailbox...]
 Moves old mail in mbox, MH or maildir-format mailboxes to an mbox-format
-mailbox compressed with gzip. This is useful for saving space and keeping your
-mailbox manageable.
+mailbox compressed with gzip. 
 
 Options are as follows:
-  -d, --days=<days>    archive messages older than <days> days (default: %d)
-  -o, --output-dir=DIR directory where archive files go (default: current)
-  -s, --suffix=NAME    suffix for archive filename (default: '%s')
-  -n, --dry-run        don't write to anything - just show what would be done
-      --delete         delete rather than archive old mail (use with caution!)
-      --warn-duplicate warn about duplicate Message-IDs in the same mailbox
-  -v, --verbose        report lots of extra debugging information
-  -q, --quiet          quiet mode - print no statistics (suitable for crontab)
-  -V, --version        display version information
-  -h, --help           display this message
+  -d, --days=<days>     archive messages older than <days> days (default: %d)
+  -o, --output-dir=DIR  directory to store archives (default: same as original)
+  -s, --suffix=NAME     suffix for archive filename (default: '%s')
+  -n, --dry-run         don't write to anything - just show what would be done
+  -u, --preserve-unread never archive unread messages
+      --delete          delete rather than archive old mail (use with caution!)
+      --no-compress     do not compress archives with gzip
+      --warn-duplicate  warn about duplicate Message-IDs in the same mailbox
+  -v, --verbose         report lots of extra debugging information
+  -q, --quiet           quiet mode - print no statistics (suitable for crontab)
+  -V, --version         display version information
+  -h, --help            display this message
 
 Example: %s linux-devel
   This will move all messages older than %s days to a 'mbox' mailbox called 
@@ -610,7 +647,44 @@ def guess_delivery_time(message):
     vprint("using valid time found from '%s' last-modification time" % \
         file_name)
     return time_message
-       
+   
+
+def is_unread(message):
+    """return true if the message is unread, false otherwise"""
+    # MH and mbox mailboxes use the 'Status' header to indicate read status
+    status = message.get('Status')
+    if (status == 'RO') or (status == 'OR'):
+        vprint("message has been read (status header='%s')" % status)
+        return 0
+    file_name = None
+    try:
+        file_name = message.fp.name
+    except AttributeError:
+        pass
+    # maildir mailboxes use the filename suffix to indicate read status
+    if file_name and re.search(":2,.*S.*$", file_name):
+        vprint("message has been read (filename info has 'S')")
+        return 0
+    vprint("message is unread")
+    return 1
+
+
+def should_archive(message):
+    """Return 1 if we should archive the message, 0 otherwise"""
+    time_message = guess_delivery_time(message)
+    old = is_too_old(time_message, options.days_old_max)
+    # I could probably do this in one if statement, but then I wouldn't
+    # understand it.
+    if old:
+        if options.preserve_unread:
+            if is_unread(message):
+                return 0
+            else:                   
+                return 1
+        else:
+            return 1
+    return 0
+    
 
 def is_too_old(time_message, max_days):
     """Return true if a message is too old (and should be archived), 
@@ -724,8 +798,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
         vprint("processing message '%s'" % msg.get('Message-ID'))
         if options.warn_duplicates:
             cache.warn_if_dupe(msg)             
-        time_message = guess_delivery_time(msg)
-        if is_too_old(time_message, options.days_old_max):
+        if should_archive(msg):
             stats.another_archived()
             if options.delete_old_mail:
                 vprint("decision: delete message")
@@ -801,8 +874,7 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         vprint("processing message '%s'" % msg.get('Message-ID'))
         if options.warn_duplicates:
             cache.warn_if_dupe(msg)             
-        time_message = guess_delivery_time(msg)
-        if is_too_old(time_message, options.days_old_max):
+        if should_archive(msg):
             stats.another_archived()
             if options.delete_old_mail:
                 vprint("decision: delete message")
@@ -855,6 +927,7 @@ def choose_temp_dir(mailbox_name):
 
 
 def set_signal_handlers():
+    """set signal handlers to clean up temporary files on unexpected exit"""
     # Make sure we clean up nicely - we don't want to leave stale procmail
     # lockfiles about if something bad happens to us. This is quite 
     # important, even though procmail will delete stale files after a while.
