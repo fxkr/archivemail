@@ -22,6 +22,22 @@ Archive and compress old mail in mbox or maildir-format mailboxes.
 Website: http://archivemail.sourceforge.net/
 """
 
+import sys
+
+def check_python_version(): 
+    """Abort if we are running on python < v2.0"""
+    too_old_error = "This program requires python v2.0 or greater."
+    try: 
+        version = sys.version_info  # we might not even have this function! :)
+        if (version[0] < 2):
+            print too_old_error
+            sys.exit(1)
+    except AttributeError:
+        print too_old_error
+        sys.exit(1)
+
+check_python_version()  # define & run this early because 'atexit' is new
+
 import atexit
 import fcntl
 import getopt
@@ -30,7 +46,6 @@ import os
 import rfc822
 import signal
 import string
-import sys
 import tempfile
 import time
 
@@ -485,8 +500,6 @@ Website: http://archivemail.sourceforge.net/ """ %   \
     (_options.script_name, _options.days_old_max, _options.archive_suffix,
     _options.script_name, _options.days_old_max)
 
-    check_python_version()
-
     args = _options.parse_args(args, usage)
     if len(args) == 0:
         print usage
@@ -805,18 +818,6 @@ def choose_temp_dir(mailbox_path):
     if not temp_dir:
         temp_dir = os.curdir # use the current directory
     return temp_dir
-
-def check_python_version():
-    """Abort if we are running on python < v2.0"""
-    build = sys.version
-    too_old_error = "requires python v2.0 or greater. Your version is: %s" % build
-    try: 
-        version = sys.version_info  # we might not even have this function! :)
-        if (version[0] < 2):
-            unexpected_error(too_old_error)
-    except:  # I should be catching more specific exceptions
-        unexpected_error(too_old_error)
-        
 
 def system_or_die(command):
     """Run the command with os.system(), aborting on non-zero exit"""
