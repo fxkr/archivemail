@@ -43,6 +43,7 @@ import fcntl
 import getopt
 import mailbox
 import os
+import re
 import rfc822
 import signal
 import stat
@@ -148,7 +149,6 @@ class Options:
     output_dir           = os.curdir
     quiet                = 0
     script_name          = os.path.basename(sys.argv[0])
-    use_modify_time      = 0
     verbose              = 0
     warn_duplicates      = 0
 
@@ -164,11 +164,11 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?IVZd:hmno:qs:vz', 
+            opts, args = getopt.getopt(args, '?IVZd:hno:qs:vz', 
                              ["bzip2", "compress", "days=", "delete",
                              "dry-run", "gzip", "help", "output-dir=", 
-                             "quiet", "suffix", "modify-time", "verbose", 
-                             "version", "warn-duplicate"])
+                             "quiet", "suffix", "verbose", "version", 
+                             "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
         for o, a in opts:
@@ -187,8 +187,6 @@ class Options:
                 sys.exit(0)
             if o in ('-q', '--quiet'):
                 self.quiet = 1
-            if o in ('-m', '--modify-time'):
-                self.use_modify_time = 1
             if o in ('-v', '--verbose'):
                 self.verbose = 1
             if o in ('-s', '--suffix'):
@@ -499,7 +497,6 @@ Options are as follows:
   -Z, --compress       compress the archive(s) using compress
       --delete         delete rather than archive old mail (use with caution!)
       --warn-duplicate warn about duplicate Message-IDs in the same mailbox
-  -m, --modify-time    use file last-modified time as date for maildir messages
   -v, --verbose        report lots of extra debugging information
   -q, --quiet          quiet mode - print no statistics (suitable for crontab)
   -V, --version        display version information
@@ -583,52 +580,58 @@ def make_mbox_from(message):
         address_header = message.get('From')
     (name, address) = rfc822.parseaddr(address_header)
 
-    date = None
-    delivery_date_header = message.get('Delivery-date')
-    if delivery_date_header:
-        date = rfc822.parsedate(delivery_date_header)
-    if not date:
-        date_header = message.get('Date')
-        if not date_header:
-            unexpected_error("message has no 'Date' header")
-        date = rfc822.parsedate(date_header)
-        if not date:
-            unexpected_error("message has no valid 'Date' header")
-    date_string = time.asctime(date)
+    time_message = guess_delivery_time(message)
+    assert(time_message)
+    gm_date = time.gmtime(time_message)
+    assert(gm_date)
+    date_string = time.asctime(gm_date)
+
     mbox_from = "From %s %s\n" % (address, date_string)
     return mbox_from
 
 
-def get_date_mtime(message):
-    """Return the delivery date of an rfc822 message in a maildir mailbox""" 
+def guess_delivery_time(message):
+    """Return a guess at the delivery date of an rfc822 message""" 
     assert(message)
-    vprint("using last-modification time of message file")
-    return os.path.getmtime(message.fp.name)
-
-
-def get_date_headers(message):
-    """Return the delivery date of an rfc822 message in a mbox mailbox""" 
-    assert(message)
-    date = message.getdate('Date')
-    delivery_date = message.getdate('Delivery-date')
-    use_date = None
-    time_message = None
-    if delivery_date:
-        try:
-            time_message = time.mktime(delivery_date)
-            use_date = delivery_date
-            vprint("using message 'Delivery-date' header")
-        except ValueError:
-            pass
-    if date and not use_date:
-        try:
-            time_message = time.mktime(date)
-            use_date = date
-            vprint("using message 'Date' header")
-        except ValueError:
-            pass
-    if not use_date:
-        unexpected_error("no valid dates found for message")
+    # try to guess the delivery date from various headers
+    # get more desparate as we go through the array
+    for header in ('Delivery-date', 'Date', 'Resent-Date'):
+        date = message.getdate(header)
+        if date:
+            try:
+                time_message = time.mktime(date)
+                assert(time_message, 'time.mktime() returned false')
+                vprint("using valid time found from '%s' header" % header)
+                return time_message
+            except (ValueError, OverflowError): pass
+    # as a second-last resort, try the date from the 'From_' line (ugly)
+    # this will only work from a mbox-format mailbox
+    if (message.unixfrom):
+        header = re.sub("From \S+", "", message.unixfrom)
+        header = string.strip(header)
+        date = rfc822.parsedate(header)
+        if date:
+            try:
+                time_message = time.mktime(date)
+                assert(time_message, 'time.mktime() returned false')
+                vprint("using valid time found from unix 'From_' header")
+                return time_message
+            except (ValueError, OverflowError): pass
+    # the headers have no valid dates -- last resort, try the file timestamp
+    # this will not work for mbox mailboxes
+    try:
+        file_name = message.fp.name
+    except AttributeError:
+        # we are looking at a 'mbox' mailbox - argh! 
+        # Just return the current time - this will never get archived :(
+        vprint("no valid times found at all -- using current time!")
+        return time.time()
+    if not os.path.isfile(file_name):
+        unexpected_error("mailbox file name '%s' has gone missing" % \
+            file_name)    
+    time_message = os.path.getmtime(message.fp.name)
+    vprint("using valid time found from '%s' last-modification time" % \
+        file_name)
     return time_message
        
 
@@ -720,7 +723,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
         vprint("processing message '%s'" % msg.get('Message-ID'))
         if _options.warn_duplicates:
             cache.warn_if_dupe(msg)             
-        time_message = get_date_headers(msg)
+        time_message = guess_delivery_time(msg)
         if is_too_old(time_message):
             stats.another_archived()
             if _options.delete_old_mail:
@@ -794,10 +797,7 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         vprint("processing message '%s'" % msg.get('Message-ID'))
         if _options.warn_duplicates:
             cache.warn_if_dupe(msg)             
-        if _options.use_modify_time:
-            time_message = get_date_mtime(msg)
-        else:
-            time_message = get_date_headers(msg)
+        time_message = guess_delivery_time(msg)
         if is_too_old(time_message):
             stats.another_archived()
             if _options.delete_old_mail:

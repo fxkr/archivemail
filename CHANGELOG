@@ -1,3 +1,7 @@
+Version 0.2.1   - 3 April 2002
+  * Since we might not have a parse-able 'Date-Received' or 'Date' field,
+    use 5 different ways to guess the date of a message.
+
 Version 0.2.0   - 3 April 2002
   * Added support for reading from MH mailboxes
   * Refuse to proceed if we would be making tempfiles in world-writable
