@@ -1,5 +1,5 @@
 
-Goals for next minor release (0.3.1):
+Goals for next minor release (0.3.2):
 -------------------------------------
 * Finish docbook sgml documentation & man page
 
@@ -8,10 +8,10 @@ Goals for next major release (0.4.0):
 * Lock any original .gz files 
   - is this necessary?
 * Check for symlink attacks for tempfiles (although we don't use /var/tmp)
+* Add a lot more unit test. (see top of test_archivemail.py)
 
 Longer Term goals:
 ------------------
-* Use zlib instead of calling gzip directly
 * Add MMDF mailbox support
 * Add Babyl mailbox support
 * Add option to archive depending on mailbox size threshold 
@@ -22,4 +22,3 @@ Longer Term goals:
   - is this a waste of time?
 * Add option - do not compress 
   - is this useless?
-* Use a Makefile/python installation process

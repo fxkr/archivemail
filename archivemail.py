@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.3.0"
+__version__ = "archivemail v0.3.1"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -48,10 +48,12 @@ check_python_version()  # define & run this early because 'atexit' is new
 import atexit
 import fcntl
 import getopt
+import gzip
 import mailbox
 import os
 import re
 import rfc822
+import shutil
 import signal
 import stat
 import string
@@ -81,8 +83,7 @@ class Stats:
         assert(final_archive_name)
         self.__start_time = time.time()
         self.__mailbox_name = mailbox_name
-        self.__archive_name = final_archive_name + \
-            options.compressor_extension()
+        self.__archive_name = final_archive_name + ".gz"
 
     def another_message(self):
         """Add one to the internal count of total messages processed"""
@@ -109,7 +110,6 @@ class Stats:
 class StaleFiles:
     """Class to keep track of files to be deleted on abnormal exit"""
     archive            = None  # tempfile for messages to be archived
-    compressed_archive = None  # compressed version of the above
     procmail_lock      = None  # original_mailbox.lock
     retain             = None  # tempfile for messages to be retained
 
@@ -127,17 +127,11 @@ class StaleFiles:
             vprint("removing stale archive file '%s'" % self.archive)
             try: os.remove(self.archive)
             except (IOError, OSError): pass
-        if self.compressed_archive:
-            vprint("removing stale compressed archive file '%s'" %
-                self.compressed_archive)
-            try: os.remove(self.compressed_archive)
-            except (IOError, OSError): pass
 
 
 class Options:
     """Class to store runtime options, including defaults"""
     archive_suffix       = "_archive"
-    compressor           = "gzip"
     days_old_max         = 180
     delete_old_mail      = 0
     dry_run              = 0
@@ -162,15 +156,13 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?IVZd:hno:qs:vz', 
-                             ["bzip2", "compress", "days=", "delete",
-                             "dry-run", "gzip", "help", "output-dir=", 
-                             "quiet", "suffix", "verbose", "version", 
-                             "warn-duplicate"])
+            opts, args = getopt.getopt(args, '?Vd:hno:qs:v', 
+                             ["days=", "delete", "dry-run", "help", 
+                             "output-dir=", "quiet", "suffix", "verbose", 
+                             "version", "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
 
-        chosen_compressor = None
         for o, a in opts:
             if o == '--delete':
                 self.delete_old_mail = 1
@@ -194,23 +186,6 @@ class Options:
             if o in ('-V', '--version'):
                 print __version__ + "\n\n" + __copyright__
                 sys.exit(0)
-            if o in ('-z', '--gzip'):
-                if (chosen_compressor):
-                    user_error("conflicting compression options")
-                self.compressor = "gzip"
-                chosen_compressor = 1
-            if o in ('-Z', '--compress'):
-                if (chosen_compressor):
-                    user_error("conflicting compression options")
-                self.compressor = "compress"
-                chosen_compressor = 1
-            if o in ('-I', '--bzip2'):
-                if (chosen_compressor):
-                    user_error("conflicting compression options")
-                self.compressor = "bzip2"
-                chosen_compressor = 1
-        if not self.compressor:
-            self.compressor = "gzip"
         return args
 
     def sanity_check(self):
@@ -230,15 +205,6 @@ class Options:
         if (self.days_old_max >= 10000):
             user_error("argument to -d must be less than 10000")
 
-    def compressor_extension(self):
-        extensions = {
-            "compress" : ".Z",
-            "gzip"     : ".gz",
-            "bzip2"    : ".bz2",
-            }
-        return extensions[self.compressor]
-
-
 
 class Mbox(mailbox.PortableUnixMailbox):
     """Class that allows read/write access to a 'mbox' mailbox. 
@@ -246,6 +212,8 @@ class Mbox(mailbox.PortableUnixMailbox):
     """
    
     mbox_file = None   # file handle for the mbox file
+    mbox_file_name = None   # GzipFile has no .name variable
+    mbox_file_closed = 0   # GzipFile has no .closed variable
     original_atime = None # last-accessed timestamp
     original_mtime = None # last-modified timestamp
     original_mode = None # file permissions to preserve
@@ -267,6 +235,7 @@ class Mbox(mailbox.PortableUnixMailbox):
             self.mbox_file = open(path, mode)
         except IOError, msg:
             unexpected_error(msg)
+        self.mbox_file_name = path
         mailbox.PortableUnixMailbox.__init__(self, self.mbox_file)
 
     def write(self, msg):
@@ -281,7 +250,7 @@ class Mbox(mailbox.PortableUnixMailbox):
         assert(msg)
         assert(self.mbox_file)
 
-        vprint("saving message to file '%s'" % self.mbox_file.name)
+        vprint("saving message to file '%s'" % self.mbox_file_name)
         unix_from = msg.unixfrom
         if not unix_from:
             unix_from = make_mbox_from(msg)
@@ -300,44 +269,45 @@ class Mbox(mailbox.PortableUnixMailbox):
 
     def remove(self):
         """Close and delete the 'mbox' mailbox file"""
-        file_name = self.mbox_file.name
+        file_name = self.mbox_file_name
         self.close()
-        vprint("removing file '%s'" % self.mbox_file.name)
+        vprint("removing file '%s'" % self.mbox_file_name)
         os.remove(file_name)
 
     def is_empty(self):
         """Return true if the 'mbox' file is empty, false otherwise"""
-        return (os.path.getsize(self.mbox_file.name) == 0)
+        return (os.path.getsize(self.mbox_file_name) == 0)
 
     def close(self):
         """Close the mbox file"""
-        if not self.mbox_file.closed:
-            vprint("closing file '%s'" % self.mbox_file.name)
+        if not self.mbox_file_closed:
+            vprint("closing file '%s'" % self.mbox_file_name)
             self.mbox_file.close()
+        self.mbox_file_closed = 1 
 
     def reset_stat(self):
         """Set the file timestamps and mode to the original value"""
         assert(self.original_atime)
         assert(self.original_mtime)
-        assert(self.mbox_file.name)
+        assert(self.mbox_file_name)
         assert(self.original_mode) # I doubt this will be 000?
-        os.utime(self.mbox_file.name, (self.original_atime,  \
+        os.utime(self.mbox_file_name, (self.original_atime,  \
             self.original_mtime)) 
-        os.chmod(self.mbox_file.name, self.original_mode)
+        os.chmod(self.mbox_file_name, self.original_mode)
 
     def exclusive_lock(self):
         """Set an advisory lock on the 'mbox' mailbox"""
-        vprint("obtaining exclusive lock on file '%s'" % self.mbox_file.name)
+        vprint("obtaining exclusive lock on file '%s'" % self.mbox_file_name)
         fcntl.flock(self.mbox_file, fcntl.LOCK_EX)
 
     def exclusive_unlock(self):
         """Unset any advisory lock on the 'mbox' mailbox"""
-        vprint("dropping exclusive lock on file '%s'" % self.mbox_file.name)
+        vprint("dropping exclusive lock on file '%s'" % self.mbox_file_name)
         fcntl.flock(self.mbox_file, fcntl.LOCK_UN)
 
     def procmail_lock(self):
         """Create a procmail lockfile on the 'mbox' mailbox"""
-        lock_name = self.mbox_file.name + options.lockfile_extension
+        lock_name = self.mbox_file_name + options.lockfile_extension
         attempt = 0
         while os.path.isfile(lock_name):
             vprint("lockfile '%s' exists - sleeping..." % lock_name)
@@ -355,8 +325,8 @@ class Mbox(mailbox.PortableUnixMailbox):
 
     def procmail_unlock(self):
         """Delete the procmail lockfile on the 'mbox' mailbox"""
-        assert(self.mbox_file.name)
-        lock_name = self.mbox_file.name + options.lockfile_extension
+        assert(self.mbox_file_name)
+        lock_name = self.mbox_file_name + options.lockfile_extension
         vprint("removing lockfile '%s'" % lock_name)
         os.remove(lock_name)
         _stale.procmail_lock = None
@@ -367,10 +337,10 @@ class Mbox(mailbox.PortableUnixMailbox):
         This will leave a zero-length mailbox file so that mail
         reading programs don't get upset that the mailbox has been
         completely deleted."""
-        assert(os.path.isfile(self.mbox_file.name))
-        vprint("turning '%s' into a zero-length file" % self.mbox_file.name)
-        mtime = os.path.getmtime(self.mbox_file.name)
-        blank_file = open(self.mbox_file.name, "w")
+        assert(os.path.isfile(self.mbox_file_name))
+        vprint("turning '%s' into a zero-length file" % self.mbox_file_name)
+        mtime = os.path.getmtime(self.mbox_file_name)
+        blank_file = open(self.mbox_file_name, "w")
         blank_file.close()
 
 
@@ -394,8 +364,9 @@ class RetainMbox(Mbox):
         assert(final_name)
         temp_name = tempfile.mktemp("archivemail_retain")
         self.mbox_file = open(temp_name, "w")
+        self.mbox_file_name = temp_name
         _stale.retain = temp_name
-        vprint("opened temporary retain file '%s'" % self.mbox_file.name)
+        vprint("opened temporary retain file '%s'" % self.mbox_file_name)
         self.__final_name = final_name
 
     def finalise(self):
@@ -408,10 +379,10 @@ class RetainMbox(Mbox):
         atime = os.path.getatime(self.__final_name)
         mtime = os.path.getmtime(self.__final_name)
         mode =  os.stat(self.__final_name)[stat.ST_MODE]
-        os.chmod(self.mbox_file.name, mode)
+        os.chmod(self.mbox_file_name, mode)
 
-        vprint("renaming '%s' to '%s'" % (self.mbox_file.name, self.__final_name))
-        os.rename(self.mbox_file.name, self.__final_name)
+        vprint("renaming '%s' to '%s'" % (self.mbox_file_name, self.__final_name))
+        os.rename(self.mbox_file_name, self.__final_name)
         os.utime(self.__final_name, (atime, mtime)) # reset to original timestamps
         _stale.retain = None
 
@@ -432,62 +403,50 @@ class ArchiveMbox(Mbox):
     __final_name = None 
 
     def __init__(self, final_name):
-        """Constructor -- extract any pre-existing compressed archive to a
+        """Constructor -- copy any pre-existing compressed archive to a
         temporary file which we use as the new 'mbox' archive for this
         mailbox. 
        
         Arguments:
         final_name -- the final name for this archive mailbox. This function
                       will check to see if the filename already exists, and
-                      extract it to a temporary file if it does. It will also
+                      copy it to a temporary file if it does. It will also
                       rename itself to this name when we call finalise()
 
         """
         assert(final_name)
-        compressor = options.compressor
-        compressedfilename = final_name + options.compressor_extension()
+        compressed_filename = final_name + ".gz"
        
         if os.path.isfile(final_name):
             unexpected_error("""There is already a file named '%s'!
 Have you been reading this archive? You probably should re-compress it
 manually, and try running me again.""" % final_name)
 
-        temp_name = tempfile.mktemp("archivemail_archive")
+        temp_name = tempfile.mktemp("archivemail_archive.gz")
 
-        if os.path.isfile(compressedfilename):
-            vprint("file already exists that is named: %s" % compressedfilename)
-            uncompress =  "%s -d -c %s > %s" % (compressor, 
-                compressedfilename, temp_name)
-            vprint("running uncompressor: %s" % uncompress)
-            _stale.archive = temp_name
-            system_or_die(uncompress)
+        if os.path.isfile(compressed_filename):
+            vprint("file already exists that is named: %s" %  \
+                compressed_filename)
+            shutil.copy2(compressed_filename, temp_name)
 
         _stale.archive = temp_name
-        self.mbox_file = open(temp_name, "a")
+        self.mbox_file = gzip.GzipFile(temp_name, "a")
+        self.mbox_file_name = temp_name
         self.__final_name = final_name
 
     def finalise(self):
-        """Compress the archive and rename this archive temporary file to the
+        """Close the archive and rename this archive temporary file to the
         final archive filename, overwriting any pre-existing archive if it
         exists.
 
         """
         assert(self.__final_name)
         self.close()
-        compressor = options.compressor
-        compressed_archive_name = self.mbox_file.name +  \
-            options.compressor_extension()
-        compress = compressor + " " + self.mbox_file.name
-        vprint("running compressor: '%s'" % compress)
-        _stale.compressed_archive = compressed_archive_name
-        system_or_die(compress)
-        _stale.archive = None
-        compressed_final_name = self.__final_name + \
-            options.compressor_extension()
-        vprint("renaming '%s' to '%s'" % (compressed_archive_name, 
+        compressed_final_name = self.__final_name + ".gz"
+        vprint("renaming '%s' to '%s'" % (self.mbox_file_name, 
             compressed_final_name))
-        os.rename(compressed_archive_name, compressed_final_name)
-        _stale.compressed_archive = None
+        os.rename(self.mbox_file_name, compressed_final_name)
+        _stale.archive = None
 
 
 class IdentityCache:
@@ -517,7 +476,7 @@ def main(args = sys.argv[1:]):
     global _stale
 
     usage = """Usage: %s [options] mailbox [mailbox...]
-Moves old mail messages in mbox or maildir-format mailboxes to compressed
+Moves old mail messages in mbox or maildir-format mailboxes to gzipped
 'mbox' mailbox archives. This is useful for saving space and keeping your
 mailbox manageable.
 
@@ -526,9 +485,6 @@ Options are as follows:
   -o, --output-dir=DIR directory where archive files go (default: current)
   -s, --suffix=NAME    suffix for archive filename (default: '%s')
   -n, --dry-run        don't write to anything - just show what would be done
-  -z, --gzip           compress the archive(s) using gzip (default) 
-  -I, --bzip2          compress the archive(s) using bzip2
-  -Z, --compress       compress the archive(s) using compress
       --delete         delete rather than archive old mail (use with caution!)
       --warn-duplicate warn about duplicate Message-IDs in the same mailbox
   -v, --verbose        report lots of extra debugging information
@@ -932,15 +888,6 @@ def is_world_writable(path):
     """Return true if the path is world-writable, false otherwise""" 
     assert(path)
     return (os.stat(path)[stat.ST_MODE] & stat.S_IWOTH)
-
-
-def system_or_die(command):
-    """Run the command with os.system(), aborting on non-zero exit"""
-    assert(command)
-    rv = os.system(command)
-    if (rv != 0):
-        status = os.WEXITSTATUS(rv)
-        unexpected_error("command '%s' returned status %d" % (command, status))
 
 
 # this is where it all happens, folks

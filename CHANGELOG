@@ -1,3 +1,11 @@
+Version 0.3.1   - ????
+  * Stopped calling 'gzip' externally and started using the gzip library
+    so that we can append to a copy of the gzip archive directly. 
+  * Removed 'bzip2' and 'compress' options since they are increasing
+    complexity without adding much, and needed to be called externally.
+    Maybe when we get a bzip2 library I will add back an option to 
+    compression archives using bzip2.
+
 Version 0.3.0   - 11 April 2002
   * We now preserve the last-accessed and last-modified timestamps correctly
   * We now preserve the correct permissions on the original mailbox instead
