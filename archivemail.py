@@ -229,6 +229,7 @@ class Mbox(mailbox.PortableUnixMailbox):
     original_atime = None # last-accessed timestamp
     original_mtime = None # last-modified timestamp
     original_mode = None # file permissions to preserve
+    starting_size = None # file size of mailbox on open
 
     def __init__(self, path, mode="r"):
         """Constructor for opening an existing 'mbox' mailbox.
@@ -244,6 +245,7 @@ class Mbox(mailbox.PortableUnixMailbox):
             self.original_atime = os.path.getatime(path)
             self.original_mtime = os.path.getmtime(path)
             self.original_mode = os.stat(path)[stat.ST_MODE]
+            self.starting_size = os.path.getsize(path)
             self.mbox_file = open(path, mode)
         except IOError, msg:
             unexpected_error(msg)
@@ -355,6 +357,10 @@ class Mbox(mailbox.PortableUnixMailbox):
         mtime = os.path.getmtime(self.mbox_file_name)
         blank_file = open(self.mbox_file_name, "w")
         blank_file.close()
+
+    def get_size(self):
+        """Return the current size of the mbox file"""
+        return os.path.getsize(self.mbox_file_name)
 
 
 class RetainMbox(Mbox):
@@ -891,6 +897,9 @@ def _archive_mbox(mailbox_name, final_archive_name):
     vprint("finished reading messages") 
     original.exclusive_unlock()
     original.close()
+    if original.starting_size != original.get_size():
+        unexpected_error("the mailbox '%s' changed size during reading!" % \
+           mailbox_name)         
     original.reset_stat()
     if not options.dry_run:
         if retain: retain.close()
