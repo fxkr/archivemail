@@ -190,6 +190,15 @@ date:
 
 <VarListEntry>
 <Term>
+    <Option>-S <Replaceable/NUM/, --size=<Replaceable/NUM/</Option>
+</Term>
+<ListItem><Para>Only archive messages that are <Replaceable/NUM/ bytes or
+greater.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
     <Option>-n, --dry-run</Option>
 </Term>
 <ListItem><Para>
