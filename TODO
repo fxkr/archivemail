@@ -1,5 +1,5 @@
 
-Goals for next minor release (0.4.6):
+Goals for next minor release (0.4.7):
 -------------------------------------
 * Think about the best way to specify the names of archives created with
   possibly an --archive-name option.

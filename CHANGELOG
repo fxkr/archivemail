@@ -1,4 +1,8 @@
 
+Version 0.4.6   - 6 May 2002
+  * Fixed a bug where the os.rename() calls could fail if we were moving
+    temporary files across different filesystems/partitions.
+
 Version 0.4.5   - 29 April 2002
   * Fixed a bug where if you used the '--delete' option to completely clean
     an mbox mailbox you would get a python error.

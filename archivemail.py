@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.5"
+__version__ = "archivemail v0.4.6"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -392,7 +392,6 @@ class Mbox(mailbox.UnixMailbox):
         completely deleted."""
         assert(os.path.isfile(self.mbox_file_name))
         vprint("turning '%s' into a zero-length file" % self.mbox_file_name)
-        mtime = os.path.getmtime(self.mbox_file_name)
         blank_file = open(self.mbox_file_name, "w")
         blank_file.close()
 
@@ -439,7 +438,12 @@ class RetainMbox(Mbox):
         os.chmod(self.mbox_file_name, mode)
 
         vprint("renaming '%s' to '%s'" % (self.mbox_file_name, self.__final_name))
-        os.rename(self.mbox_file_name, self.__final_name)
+        try:
+            os.rename(self.mbox_file_name, self.__final_name)
+        except OSError:
+            # file might be on a different filesystem -- move it manually
+            shutil.copy2(self.mbox_file_name, self.__final_name)
+            os.remove(self.mbox_file_name)
         os.utime(self.__final_name, (atime, mtime)) # reset to original timestamps
         _stale.retain = None
 
@@ -525,7 +529,12 @@ manually, and try running me again.""" % final_name)
             final_name = final_name + ".gz"
         vprint("renaming '%s' to '%s'" % (self.mbox_file_name, 
             final_name))
-        os.rename(self.mbox_file_name, final_name)
+        try:
+            os.rename(self.mbox_file_name, final_name)
+        except OSError:
+            # file might be on a different filesystem -- move it manually
+            shutil.copy2(self.mbox_file_name, final_name)
+            os.remove(self.mbox_file_name)
         _stale.archive = None
 
 
