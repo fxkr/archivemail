@@ -1,4 +1,11 @@
 
+Version 0.4.3   - 26 April 2002
+  * Fixed a couple of bugs where I was using python version 2.2 syntax that
+    was giving errors in python v2.0 and v2.1. 
+  * Changed the python requirements for the test script from python version
+    2.0 to version 2.1. This is because the unittest module is only available
+    in version 2.1 and above.
+
 Version 0.4.2   - 24 April 2002
   * Added the ability to archive messages older than a given absolute date 
     with the new option '--date'.

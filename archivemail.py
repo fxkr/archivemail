@@ -22,18 +22,18 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.2"
+__version__ = "archivemail v0.4.3"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
 
-
 import sys
 
 def check_python_version(): 
     """Abort if we are running on python < v2.0"""
-    too_old_error = "This program requires python v2.0 or greater."
+    too_old_error = """This program requires python v2.0 or greater. 
+Your version of python is: %s""" % sys.version
     try: 
         version = sys.version_info  # we might not even have this function! :)
         if (version[0] < 2):
@@ -344,12 +344,12 @@ class Mbox(mailbox.UnixMailbox):
     def exclusive_lock(self):
         """Set an advisory lock on the 'mbox' mailbox"""
         vprint("obtaining exclusive lock on file '%s'" % self.mbox_file_name)
-        fcntl.flock(self.mbox_file, fcntl.LOCK_EX)
+        fcntl.flock(self.mbox_file.fileno(), fcntl.LOCK_EX)
 
     def exclusive_unlock(self):
         """Unset any advisory lock on the 'mbox' mailbox"""
         vprint("dropping exclusive lock on file '%s'" % self.mbox_file_name)
-        fcntl.flock(self.mbox_file, fcntl.LOCK_UN)
+        fcntl.flock(self.mbox_file.fileno(), fcntl.LOCK_UN)
 
     def procmail_lock(self):
         """Create a procmail lockfile on the 'mbox' mailbox"""
@@ -537,7 +537,7 @@ class IdentityCache:
         assert(msg)
         message_id = msg.get('Message-ID')
         assert(message_id)
-        if message_id in self.seen_ids:
+        if self.seen_ids.has_key(message_id):
             user_warning("duplicate message id: '%s' in mailbox '%s'" % 
                 (message_id, self.mailbox_name))
         self.seen_ids[message_id] = 1

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 ############################################################################
 # Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 #
@@ -34,11 +34,15 @@ TODO: add tests for:
 import sys
 
 def check_python_version(): 
-    """Abort if we are running on python < v2.0"""
-    too_old_error = "This program requires python v2.0 or greater."
+    """Abort if we are running on python < v2.1"""
+    too_old_error = """This test script requires python version 2.1 or later.
+This is because it requires the pyUnit 'unittest' module, which only got
+released in python version 2.1. You should still be able to run archivemail on
+python versions 2.0 and above, however -- just not test it.
+Your version of python is: %s""" % sys.version
     try: 
         version = sys.version_info  # we might not even have this function! :)
-        if (version[0] < 2):
+        if (version[0] < 2) or ((version[0] == 2) and (version[1] < 1)):
             print too_old_error
             sys.exit(1)
     except AttributeError:
@@ -157,11 +161,11 @@ class TestMboxExclusiveLock(unittest.TestCase):
         self.mbox.exclusive_lock()
         file = open(self.mbox_name, "r+")
         lock_nb = fcntl.LOCK_EX | fcntl.LOCK_NB
-        self.assertRaises(IOError, fcntl.flock, file, lock_nb)
+        self.assertRaises(IOError, fcntl.flock, file.fileno(), lock_nb)
 
         self.mbox.exclusive_unlock()
-        fcntl.flock(file, lock_nb)
-        fcntl.flock(file, fcntl.LOCK_UN)
+        fcntl.flock(file.fileno(), lock_nb)
+        fcntl.flock(file.fileno(), fcntl.LOCK_UN)
 
     def tearDown(self):
         if os.path.exists(self.mbox_name):
@@ -916,22 +920,22 @@ def make_message(body=None, default_headers={}, hours_old=None):
     headers = copy.copy(default_headers)
     if not headers:
         headers = {}
-    if 'Date' not in headers:
+    if not headers.has_key('Date'):
         time_message = time.time() - (60 * 60 * hours_old)
         headers['Date'] = time.asctime(time.localtime(time_message))
-    if 'From' not in headers:
+    if not headers.has_key('From'):
         headers['From'] = "sender@dummy.domain"        
-    if 'To' not in headers:
+    if not headers.has_key('To'):
         headers['To'] = "receipient@dummy.domain"        
-    if 'Subject' not in headers:
+    if not headers.has_key('Subject'):
         headers['Subject'] = "This is the subject"
-    if 'From_' not in headers:
+    if not headers.has_key('From_'):
         headers['From_'] = "%s %s" % (headers['From'], headers['Date'])
     if not body:
         body = "This is the message body"
 
     msg = ""
-    if 'From_' in headers:
+    if headers.has_key('From_'):
         msg = msg + ("From %s\n" % headers['From_'])
         del headers['From_']
     for key in headers.keys():
