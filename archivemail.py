@@ -35,8 +35,8 @@ import tempfile
 import time
 
 # global administrivia 
-__version__ = "archivemail v0.10"
-__rcs_id__ = "$Id$"
+__version__ = "archivemail v0.1.0"
+__cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
@@ -121,7 +121,6 @@ class StaleFiles:
 class Options:
     """Class to store runtime options, including defaults"""
     archive_suffix       = "_archive"
-    warn_duplicates      = 1
     compressor           = None
     compressor_extension = None
     days_old_max         = 180
@@ -135,6 +134,7 @@ class Options:
     script_name          = os.path.basename(sys.argv[0])
     use_modify_time      = 0
     verbose              = 0
+    warn_duplicates      = 0
 
     def parse_args(self, args, usage):
         """Set our runtime options from the command-line arguments.
@@ -152,12 +152,14 @@ class Options:
                              ["bzip2", "compress", "days=", "delete",
                              "dry-run", "gzip", "help", "output-dir=", 
                              "quiet", "suffix", "modify-time", "verbose", 
-                             "version"])
+                             "version", "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
         for o, a in opts:
             if o == '--delete':
                 self.delete_old_mail = 1
+            if o == '--warn-duplicate':
+                self.warn_duplicates = 1
             if o in ('-n', '--dry-run'):
                 self.dry_run = 1
             if o in ('-d', '--days'):
@@ -460,11 +462,11 @@ Options are as follows:
   -m, --modify-time    use file last-modified time as date for maildir messages
   -n, --dry-run        don't write to anything - just show what would be done
   -o, --output-dir=DIR directory where archive files go (default: current)
-      --ignore-dupe    don't warn about mailboxes with duplicates messages
   -z, --gzip           compress the archive(s) using gzip (default) 
   -I, --bzip2          compress the archive(s) using bzip2
   -Z, --compress       compress the archive(s) using compress
       --delete         delete rather than archive old mail (use with caution!)
+      --warn-duplicate warn about duplicate Message-IDs in the same mailbox
   -v, --verbose        report lots of extra debugging information
   -q, --quiet          quiet mode - print no statistics (suitable for crontab)
   -V, --version        display version information
