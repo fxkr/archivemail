@@ -41,10 +41,12 @@ class TestMboxIsEmpty(unittest.TestCase):
         self.not_empty_name = make_mbox(messages=1)
 
     def testEmpty(self):
+        """is_empty() should be true for an empty mbox"""
         mbox = archivemail.Mbox(self.empty_name)
         assert(mbox.is_empty())
 
     def testNotEmpty(self):
+        """is_empty() should be false for a non-empty mbox"""
         mbox = archivemail.Mbox(self.not_empty_name)
         assert(not mbox.is_empty())
 
@@ -62,6 +64,7 @@ class TestMboxLeaveEmpty(unittest.TestCase):
         self.mbox = archivemail.Mbox(self.mbox_name)
 
     def testLeaveEmpty(self):
+        """leave_empty should leave a zero-length file"""
         self.mbox.leave_empty()
         assert(os.path.isfile(self.mbox_name))
         self.assertEqual(os.path.getsize(self.mbox_name), 0)
@@ -80,6 +83,7 @@ class TestMboxProcmailLock(unittest.TestCase):
         self.mbox = archivemail.Mbox(self.mbox_name)
 
     def testProcmailLock(self):
+        """procmail_lock/unlock should create/delete a lockfile"""
         lock = self.mbox_name + ".lock"
         self.mbox.procmail_lock()
         assert(os.path.isfile(lock))
@@ -99,7 +103,8 @@ class TestMboxRemove(unittest.TestCase):
         self.mbox_name = make_mbox()
         self.mbox = archivemail.Mbox(self.mbox_name)
 
-    def testProcmailLock(self):
+    def testMboxRemove(self):
+        """remove() should delete a mbox mailbox"""
         assert(os.path.exists(self.mbox_name))
         self.mbox.remove()
         assert(not os.path.exists(self.mbox_name))
@@ -115,6 +120,7 @@ class TestMboxExclusiveLock(unittest.TestCase):
         self.mbox = archivemail.Mbox(self.mbox_name)
 
     def testExclusiveLock(self):
+        """exclusive_lock/unlock should create/delete an advisory lock"""
         self.mbox.exclusive_lock()
         file = open(self.mbox_name, "r+")
         lock_nb = fcntl.LOCK_EX | fcntl.LOCK_NB
@@ -135,11 +141,13 @@ class TestMboxNext(unittest.TestCase):
         self.empty_name = make_mbox(messages=0)
 
     def testNextEmpty(self):
+        """mbox.next() should return None on an empty mailbox"""
         mbox = archivemail.Mbox(self.empty_name)
         msg = mbox.next()
         self.assertEqual(msg, None)
 
     def testNextNotEmpty(self):
+        """mbox.next() should a message on a populated mailbox"""
         mbox = archivemail.Mbox(self.not_empty_name)
         for count in range(18):
             msg = mbox.next()
@@ -160,6 +168,7 @@ class TestMboxWrite(unittest.TestCase):
         self.mbox_write = make_mbox(messages=0)
 
     def testWrite(self):
+        """mbox.write() should append messages to a mbox mailbox"""
         read = archivemail.Mbox(self.mbox_read)
         write = archivemail.Mbox(self.mbox_write, mode="w")
         for count in range(3):
@@ -170,6 +179,8 @@ class TestMboxWrite(unittest.TestCase):
         assert(filecmp.cmp(self.mbox_read, self.mbox_write))
 
     def testWriteNone(self):
+        """calling mbox.write() with no message should raise AssertionError"""
+        read = archivemail.Mbox(self.mbox_read)
         write = archivemail.Mbox(self.mbox_write, mode="w")
         self.assertRaises(AssertionError, write.write, None)
 
@@ -180,29 +191,68 @@ class TestMboxWrite(unittest.TestCase):
             os.remove(self.mbox_read)
 
 
+
+class TestOptionDefaults(unittest.TestCase):
+    def testCompressor(self):
+        """gzip should be default compressor"""
+        self.assertEqual(archivemail.options.compressor, "gzip")
+
+    def testVerbose(self):
+        """verbose should be off by default"""
+        self.assertEqual(archivemail.options.verbose, 0)
+
+    def testDaysOldMax(self):
+        """default archival time should be 180 days"""
+        self.assertEqual(archivemail.options.days_old_max, 180)
+
+    def testQuiet(self):
+        """quiet should be off by default"""
+        self.assertEqual(archivemail.options.quiet, 0)
+
+    def testDeleteOldMail(self):
+        """we should not delete old mail by default"""
+        self.assertEqual(archivemail.options.quiet, 0)
+
+
 ########## generic routine testing #################
 
 
 class TestIsTooOld(unittest.TestCase):
+    def testVeryOld(self):
+        """is_too_old(max_days=360) should be true for these dates > 1 year"""
+        for years in range(1, 10):
+            time_msg = time.time() - (years * 365 * 24 * 60 * 60)
+            assert(archivemail.is_too_old(time_message=time_msg, max_days=360))
+
     def testOld(self):
-        time_msg = time.time() - (15 * 24 * 60 * 60) # 15 days old
-        assert(archivemail.is_too_old(time_message=time_msg, max_days=14))
+        """is_too_old(max_days=14) should be true for these dates > 14 days"""
+        for days in range(14, 360):
+            time_msg = time.time() - (days * 24 * 60 * 60)
+            assert(archivemail.is_too_old(time_message=time_msg, max_days=14))
 
     def testJustOld(self):
-        time_msg = time.time() - (25 * 60 * 60) # 25 hours old
-        assert(archivemail.is_too_old(time_message=time_msg, max_days=1))
+        """is_too_old(max_days=1) should be true for these dates >= 1 day"""
+        for minutes in range(0, 61):
+            time_msg = time.time() - (25 * 60 * 60) + (minutes * 60)
+            assert(archivemail.is_too_old(time_message=time_msg, max_days=1))
 
     def testNotOld(self):
-        time_msg = time.time() - (8 * 24 * 60 * 60) # 8 days old
-        assert(not archivemail.is_too_old(time_message=time_msg, max_days=9))
+        """is_too_old(max_days=9) should be false for these dates < 9 days"""
+        for days in range(0, 9):
+            time_msg = time.time() - (days * 24 * 60 * 60)
+            assert(not archivemail.is_too_old(time_message=time_msg, max_days=9))
 
     def testJustNotOld(self):
-        time_msg = time.time() - (23 * 60 * 60) # 23 hours old
-        assert(not archivemail.is_too_old(time_message=time_msg, max_days=1))
+        """is_too_old(max_days=1) should be false for these hours <= 1 day"""
+        for minutes in range(0, 60):
+            time_msg = time.time() - (23 * 60 * 60) - (minutes * 60)
+            assert(not archivemail.is_too_old(time_message=time_msg, max_days=1))
 
     def testFuture(self):
-        time_msg = time.time() + (1 * 24 * 60 * 60) # tomorrow
-        assert(not archivemail.is_too_old(time_message=time_msg, max_days=1))
+        """is_too_old(max_days=1) should be false for times in the future"""
+        for minutes in range(0, 60):
+            time_msg = time.time() + (minutes * 60)
+            assert(not archivemail.is_too_old(time_message=time_msg, max_days=1))
 
 
 class TestChooseTempDir(unittest.TestCase):
@@ -213,22 +263,26 @@ class TestChooseTempDir(unittest.TestCase):
         os.mkdir(self.sub_dir)
 
     def testCurrentDir(self):
-        archivemail._options.output_dir = None
+        """use the current directory as a temp directory with no output dir"""
+        archivemail.options.output_dir = None
         dir = archivemail.choose_temp_dir("dummy")
         self.assertEqual(dir, os.curdir)
 
     def testSubDir(self):
-        archivemail._options.output_dir = None
+        """use the mailbox parent directory as a temp directory"""
+        archivemail.options.output_dir = None
         dir = archivemail.choose_temp_dir(os.path.join(self.sub_dir, "dummy"))
         self.assertEqual(dir, self.sub_dir)
 
     def testOutputDir(self):
-        archivemail._options.output_dir = self.output_dir
+        """use the output dir as a temp directory when specified"""
+        archivemail.options.output_dir = self.output_dir
         dir = archivemail.choose_temp_dir("dummy")
         self.assertEqual(dir, self.output_dir)
 
     def testSubDirOutputDir(self):
-        archivemail._options.output_dir = self.output_dir
+        """use the output dir as temp when given a mailbox directory"""
+        archivemail.options.output_dir = self.output_dir
         dir = archivemail.choose_temp_dir(os.path.join(self.sub_dir, "dummy"))
         self.assertEqual(dir, self.output_dir)
 
@@ -245,10 +299,11 @@ class TestArchiveMboxTimestampNew(unittest.TestCase):
         self.mtime = os.path.getmtime(self.mbox_name) - 66
         self.atime = os.path.getatime(self.mbox_name) - 88
         os.utime(self.mbox_name, (self.atime, self.mtime))
-        archivemail._options.quiet = 1
+        archivemail.options.quiet = 1
 
     def testTime(self):
-        archivemail._options.compressor = "gzip"
+        """mbox timestamps should not change after no archival"""
+        archivemail.options.compressor = "gzip"
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
         new_atime = os.path.getatime(self.mbox_name)
@@ -259,7 +314,7 @@ class TestArchiveMboxTimestampNew(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.mbox_name):
             os.remove(self.mbox_name)
-        archivemail._options.quiet = 0
+        archivemail.options.quiet = 0
 
 
 class TestArchiveMboxTimestampOld(unittest.TestCase):
@@ -268,10 +323,11 @@ class TestArchiveMboxTimestampOld(unittest.TestCase):
         self.mtime = os.path.getmtime(self.mbox_name) - 66
         self.atime = os.path.getatime(self.mbox_name) - 88
         os.utime(self.mbox_name, (self.atime, self.mtime))
-        archivemail._options.quiet = 1
+        archivemail.options.quiet = 1
 
     def testTime(self):
-        archivemail._options.compressor = "gzip"
+        """mbox timestamps should not change after archival"""
+        archivemail.options.compressor = "gzip"
         archive_name = self.mbox_name + "_archive.gz"
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
@@ -286,7 +342,7 @@ class TestArchiveMboxTimestampOld(unittest.TestCase):
         for ext in (".gz", ".bz2", ".Z"):
             if os.path.exists(self.mbox_name + ext):
                 os.remove(self.mbox_name + ext)
-        archivemail._options.quiet = 0
+        archivemail.options.quiet = 0
 
 
 class TestArchiveMboxOld(unittest.TestCase):
@@ -295,10 +351,11 @@ class TestArchiveMboxOld(unittest.TestCase):
         self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.copy_name = tempfile.mktemp()
         shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail._options.quiet = 1
+        archivemail.options.quiet = 1
 
     def testArchiveOldGzip(self):
-        archivemail._options.compressor = "gzip"
+        """archiving an old mailbox with gzip should create a valid archive"""
+        archivemail.options.compressor = "gzip"
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
         self.assertEqual(os.path.getsize(self.mbox_name), 0)
@@ -316,7 +373,8 @@ class TestArchiveMboxOld(unittest.TestCase):
         self.setUp()
 
     def testArchiveOldBzip2(self):
-        archivemail._options.compressor = "bzip2"
+        """archiving an old mailbox with bzip2 should create a valid archive"""
+        archivemail.options.compressor = "bzip2"
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
         self.assertEqual(os.path.getsize(self.mbox_name), 0)
@@ -334,7 +392,8 @@ class TestArchiveMboxOld(unittest.TestCase):
         self.setUp()
 
     def testArchiveOldCompress(self):
-        archivemail._options.compressor = "compress"
+        """archiving an old mailbox with compress should create a valid archive"""
+        archivemail.options.compressor = "compress"
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
         self.assertEqual(os.path.getsize(self.mbox_name), 0)
@@ -359,18 +418,19 @@ class TestArchiveMboxOld(unittest.TestCase):
                 os.remove(self.mbox_name + ext)
         if os.path.exists(self.copy_name):
             os.remove(self.copy_name)
-        archivemail._options.quiet = 0
+        archivemail.options.quiet = 0
 
 
 class TestArchiveMboxNew(unittest.TestCase):
     def setUp(self):
-        archivemail._options.quiet = 1
+        archivemail.options.quiet = 1
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
         self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.copy_name = tempfile.mktemp()
         shutil.copyfile(self.mbox_name, self.copy_name)
 
     def testArchiveNew(self):
+        """archiving a not-old-enough mailbox should not create an archive""" 
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
         assert(filecmp.cmp(self.mbox_name, self.copy_name))
@@ -381,11 +441,39 @@ class TestArchiveMboxNew(unittest.TestCase):
         assert(not os.path.exists(archive_name))
 
     def tearDown(self):
-        archivemail._options.quiet = 0
+        archivemail.options.quiet = 0
         if os.path.exists(self.mbox_name):
             os.remove(self.mbox_name)
         if os.path.exists(self.copy_name):
             os.remove(self.copy_name)
+
+
+class TestArchiveMboxMode(unittest.TestCase):
+    def setUp(self):
+        archivemail.options.quiet = 1
+        self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
+
+    def testArchiveMboxMode(self):
+        """test that archive files are written with the original mode"""
+        for user in (0700, 0600):
+            for group in (070, 060, 050, 040, 030, 020, 010, 000):
+                for other in (07, 06, 05, 04, 03, 02, 01, 00):
+                    mode = user + group + other
+                    os.chmod(self.mbox_name, mode)
+                    archivemail.archive(self.mbox_name)
+                    archive_name = self.mbox_name + "_archive.gz"
+                    assert(os.path.exists(self.mbox_name))
+                    assert(os.path.exists(archive_name))
+                    new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+                    self.assertEqual(mode, stat.S_IMODE(new_mode))
+                    os.remove(archive_name)
+                    self.tearDown()
+                    self.setUp()
+
+    def tearDown(self):
+        archivemail.options.quiet = 0
+        if os.path.exists(self.mbox_name):
+            os.remove(self.mbox_name)
 
 
 ########## helper routines ############
