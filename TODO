@@ -1,24 +1,19 @@
 
 Goals for next minor release (0.2.1):
 -------------------------------------
-
-* Complain/refuse to create tempfiles in world-writeable directories
 * Test exclusive locking works with another test process
 * Perserve atime of original mailbox properly
 * Finish man page
 
 Goals for next major release (0.3.0):
 -------------------------------------
-
 * Build a testing framework using python module 'unittest'
 * Lock any original .gz files 
   - is this necessary?
 * Check for symlink attacks for tempfiles (although we don't use /var/tmp)
-* Test for write permission before doing anything
 
 Longer Term goals:
 ------------------
-
 * Add MMDF mailbox support
 * Add Babyl mailbox support
 * Add option to archive depending on mailbox size threshold 

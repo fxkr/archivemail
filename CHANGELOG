@@ -1,0 +1,10 @@
+Version 0.2.0   - 3 April 2002
+  * Added support for reading from MH mailboxes
+  * Refuse to proceed if we would be making tempfiles in world-writable
+    directories
+  * Clamped down with lots of assert()s checking function parameters
+  * Complain earlier if we do not have permission to write to the output
+    directory
+
+Version 0.1.0   - 31 March 2002
+  * Initial release
