@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.0"
+__version__ = "archivemail v0.4.1"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -135,6 +135,7 @@ class Options:
     days_old_max         = 180
     delete_old_mail      = 0
     dry_run              = 0
+    include_flagged      = 0
     lockfile_attempts    = 5  
     lockfile_extension   = ".lock"
     lockfile_sleep       = 1 
@@ -162,8 +163,9 @@ class Options:
         try:
             opts, args = getopt.getopt(args, '?Vd:hno:qs:uv', 
                              ["days=", "delete", "dry-run", "help",
-                             "preserve-unread", "no-compress", "output-dir=",
-                             "quiet", "suffix", "verbose", "version",
+                             "include-flagged", "no-compress",
+                             "output-dir=", "preserve-unread", "quiet",
+                             "suffix", "verbose", "version",
                              "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
@@ -171,14 +173,12 @@ class Options:
         for o, a in opts:
             if o == '--delete':
                 self.delete_old_mail = 1
-            if o in ('-u', '--preserve-unread'):
-                self.preserve_unread = 1
+            if o == '--include-flagged':
+                self.include_flagged = 1
             if o == '--no-compress':
                 self.no_compress = 1
             if o == '--warn-duplicate':
                 self.warn_duplicates = 1
-            if o in ('-n', '--dry-run'):
-                self.dry_run = 1
             if o in ('-d', '--days'):
                 self.days_old_max = string.atoi(a)
             if o in ('-o', '--output-dir'):
@@ -186,12 +186,16 @@ class Options:
             if o in ('-h', '-?', '--help'):
                 print usage
                 sys.exit(0)
+            if o in ('-n', '--dry-run'):
+                self.dry_run = 1
             if o in ('-q', '--quiet'):
                 self.quiet = 1
-            if o in ('-v', '--verbose'):
-                self.verbose = 1
             if o in ('-s', '--suffix'):
                 self.archive_suffix = a
+            if o in ('-u', '--preserve-unread'):
+                self.preserve_unread = 1
+            if o in ('-v', '--verbose'):
+                self.verbose = 1
             if o in ('-V', '--version'):
                 print __version__ + "\n\n" + __copyright__
                 sys.exit(0)
@@ -522,6 +526,7 @@ Options are as follows:
   -n, --dry-run         don't write to anything - just show what would be done
   -u, --preserve-unread never archive unread messages
       --delete          delete rather than archive old mail (use with caution!)
+      --include-flagged messages flagged important can also be archived
       --no-compress     do not compress archives with gzip
       --warn-duplicate  warn about duplicate Message-IDs in the same mailbox
   -v, --verbose         report lots of extra debugging information
@@ -649,11 +654,31 @@ def guess_delivery_time(message):
     return time_message
    
 
+def is_flagged(message):
+    """return true if the message is flagged important, false otherwise"""
+    # MH and mbox mailboxes use the 'X-Status' header to indicate importance
+    x_status = message.get('X-Status')
+    if x_status and re.search('F', x_status):
+        vprint("message is important (X-Status header='%s')" % x_status)
+        return 1
+    file_name = None
+    try:
+        file_name = message.fp.name
+    except AttributeError:
+        pass
+    # maildir mailboxes use the filename suffix to indicate flagged status
+    if file_name and re.search(":2,.*F.*$", file_name):
+        vprint("message is important (filename info has 'F')")
+        return 1
+    vprint("message is not flagged important")
+    return 0
+
+
 def is_unread(message):
     """return true if the message is unread, false otherwise"""
     # MH and mbox mailboxes use the 'Status' header to indicate read status
     status = message.get('Status')
-    if (status == 'RO') or (status == 'OR'):
+    if status and re.search('R', status):
         vprint("message has been read (status header='%s')" % status)
         return 0
     file_name = None
@@ -676,6 +701,8 @@ def should_archive(message):
     # I could probably do this in one if statement, but then I wouldn't
     # understand it.
     if old:
+        if not options.include_flagged and is_flagged(message):
+            return 0
         if options.preserve_unread:
             if is_unread(message):
                 return 0
