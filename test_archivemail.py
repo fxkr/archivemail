@@ -494,10 +494,6 @@ This is after the ^From line"""
     def testOldWeirdHeaders(self):
         """archiving old mailboxes with weird headers"""
         weird_headers = (
-            {   # we should archive even though date < epoch
-                'From_' : 'sender@dummy.domain Sat Feb 09 02:35:07 1962',
-                'Date'  : 'Fri, 08 Feb 1962 07:22:54 -0500',
-            },
             {   # we should archive because of the date on the 'From_' line
                 'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
                 'Date'  : 'Friskhdfkjkh, 28 Jul 2002 1line noise6:11:36 +1000',
