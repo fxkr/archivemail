@@ -146,7 +146,7 @@ class Options:
     lockfile_attempts    = 5  
     lockfile_extension   = ".lock"
     lockfile_sleep       = 1 
-    output_dir           = os.curdir
+    output_dir           = None
     quiet                = 0
     script_name          = os.path.basename(sys.argv[0])
     verbose              = 0
@@ -218,15 +218,16 @@ class Options:
 
     def sanity_check(self):
         """Complain bitterly about our options now rather than later"""
-        if not os.path.isdir(self.output_dir):
-            user_error("output directory does not exist: '%s'" % \
-                self.output_dir)
-        if not os.access(self.output_dir, os.W_OK):
-            user_error("no write permission on output directory: '%s'" % \
-                self.output_dir)
-        if is_world_writable(self.output_dir):
-            unexpected_error(("output directory is world-writable: '%s' " + \
-                "-- I feel nervous!") % self.output_dir)
+        if self.output_dir:
+            if not os.path.isdir(self.output_dir):
+                user_error("output directory does not exist: '%s'" % \
+                    self.output_dir)
+            if not os.access(self.output_dir, os.W_OK):
+                user_error("no write permission on output directory: '%s'" % \
+                    self.output_dir)
+            if is_world_writable(self.output_dir):
+                unexpected_error(("output directory is world-writable: " + \
+                    "%s -- I feel nervous!") % self.output_dir)
         if (self.days_old_max < 1):
             user_error("argument to -d must be greater than zero")
         if (self.days_old_max >= 10000):
@@ -519,8 +520,6 @@ Website: http://archivemail.sourceforge.net/ """ %   \
 
     _options.sanity_check()
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
-    tempfile.tempdir = _options.output_dir
-    assert(tempfile.tempdir)
 
     # Make sure we clean up nicely - we don't want to leave stale procmail
     # lockfiles about if something bad happens to us. This is quite 
@@ -669,14 +668,17 @@ def archive(mailbox_name):
                           already exists
 
     """
-    assert(mailbox_name)
-
-    vprint("set tempfile directory to '%s'" % tempfile.tempdir)
+    assert(mailbox_name) 
 
     final_archive_name = mailbox_name + _options.archive_suffix
-    final_archive_name = os.path.join(_options.output_dir, 
-            os.path.basename(final_archive_name))
+    if _options.output_dir:
+        final_archive_name = os.path.join(_options.output_dir, 
+                os.path.basename(final_archive_name))
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
+
+    tempfile.tempdir = choose_temp_dir(mailbox_name)
+    assert(tempfile.tempdir)
+    vprint("set tempfile directory to '%s'" % tempfile.tempdir)
 
     # check to see if we are running as root -- if so, change our effective
     # userid and groupid to that of the original mailbox
@@ -842,6 +844,29 @@ def _archive_dir(mailbox_name, final_archive_name, type):
 
 
 ###############  misc  functions  ###############
+
+
+def choose_temp_dir(mailbox_name):
+    """Return a suitable temporary directory to use for a given mailbox name"""
+    assert(mailbox_name)
+    mailbox_dirname = os.path.dirname(mailbox_name)
+    temp_dir = None
+
+    if _options.output_dir:
+        temp_dir = _options.output_dir
+    elif mailbox_dirname:
+        temp_dir = mailbox_dirname
+    else:
+        temp_dir = os.curdir
+    assert(temp_dir)
+    if is_world_writable(temp_dir):
+        unexpected_error(("temporary directory is world-writable: " + \
+            "%s -- I feel nervous!") % temp_dir)
+    if not os.access(temp_dir, os.W_OK):
+        user_error("no write permission on temporary directory: '%s'" % \
+            temp_dir)
+    return temp_dir
+
 
 def clean_up():
     """Delete stale files -- to be registered with atexit.register()"""
