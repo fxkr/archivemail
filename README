@@ -13,8 +13,8 @@ USE:
 
 'archivemail' is a tool written in Python for organising and storing old
 email choking any of your mailboxes. It can move messages older than a
-certain number of days to a separate 'archive' mbox-format mailbox which
-can be compressed with bzip2, gzip or compress. 
+certain number of days to a separate 'archive' mbox-format mailbox that
+is compressed with 'gzip'.
 
 For example, have you been subscribing to the 'linux-kernel' mailing list
 for the last 6 years and ended up with an 160-meg mailbox that 'mutt' is

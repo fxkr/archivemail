@@ -1,0 +1,222 @@
+<!DOCTYPE RefEntry PUBLIC "-//Davenport//DTD DocBook V3.0//EN" [
+
+<!ENTITY gzip "<CiteRefEntry>
+<RefEntryTitle><Command/gzip/</RefEntryTitle>
+<ManVolNum/1/</CiteRefEntry>">
+
+<!ENTITY python "<CiteRefEntry>
+<RefEntryTitle><Command/python/</RefEntryTitle>
+<ManVolNum/1/</CiteRefEntry>">
+
+<!ENTITY seteuid "<CiteRefEntry>
+<RefEntryTitle><Command/seteuid/</RefEntryTitle>
+<ManVolNum/2/</CiteRefEntry>">
+
+<!ENTITY crontab "<CiteRefEntry>
+<RefEntryTitle><Command/crontab/</RefEntryTitle>
+<ManVolNum/5/</CiteRefEntry>">
+]>
+
+<RefEntry>
+
+<DocInfo><Date>12 April 2002</Date></DocInfo>
+
+<RefMeta>
+<RefEntryTitle>archivemail</RefEntryTitle>
+<ManVolNum>1</ManVolNum>
+<RefMiscInfo>SP</RefMiscInfo>
+</RefMeta>
+
+<RefNameDiv>
+<RefName>archivemail</RefName>
+<RefPurpose>archive and compress your old email</RefPurpose>
+</RefNameDiv>
+
+<RefSynopsisDiv>
+<CmdSynopsis>
+
+<Command/archivemail/
+<Arg><Option>options</Option></Arg>
+<Arg choice=req rep=repeat><Replaceable/MAILBOX/</Arg>
+
+</CmdSynopsis>
+</RefSynopsisDiv>
+
+<RefSect1>
+<Title>Description</Title>
+
+<Para>
+<Command/archivemail/ is a tool written in &python; for archiving and
+compressing old email in mailboxes. 
+</Para>
+
+<Para>
+By default it will read the mailbox <Replaceable/MAILBOX/, moving messages
+that are older that the specified number of days (180 by default) to a
+<Replaceable/mbox/-format mailbox in the same directory that is compressed
+with &gzip;.  
+</Para>
+
+<Para>
+<Command/archivemail/ supports reading <Replaceable/Maildir/,
+<Replaceable/MH/ and <Replaceable/mbox/-format mailboxes, but it will
+always write archive files in <Replaceable/mbox/-format mailboxes, 
+compressed with &gzip;.
+</Para>
+
+<Para>
+<Command/archivemail/ has some support for being run as the root user on
+user mailboxes. When running as root, it will &seteuid; to the owner of the
+mailbox it is reading, creating any archive files as that user. 
+</Para>
+</RefSect1>
+
+<RefSect1>
+<Title>Options</Title>
+
+<VariableList>
+
+<VarListEntry>
+<Term>
+    <Option>-d <Replaceable/NUM/, --days=<Replaceable/NUM/</Option>
+</Term>
+<ListItem><Para>Archive messages older than <Replaceable/NUM/ days.  
+The default is 180.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-o <Replaceable/PATH/, --output-dir=<Replaceable/PATH/</Option>
+</Term>
+<ListItem><Para>Use the directory name <Replaceable/PATH/ to store the
+mailbox archives. The default is the same directory as the mailbox to be
+read.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-s <Replaceable/NAME/, --suffix=<Replaceable/NAME/</Option>
+</Term>
+<ListItem><Para>
+Use the suffix <Replaceable/NAME/ to create the filename used for archive
+mailboxes.  The default is `_archive'. For example, if you run
+<Command/archivemail/ on a mailbox called `exsouthrock', any archive
+mailbox file will be created with the filename `exsouthrock_archive.gz'.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-n, --dry-run</Option>
+</Term>
+<ListItem><Para>
+Don't write to any files -- just show what would have been done. This is
+useful for testing to see how many messages would have been archived.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>--delete</Option>
+</Term>
+<ListItem><Para>
+Delete rather than archive old mail. Use this option with caution!
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>--warn-duplicate</Option>
+</Term>
+<ListItem><Para>
+Warn about duplicate Message-IDs that appear in the input mailbox.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-v, --verbose</Option>
+</Term>
+<ListItem><Para>
+Reports lots of extra debugging information about what is going on.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-q, --quiet</Option>
+</Term>
+<ListItem><Para>
+Turns on <Replaceable/quiet mode/. Do not print any statistics about how
+many messages were archived. This should be used if you are running
+<Command/archivemail/ from cron.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-V, --version</Option>
+</Term>
+<ListItem><Para>
+Display the version of <Command/archivemail/ and exit.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-h, --help</Option>
+</Term>
+<ListItem><Para>
+Display brief summary information about how to run <Command/archivemail/.
+</Para></ListItem>
+</VarListEntry>
+</VariableList>
+
+</RefSect1>
+
+<RefSect1>
+<Title>Notes</Title>
+<Para>
+<Command/archivemail/ will always attempt to preserve the mode,
+last-access and last-modify times of the input mailbox.
+</Para>
+
+<Para>
+Probably the best way to run <Command/archivemail/ is from your &crontab;
+file, using the <Option>-q</Option> option.
+</Para>
+
+<Para>
+<Command/archivemail/ attempts to find the delivery date of a message by
+looking for valid dates in the following headers, in order of precedence: 
+<Replaceable/Delivery-date/,
+<Replaceable/Date/ and
+<Replaceable/Resent-Date/.
+If it cannot find any valid date in these headers, it
+will use the last-modified file timestamp on <Replaceable/MH/ and
+<Replaceable/Maildir/ format mailboxes, or the date on the 
+<Replaceable/From/ line on <Replaceable/mbox/-format mailboxes.
+</Para>
+</RefSect1>
+
+<RefSect1>
+<Title>Exit Status</Title>
+<SimPara>Normally the exit status is 0, and nonzero on an unexpected errors.
+</SimPara>
+</RefSect1>
+
+<RefSect1>
+<Title>See Also</Title>
+<SimpleList>
+<Member> &python;, &gzip; </Member>
+</SimpleList>
+</RefSect1>
+
+<RefSect1>
+<Title>Author</Title>
+<SimPara>Paul Rodger <Email/paul@paulrodger.com/</SimPara>
+</RefSect1>
+
+</RefEntry>

@@ -4,5 +4,7 @@ MANIFEST
 README
 TODO
 archivemail
+archivemail.1
+archivemail.sgml
 setup.py
 test_archivemail.py

@@ -203,6 +203,7 @@ class TestMboxWrite(unittest.TestCase):
             if os.path.exists(name):
                 os.remove(name)
 
+########## options class testing #################
 
 class TestOptionDefaults(unittest.TestCase):
     def testVerbose(self):
@@ -222,8 +223,7 @@ class TestOptionDefaults(unittest.TestCase):
         self.assertEqual(archivemail.options.quiet, 0)
 
 
-########## generic routine testing #################
-
+########## archivemail.is_too_old() unit testing #################
 
 class TestIsTooOld(unittest.TestCase):
     def testVeryOld(self):
@@ -262,6 +262,7 @@ class TestIsTooOld(unittest.TestCase):
             time_msg = time.time() + (minutes * 60)
             assert(not archivemail.is_too_old(time_message=time_msg, max_days=1))
 
+################ archivemail.choose_temp_dir() unit testing #############
 
 class TestChooseTempDir(unittest.TestCase):
     def setUp(self):
@@ -460,7 +461,9 @@ class TestArchiveMboxNew(unittest.TestCase):
             if os.path.exists(name):
                 os.remove(name)
 
-
+#
+# Test the file mode (permissions) of the original mailbox after archival
+#
 class TestArchiveMboxMode(unittest.TestCase):
     def setUp(self):
         archivemail.options.quiet = 1
