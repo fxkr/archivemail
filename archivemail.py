@@ -52,7 +52,7 @@ import tempfile
 import time
 
 # global administrivia 
-__version__ = "archivemail v0.2.0"
+__version__ = "archivemail v0.2.1"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO

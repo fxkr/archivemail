@@ -1,6 +1,15 @@
-Version 0.2.1   - 3 April 2002
+Version 0.2.1   - 4 April 2002
   * Since we might not have a parse-able 'Date-Received' or 'Date' field,
-    use 5 different ways to guess the date of a message.
+    use 5 different ways to guess the date of a message. 
+  * Removed the '--use-mtime' option since it is obsolete -- we will always
+    use the file modification time for the message if other date-parsing
+    methods fail.  
+  * Check to see if we are running as root -- if so, change our
+    effective userid and groupid to that of the original mailbox. This will 
+    make sure any archives or tempfiles we write have the same ownership and 
+    will allow the root user to do "archivemail /var/spool/mail/*"
+  * Fixed a bug where if you ran 'archivemail.py foo/mbox' it would create 
+    the archive file in the current directory instead of the directory 'foo'.
 
 Version 0.2.0   - 3 April 2002
   * Added support for reading from MH mailboxes

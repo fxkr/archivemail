@@ -17,13 +17,17 @@ overhead on your mail reader. The number of days before mail is considered
 'old' is up to you, but the default is 180 days. To see the options
 archivemail supports, try running 'archivemail --help'.
 
-'archivemail' currently works on mbox-format and maildir-format mailboxes,
+'archivemail' currently works on mbox, maildir and MH format mailboxes
 and requires python v2.0 or greater. It also supports deleting old mail
 instead of archiving it with the '--delete' option.
 
 The best way to run archivemail is from cron. Giving the '-q' option to
 archivemail will make it quiet, only printing messages if something went 
 wrong.
+
+Another good option to remember is the '--dry-run' or '-n' option, which will
+just show you how many messages it would have archived without actually
+writing to the disk.
 
 archivemail is not exactly blazingly quick at the moment, but if you run it
 from cron you won't mind. Archiving from maildir mailboxes instead of 'mbox'
