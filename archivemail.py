@@ -943,17 +943,6 @@ def archive(mailbox_name):
                 os.path.basename(final_archive_name))
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
 
-    # create a temporary directory for us to work in securely
-    old_temp_dir = tempfile.tempdir
-    tempfile.tempdir = None
-    new_temp_dir = tempfile.mktemp('archivemail')
-    assert(new_temp_dir)
-    os.mkdir(new_temp_dir)
-    _stale.temp_dir = new_temp_dir
-    tempfile.tempdir = new_temp_dir
-
-    vprint("set tempfile directory to '%s'" % new_temp_dir)
-
     # check to see if we are running as root -- if so, change our effective
     # userid and groupid to that of the original mailbox
     if (os.getuid() == 0) and os.path.exists(mailbox_name):
@@ -963,6 +952,16 @@ def archive(mailbox_name):
         os.setegid(mailbox_group)
         vprint("changing effective user id to: %d" % mailbox_user)
         os.seteuid(mailbox_user)
+
+    # create a temporary directory for us to work in securely
+    old_temp_dir = tempfile.tempdir
+    tempfile.tempdir = None
+    new_temp_dir = tempfile.mktemp('archivemail')
+    assert(new_temp_dir)
+    os.mkdir(new_temp_dir)
+    _stale.temp_dir = new_temp_dir
+    tempfile.tempdir = new_temp_dir
+    vprint("set tempfile directory to '%s'" % new_temp_dir)
 
     if os.path.islink(mailbox_name):
         unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
@@ -982,14 +981,16 @@ def archive(mailbox_name):
     else:
         user_error("'%s': no such file or directory" % mailbox_name)
 
+    # remove our special temp directory - hopefully empty
+    os.rmdir(new_temp_dir)
+    _stale.temp_dir = None
+    tempfile.tempdir = old_temp_dir
+
     # if we are running as root, revert the seteuid()/setegid() above
     if (os.getuid() == 0):
         vprint("changing effective groupid and userid back to root")
         os.setegid(0)
         os.seteuid(0)
-    os.rmdir(new_temp_dir)
-    _stale.temp_dir = None
-    tempfile.tempdir = old_temp_dir
 
 
 def _archive_mbox(mailbox_name, final_archive_name):
