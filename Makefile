@@ -1,5 +1,5 @@
 
-VERSION=0.4.1
+VERSION=0.4.2
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 
@@ -16,6 +16,7 @@ test:
 clobber: clean
 	rm -rf build dist
 
+
 sdist: clobber doc
 	cp archivemail.py archivemail
 	fakeroot python setup.py sdist
@@ -24,10 +25,10 @@ tag:
 	cvs tag -F current
 	cvs tag $(VERSION_TAG)
 
-doc: archivemail.1 archivemail.html
-
 upload:
 	(cd dist && lftp -c 'open upload.sf.net && cd incoming && put $(TARFILE)')
+
+doc: archivemail.1 archivemail.html
 
 archivemail.1: archivemail.sgml
 	nsgmls archivemail.sgml | sgmlspl docbook2man-spec.pl 

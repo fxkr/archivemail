@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.1"
+__version__ = "archivemail v0.4.2"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -133,6 +133,7 @@ class Options:
     """Class to store runtime options, including defaults"""
     archive_suffix       = "_archive"
     days_old_max         = 180
+    date_old_max         = None
     delete_old_mail      = 0
     dry_run              = 0
     include_flagged      = 0
@@ -161,14 +162,15 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?Vd:hno:qs:uv', 
-                             ["days=", "delete", "dry-run", "help",
-                             "include-flagged", "no-compress",
-                             "output-dir=", "preserve-unread", "quiet",
-                             "suffix", "verbose", "version",
-                             "warn-duplicate"])
+            opts, args = getopt.getopt(args, '?D:Vd:hno:qs:uv', 
+                             ["date=", "days=", "delete", "dry-run", "help",
+                             "include-flagged", "no-compress", "output-dir=", 
+                             "preserve-unread", "quiet", "suffix", "verbose", 
+                             "version", "warn-duplicate"])
         except getopt.error, msg:
             user_error(msg)
+
+        archive_by = None 
 
         for o, a in opts:
             if o == '--delete':
@@ -179,7 +181,15 @@ class Options:
                 self.no_compress = 1
             if o == '--warn-duplicate':
                 self.warn_duplicates = 1
+            if o in ('-D', '--date'):
+                if archive_by: 
+                    user_error("you cannot specify both -d and -D options")
+                archive_by = "date"                        
+                self.date_old_max = self.date_argument(a)
             if o in ('-d', '--days'):
+                if archive_by: 
+                    user_error("you cannot specify both -d and -D options")
+                archive_by = "days"                        
                 self.days_old_max = string.atoi(a)
             if o in ('-o', '--output-dir'):
                 self.output_dir = a
@@ -217,6 +227,27 @@ class Options:
             user_error("argument to -d must be greater than zero")
         if (self.days_old_max >= 10000):
             user_error("argument to -d must be less than 10000")
+
+    def date_argument(self, string):
+        """Converts a date argument string into seconds since the epoch"""
+        date_formats = (
+            "%Y-%m-%d",  # ISO format 
+            "%d %b %Y" , # Internet format 
+            "%d %B %Y" , # Internet format with full month names
+        )
+        time.accept2dyear = 0  # I'm not going to support 2-digit years
+        for format in date_formats:
+            try:
+                date = time.strptime(string, format)
+                seconds = time.mktime(date)
+                return seconds
+            except (ValueError, OverflowError):
+                pass
+        user_error("cannot parse the date argument '%s'\n"
+            "The date should be in ISO format (eg '2002-04-23'),\n"
+            "Internet format (eg '23 Apr 2002') or\n"
+            "Internet format with full month names (eg '23 April 2002')" % 
+            string)
 
 
 class Mbox(mailbox.UnixMailbox):
@@ -526,7 +557,8 @@ Moves old mail in mbox, MH or maildir-format mailboxes to an mbox-format
 mailbox compressed with gzip. 
 
 Options are as follows:
-  -d, --days=<days>     archive messages older than <days> days (default: %d)
+  -d, --days=NUM        archive messages older than NUM days (default: %d)
+  -D, --date=DATE       archive messages older than DATE
   -o, --output-dir=DIR  directory to store archives (default: same as original)
   -s, --suffix=NAME     suffix for archive filename (default: '%s')
   -n, --dry-run         don't write to anything - just show what would be done
@@ -747,34 +779,54 @@ def is_unread(message):
 
 
 def should_archive(message):
-    """Return 1 if we should archive the message, 0 otherwise"""
+    """Return true if we should archive the message, false otherwise"""
+    old = 0
     time_message = guess_delivery_time(message)
-    old = is_too_old(time_message, options.days_old_max)
-    # I could probably do this in one if statement, but then I wouldn't
-    # understand it.
-    if old:
-        if not options.include_flagged and is_flagged(message):
-            return 0
-        if options.preserve_unread:
-            if is_unread(message):
-                return 0
-            else:                   
-                return 1
-        else:
-            return 1
-    return 0
-    
+    if options.date_old_max == None:
+        old = is_older_than_days(time_message, options.days_old_max)
+    else:
+        old = is_older_than_time(time_message, options.date_old_max)
 
-def is_too_old(time_message, max_days):
-    """Return true if a message is too old (and should be archived), 
+    # I could probably do this in one if statement, but then I wouldn't
+    # understand it. 
+    if not old:
+        return 0
+    if not options.include_flagged and is_flagged(message):
+        return 0
+    if options.preserve_unread and is_unread(message):
+        return 0
+    return 1
+        
+    
+def is_older_than_time(time_message, max_time):
+    """Return true if a message is older than the specified time,
     false otherwise.
 
     Arguments:
     time_message -- the delivery date of the message measured in seconds
                     since the epoch
+    max_time -- maximum time allowed for message
        
     """
-    assert(time_message > 0)
+    days_old = (max_time - time_message) / 24 / 60 / 60
+    if time_message < max_time:
+        vprint("message is %.2f days older than the specified date" % days_old)
+        return 1
+    vprint("message is %.2f days younger than the specified date" % \
+        abs(days_old))
+    return 0
+
+
+def is_older_than_days(time_message, max_days):
+    """Return true if a message is older than the specified number of days,
+    false otherwise.
+
+    Arguments:
+    time_message -- the delivery date of the message measured in seconds
+                    since the epoch
+    max_days -- maximum number of days before message is considered old
+       
+    """
     assert(max_days >= 1)
 
     time_now = time.time()
@@ -1020,6 +1072,7 @@ def set_signal_handlers():
     # SIGINT (signal 2) is handled as a python exception
     signal.signal(signal.SIGQUIT, clean_up_signal)  # signal 3
     signal.signal(signal.SIGTERM, clean_up_signal)  # signal 15
+
 
 def clean_up():
     """Delete stale files -- to be registered with atexit.register()"""

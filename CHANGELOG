@@ -1,4 +1,10 @@
 
+Version 0.4.2   - ???
+  * Added the ability to archive messages older than a given absolute date 
+    with the new option '--date'.
+  * Fixed a bug where archivemail would complain about messages older than 
+    1970. Yes, someone had a 'Date' header with 1967 :)
+
 Version 0.4.1   - 21 April 2002
   * Don't archive messages that are flagged important unless we are given the
     --include-flagged option. 

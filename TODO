@@ -1,9 +1,11 @@
 
-Goals for next minor release (0.4.2):
+Goals for next minor release (0.4.3):
 -------------------------------------
 * Think about the best way to specify the names of archives created with
   possibly an --archive-name option.
 * Add a lot more tests (see top of test_archivemail.py)
+* We need some better checking to see if we are really looking at a valid
+  mbox-format mailbox.
 
 Goals for next major release (0.5.0):
 -------------------------------------

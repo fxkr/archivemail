@@ -26,9 +26,10 @@ TODO: add tests for:
     * archiving maildir-format mailboxes
     * archiving MH-format mailboxes
     * running archivemail via os.system()
-    * test the include_flagged option works
     * preservation of status information from maildir to mbox
     * a 3rd party process changing the mbox file being read
+    * test to make sure the --date option works
+    * test to make sure archiving dates < 1970 works
 
 """
 
@@ -244,44 +245,54 @@ class TestOptionDefaults(unittest.TestCase):
         """no-compression should be off by default"""
         self.assertEqual(archivemail.options.no_compress, 0)
 
-########## archivemail.is_too_old() unit testing #################
+    def testIncludeFlagged(self):
+        """we should not archive flagged messages by default"""
+        self.assertEqual(archivemail.options.include_flagged, 0)
+
+########## archivemail.is_older_than_days() unit testing #################
 
 class TestIsTooOld(unittest.TestCase):
     def testVeryOld(self):
-        """is_too_old(max_days=360) should be true for these dates > 1 year"""
+        """with max_days=360, should be true for these dates > 1 year"""
         for years in range(1, 10):
             time_msg = time.time() - (years * 365 * 24 * 60 * 60)
-            assert(archivemail.is_too_old(time_message=time_msg, max_days=360))
+            assert(archivemail.is_older_than_days(time_message=time_msg,
+                max_days=360))
 
     def testOld(self):
-        """is_too_old(max_days=14) should be true for these dates > 14 days"""
+        """with max_days=14, should be true for these dates > 14 days"""
         for days in range(14, 360):
             time_msg = time.time() - (days * 24 * 60 * 60)
-            assert(archivemail.is_too_old(time_message=time_msg, max_days=14))
+            assert(archivemail.is_older_than_days(time_message=time_msg, 
+                max_days=14))
 
     def testJustOld(self):
-        """is_too_old(max_days=1) should be true for these dates >= 1 day"""
+        """with max_days=1, should be true for these dates >= 1 day"""
         for minutes in range(0, 61):
             time_msg = time.time() - (25 * 60 * 60) + (minutes * 60)
-            assert(archivemail.is_too_old(time_message=time_msg, max_days=1))
+            assert(archivemail.is_older_than_days(time_message=time_msg, 
+                max_days=1))
 
     def testNotOld(self):
-        """is_too_old(max_days=9) should be false for these dates < 9 days"""
+        """with max_days=9, should be false for these dates < 9 days"""
         for days in range(0, 9):
             time_msg = time.time() - (days * 24 * 60 * 60)
-            assert(not archivemail.is_too_old(time_message=time_msg, max_days=9))
+            assert(not archivemail.is_older_than_days(time_message=time_msg, 
+                max_days=9))
 
     def testJustNotOld(self):
-        """is_too_old(max_days=1) should be false for these hours <= 1 day"""
+        """with max_days=1, should be false for these hours <= 1 day"""
         for minutes in range(0, 60):
             time_msg = time.time() - (23 * 60 * 60) - (minutes * 60)
-            assert(not archivemail.is_too_old(time_message=time_msg, max_days=1))
+            assert(not archivemail.is_older_than_days(time_message=time_msg, 
+                max_days=1))
 
     def testFuture(self):
-        """is_too_old(max_days=1) should be false for times in the future"""
+        """with max_days=1, should be false for times in the future"""
         for minutes in range(0, 60):
             time_msg = time.time() + (minutes * 60)
-            assert(not archivemail.is_too_old(time_message=time_msg, max_days=1))
+            assert(not archivemail.is_older_than_days(time_message=time_msg, 
+                max_days=1))
 
 ################ archivemail.choose_temp_dir() unit testing #############
 
@@ -516,6 +527,67 @@ class TestArchiveMboxPreserveStatus(unittest.TestCase):
                 os.remove(name)
 
 
+class TestArchiveMboxFlagged(unittest.TestCase):
+    """make sure the 'include_flagged' option works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
+    def testOld(self):
+        """by default, old flagged messages should not be archived"""
+        archivemail.options.include_flagged = 0
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
+            x_status="F")
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(not os.path.exists(archive_name))
+
+    def testIncludeFlaggedNew(self):
+        """new flagged messages should not be archived with include_flagged"""
+        archivemail.options.include_flagged = 1
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179), \
+            x_status="F")
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        assert(filecmp.cmp(self.mbox_name, self.copy_name, shallow=0))
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(not os.path.exists(archive_name))
+
+    def testIncludeFlaggedOld(self):
+        """old flagged messages should be archived with include_flagged"""
+        archivemail.options.include_flagged = 1
+        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
+            x_status="F")
+        self.copy_name = tempfile.mktemp()
+        shutil.copyfile(self.mbox_name, self.copy_name)
+
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        self.assertEqual(os.path.getsize(self.mbox_name), 0)
+        archive_name = self.mbox_name + "_archive.gz"
+        assert(os.path.exists(archive_name))
+        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+        archive_name = self.mbox_name + "_archive"
+        assert(os.path.exists(archive_name))
+        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+
+    def tearDown(self):
+        archivemail.options.include_flagged = 0
+        archivemail.options.quiet = 0
+        archive = self.mbox_name + "_archive"
+        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
+            if os.path.exists(name):
+                os.remove(name)
+
+
+
 class TestArchiveMboxUncompressedOld(unittest.TestCase):
     """make sure that the 'no_compress' option works"""
     mbox_name = None
@@ -646,27 +718,44 @@ class TestArchiveMboxMode(unittest.TestCase):
 
 ########## helper routines ############
 
-def make_message(hours_old=0, status=None):
-    time_message = time.time() - (60 * 60 * hours_old)
-    time_string = time.asctime(time.localtime(time_message))
+def make_message(body=None, date=None, delivery_date=None, from_address=None, 
+    hours_old=0, resent_date=None, status=None, subject=None, to_address=None,
+    unix_from=None, x_status=None):
 
-    msg = """From sender@domain %s
-From: sender@domain
-To: receipient@domain
-Subject: This is a dummy message
-Date: %s
-""" % (time_string, time_string)
-    
+    if not date:
+        time_message = time.time() - (60 * 60 * hours_old)
+        date = time.asctime(time.localtime(time_message))
+    if not from_address:
+        from_address = "sender@dummy.domain"        
+    if not to_address:
+        to_address = "receipient@dummy.domain"        
+    if not subject:
+        subject = "This is the subject"
+    if not unix_from:
+        unix_from = "From %s %s" % (from_address, date)
+    if not body:
+        body = "This is the message body"
+
+    msg = ""
+    if unix_from:
+        msg = msg + ("%s\n" % unix_from)
+    if date:
+        msg = msg + ("Date: %s\n" % date)
+    if delivery_date:
+        msg = msg + ("Delivery-Date: %s\n" % delivery_date)
+    if resent_date:
+        msg = msg + ("Resent-Date: %s\n" % resent_date)
     if status:
         msg = msg + ("Status: %s\n" % status)
-
-    msg = msg + """
-
-This is the message body.
-It's very exciting.
-
-
-""" 
+    if x_status:
+        msg = msg + ("X-Status: %s\n" % x_status)
+    if from_address:
+        msg = msg + ("From: %s\n" % from_address)
+    if to_address:
+        msg = msg + ("To: %s\n" % to_address)
+    if subject:
+        msg = msg + ("Subject: %s\n" % subject)
+    msg = msg + "\n\n" + body + "\n\n"
     return msg
 
 
@@ -680,11 +769,12 @@ def append_file(source, dest):
     read.close()
     write.close()
 
-def make_mbox(messages=1, hours_old=0, status=None):
+def make_mbox(messages=1, hours_old=0, status=None, x_status=None):
     name = tempfile.mktemp()
     file = open(name, "w")
     for count in range(messages):
-        file.write(make_message(hours_old=hours_old, status=status))
+        file.write(make_message(hours_old=hours_old, status=status, \
+            x_status=x_status))
     file.close()
     return name
     

@@ -93,7 +93,20 @@ mailbox it is reading, creating any archive files as that user.
     <Option>-d <Replaceable/NUM/, --days=<Replaceable/NUM/</Option>
 </Term>
 <ListItem><Para>Archive messages older than <Replaceable/NUM/ days.  
-The default is 180.
+The default is 180. This option is incompatible with the
+<Option/--date/ option below.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-D <Replaceable/DATE/, --date=<Replaceable/DATE/</Option>
+</Term>
+<ListItem><Para>Archive messages older than <Replaceable/DATE/.
+<Replaceable/DATE/ can be a date string in ISO format (eg '2002-04-23'), 
+Internet format (eg '23 Apr 2002') or Internet format with full month names 
+(eg '23 April 2002'). Two-digit years are not supported.
+This option is incompatible with the <Option/--days/ option above.
 </Para></ListItem>
 </VarListEntry>
 
@@ -280,6 +293,22 @@ are older than 180 days to a compressed mailbox called
 <filename>debian-user_archive.gz</filename> in the current directory: 
 <screen>
 <prompt>bash$ </prompt><userinput>archivemail debian-user</userinput>
+</screen>
+</Para>
+
+<Para>
+To archive all messages in the mailbox <filename>cm-melb</filename> that
+are older than the first of January 2002 to a compressed mailbox called
+<filename>cm-melb_archive.gz</filename> in the current directory: 
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail --date'1 Jan 2002' cm-melb</userinput>
+</screen>
+</Para>
+
+<Para>
+Exactly the same as the above example, using an ISO date format instead:
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail --date=2002-01-01 cm-melb</userinput>
 </screen>
 </Para>
 
