@@ -22,7 +22,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.4.7"
+__version__ = "archivemail v0.4.8"
 __cvs_id__ = "$Id$"
 __copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
 This is free software; see the source for copying conditions. There is NO
@@ -112,6 +112,7 @@ class StaleFiles:
     archive            = None  # tempfile for messages to be archived
     procmail_lock      = None  # original_mailbox.lock
     retain             = None  # tempfile for messages to be retained
+    temp_dir           = None  # our tempfile directory container
 
     def clean(self):
         """Delete any temporary files or lockfiles that exist"""
@@ -126,6 +127,10 @@ class StaleFiles:
         if self.archive:
             vprint("removing stale archive file '%s'" % self.archive)
             try: os.remove(self.archive)
+            except (IOError, OSError): pass
+        if self.temp_dir:
+            vprint("removing stale tempfile directory '%s'" % self.temp_dir)
+            try: os.rmdir(self.temp_dir)
             except (IOError, OSError): pass
 
 
@@ -418,7 +423,7 @@ class RetainMbox(Mbox):
 
         """
         assert(final_name)
-        temp_name = tempfile.mktemp("archivemail_retain")
+        temp_name = tempfile.mktemp("retain")
         self.mbox_file = open(temp_name, "w")
         self.mbox_file_name = temp_name
         _stale.retain = temp_name
@@ -490,7 +495,7 @@ class ArchiveMbox(Mbox):
             unexpected_error("""There is already a file named '%s'!
 Have you been previously compressing this archive? You probably should 
 uncompress it manually, and try running me again.""" % compressed_archive)
-        temp_name = tempfile.mktemp("archivemail_archive")
+        temp_name = tempfile.mktemp("archive")
         if os.path.isfile(final_name):
             vprint("file already exists that is named: %s" % final_name)
             shutil.copy2(final_name, temp_name)
@@ -507,7 +512,7 @@ uncompress it manually, and try running me again.""" % compressed_archive)
 Have you been reading this archive? You probably should re-compress it
 manually, and try running me again.""" % final_name)
 
-        temp_name = tempfile.mktemp("archivemail_archive.gz")
+        temp_name = tempfile.mktemp("archive.gz")
         if os.path.isfile(compressed_filename):
             vprint("file already exists that is named: %s" %  \
                 compressed_filename)
@@ -923,10 +928,16 @@ def archive(mailbox_name):
                 os.path.basename(final_archive_name))
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
 
+    # create a temporary directory for us to work in securely
     old_temp_dir = tempfile.tempdir
-    tempfile.tempdir = choose_temp_dir(mailbox_name)
-    assert(tempfile.tempdir)
-    vprint("set tempfile directory to '%s'" % tempfile.tempdir)
+    tempfile.tempdir = None
+    new_temp_dir = tempfile.mktemp('archivemail')
+    assert(new_temp_dir)
+    os.mkdir(new_temp_dir)
+    _stale.temp_dir = new_temp_dir
+    tempfile.tempdir = new_temp_dir
+
+    vprint("set tempfile directory to '%s'" % new_temp_dir)
 
     # check to see if we are running as root -- if so, change our effective
     # userid and groupid to that of the original mailbox
@@ -961,6 +972,8 @@ def archive(mailbox_name):
         vprint("changing effective groupid and userid back to root")
         os.setegid(0)
         os.seteuid(0)
+    os.rmdir(new_temp_dir)
+    _stale.temp_dir = None
     tempfile.tempdir = old_temp_dir
 
 
@@ -1101,28 +1114,6 @@ def _archive_dir(mailbox_name, final_archive_name, type):
 
 
 ###############  misc  functions  ###############
-
-
-def choose_temp_dir(mailbox_name):
-    """Return a suitable temporary directory to use for a given mailbox name"""
-    assert(mailbox_name)
-    mailbox_dirname = os.path.dirname(mailbox_name)
-    temp_dir = None
-
-    if options.output_dir:
-        temp_dir = options.output_dir
-    elif mailbox_dirname:
-        temp_dir = mailbox_dirname
-    else:
-        temp_dir = os.curdir
-    assert(temp_dir)
-    if is_world_writable(temp_dir):
-        unexpected_error(("temporary directory is world-writable: " + \
-            "%s -- I feel nervous!") % temp_dir)
-    if not os.access(temp_dir, os.W_OK):
-        user_error("no write permission on temporary directory: '%s'" % \
-            temp_dir)
-    return temp_dir
 
 
 def set_signal_handlers():

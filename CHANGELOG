@@ -1,3 +1,6 @@
+Version 0.4.8   - 20 May 2002
+  * Call mkdir() to create a container directory in which we can place any
+    created tempfiles 
 
 Version 0.4.7   - 9 May 2002
   * Fixed a bug where archivemail would abort if it received a date header

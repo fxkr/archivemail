@@ -1,5 +1,5 @@
 
-VERSION=0.4.7
+VERSION=0.4.8
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 

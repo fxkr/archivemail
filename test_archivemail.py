@@ -300,43 +300,6 @@ class TestIsTooOld(unittest.TestCase):
             assert(not archivemail.is_older_than_days(time_message=time_msg, 
                 max_days=1))
 
-################ archivemail.choose_temp_dir() unit testing #############
-
-class TestChooseTempDir(unittest.TestCase):
-    def setUp(self):
-        self.output_dir = tempfile.mktemp()
-        os.mkdir(self.output_dir)
-        self.sub_dir = tempfile.mktemp()
-        os.mkdir(self.sub_dir)
-
-    def testCurrentDir(self):
-        """use the current directory as a temp directory with no output dir"""
-        archivemail.options.output_dir = None
-        dir = archivemail.choose_temp_dir("dummy")
-        self.assertEqual(dir, os.curdir)
-
-    def testSubDir(self):
-        """use the mailbox parent directory as a temp directory"""
-        archivemail.options.output_dir = None
-        dir = archivemail.choose_temp_dir(os.path.join(self.sub_dir, "dummy"))
-        self.assertEqual(dir, self.sub_dir)
-
-    def testOutputDir(self):
-        """use the output dir as a temp directory when specified"""
-        archivemail.options.output_dir = self.output_dir
-        dir = archivemail.choose_temp_dir("dummy")
-        self.assertEqual(dir, self.output_dir)
-
-    def testSubDirOutputDir(self):
-        """use the output dir as temp when given a mailbox directory"""
-        archivemail.options.output_dir = self.output_dir
-        dir = archivemail.choose_temp_dir(os.path.join(self.sub_dir, "dummy"))
-        self.assertEqual(dir, self.output_dir)
-
-    def tearDown(self):
-        os.rmdir(self.output_dir)
-        os.rmdir(self.sub_dir)
-
 
 ########## acceptance testing ###########
 
