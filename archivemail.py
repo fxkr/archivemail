@@ -45,6 +45,7 @@ import mailbox
 import os
 import rfc822
 import signal
+import stat
 import string
 import tempfile
 import time
@@ -144,7 +145,7 @@ class Options:
     lockfile_attempts    = 5  
     lockfile_extension   = ".lock"
     lockfile_sleep       = 1 
-    output_dir           = None
+    output_dir           = os.curdir
     quiet                = 0
     script_name          = os.path.basename(sys.argv[0])
     use_modify_time      = 0
@@ -179,13 +180,7 @@ class Options:
                 self.dry_run = 1
             if o in ('-d', '--days'):
                 self.days_old_max = string.atoi(a)
-                if (self.days_old_max < 1):
-                    user_error("argument to -d must be greater than zero")
-                if (self.days_old_max >= 10000):
-                    user_error("argument to -d must be less than 10000")
             if o in ('-o', '--output-dir'):
-                if not os.path.isdir(a):
-                    user_error("output directory does not exist: '%s'" % a)
                 self.output_dir = a
             if o in ('-h', '-?', '--help'):
                 print usage
@@ -222,6 +217,22 @@ class Options:
             }
         self.compressor_extension = extensions[self.compressor]
         return args
+
+    def sanity_check(self):
+        """Complain bitterly about our options now rather than later"""
+        if not os.path.isdir(self.output_dir):
+            user_error("output directory does not exist: '%s'" % \
+                self.output_dir)
+        if not os.access(self.output_dir, os.W_OK):
+            user_error("no write permission on output directory: '%s'" % \
+                self.output_dir)
+        if is_world_writable(self.output_dir):
+            unexpected_error(("output directory is world-writable: '%s' " + \
+                "-- I feel nervous!") % self.output_dir)
+        if (self.days_old_max < 1):
+            user_error("argument to -d must be greater than zero")
+        if (self.days_old_max >= 10000):
+            user_error("argument to -d must be less than 10000")
 
 
 class Mbox(mailbox.PortableUnixMailbox):
@@ -509,7 +520,10 @@ Website: http://archivemail.sourceforge.net/ """ %   \
         print usage
         sys.exit(1)
 
+    _options.sanity_check()
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
+    tempfile.tempdir = _options.output_dir
+    assert(tempfile.tempdir)
 
     # Make sure we clean up nicely - we don't want to leave stale procmail
     # lockfiles about if something bad happens to us. This is quite 
@@ -643,17 +657,15 @@ def archive(mailbox_name):
     """
     assert(mailbox_name)
 
-    tempfile.tempdir = choose_temp_dir(mailbox_name)
     vprint("set tempfile directory to '%s'" % tempfile.tempdir)
 
     final_archive_name = mailbox_name + _options.archive_suffix
-    if _options.output_dir:
-        final_archive_name = os.path.join(_options.output_dir, 
+    final_archive_name = os.path.join(_options.output_dir, 
             os.path.basename(final_archive_name))
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
 
     if os.path.islink(mailbox_name):
-        unexpected_error("'%s' is a symbolic link -- I am nervous" % 
+        unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
             mailbox_name)
     elif os.path.isfile(mailbox_name):
         vprint("guessing mailbox is of type: mbox")
@@ -824,20 +836,11 @@ def clean_up_signal(signal_number, stack_frame):
     unexpected_error("received signal %s" % signal_number)
 
 
-def choose_temp_dir(mailbox_path):
-    """Set the directory for temporary files to something safe.
-    
-    Arguments:
-    mailbox_path -- path name to the original mailbox
+def is_world_writable(path):
+    """Return true if the path is world-writable, false otherwise""" 
+    assert(path)
+    return (os.stat(path)[stat.ST_MODE] & stat.S_IWOTH)
 
-    """
-    assert(mailbox_path)
-    temp_dir = os.path.dirname(mailbox_path)
-    if _options.output_dir:
-        temp_dir = _options.output_dir
-    if not temp_dir:
-        temp_dir = os.curdir # use the current directory
-    return temp_dir
 
 def system_or_die(command):
     """Run the command with os.system(), aborting on non-zero exit"""
