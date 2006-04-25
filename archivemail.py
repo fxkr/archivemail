@@ -757,7 +757,7 @@ def add_status_headers(message):
 
     # files in the maildir 'cur' directory are no longer new,
     # they are the same as messages with 'Status: O' headers in mbox
-    (None, last_dir) = os.path.split(os.path.dirname(message.fp.name))
+    last_dir = os.path.basename(os.path.dirname(message.fp.name))
     if last_dir == "cur":
         status = status + "O" 
 
