@@ -60,6 +60,7 @@ import stat
 import string
 import tempfile
 import time
+import urlparse
 
 ############## class definitions ###############
 
@@ -149,6 +150,7 @@ class Options:
     no_compress          = 0
     only_archive_read    = 0
     output_dir           = None
+    pwfile               = None
     preserve_unread      = 0
     quiet                = 0
     read_buffer_size     = 8192
@@ -169,9 +171,10 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?D:S:Vd:hno:qs:uv', 
+            opts, args = getopt.getopt(args, '?D:S:Vd:hno:P:qs:uv', 
                              ["date=", "days=", "delete", "dry-run", "help",
                              "include-flagged", "no-compress", "output-dir=",
+                             "pwfile",
                              "preserve-unread", "quiet", "size=", "suffix=",
                              "verbose", "version", "warn-duplicate"])
         except getopt.error, msg:
@@ -200,6 +203,8 @@ class Options:
                 self.days_old_max = string.atoi(a)
             if o in ('-o', '--output-dir'):
                 self.output_dir = a
+            if o in ('-P', '--pwfile'):
+                self.pwfile = a
             if o in ('-h', '-?', '--help'):
                 print usage
                 sys.exit(0)
@@ -240,6 +245,9 @@ class Options:
             user_error("--size argument must be greater than zero")
         if self.quiet and self.verbose:
             user_error("you cannot use both the --quiet and --verbose options")
+        if self.pwfile:
+            if not os.path.isfile(self.pwfile):
+                user_error("pwfile %s does not exist" % self.pwfile)
 
     def date_argument(self, string):
         """Converts a date argument string into seconds since the epoch"""
@@ -582,6 +590,7 @@ Options are as follows:
   -d, --days=NUM        archive messages older than NUM days (default: %d)
   -D, --date=DATE       archive messages older than DATE
   -o, --output-dir=DIR  directory to store archives (default: same as original)
+  -P, --pwfile=FILE     file to read imap password from (default: None)
   -s, --suffix=NAME     suffix for archive filename (default: '%s')
   -S, --size=NUM        only archive messages NUM bytes or larger
   -n, --dry-run         don't write to anything - just show what would be done
@@ -603,6 +612,7 @@ Example: %s linux-kernel
 
 To archive IMAP mailboxes, format your mailbox argument like this:
   imap://username:password@server/mailbox
+  (substitute 'imap' with 'imaps' for an SSL connection)
 
 Website: http://archivemail.sourceforge.net/ """ %   \
     (options.script_name, options.days_old_max, options.archive_suffix,
@@ -1001,7 +1011,8 @@ def archive(mailbox_name):
     parsed_suffix = time.strftime(options.archive_suffix, 
         time.localtime(parsed_suffix_time))
 
-    if mailbox_name[:7].lower() == 'imap://':
+    imap_scheme = urlparse.urlparse(mailbox_name)[0]
+    if imap_scheme == 'imap' or imap_scheme == 'imaps':
         final_archive_name = mailbox_name.split('/')[-1] + parsed_suffix
     else:
         final_archive_name = mailbox_name + parsed_suffix
@@ -1036,8 +1047,8 @@ def archive(mailbox_name):
     if os.path.islink(mailbox_name):
         unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
             mailbox_name)
-    elif mailbox_name[:7].lower() == 'imap://':
-        vprint("guessing mailbox is of type: imap")
+    if imap_scheme == 'imap' or imap_scheme == 'imaps':
+        vprint("guessing mailbox is of type: imap(s)")
         _archive_imap(mailbox_name, final_archive_name)
     elif os.path.isfile(mailbox_name):
         vprint("guessing mailbox is of type: mbox")
@@ -1207,10 +1218,11 @@ def _archive_imap(mailbox_name, final_archive_name):
     assert(final_archive_name)
     import imaplib
     import cStringIO
+    import getpass
 
     archive = None
     stats = Stats(mailbox_name, final_archive_name)
-    imap_str = mailbox_name[7:]
+    imap_str = mailbox_name[mailbox_name.find('://') + 3:]
     filter = build_imap_filter()
     vprint("imap filter: '%s'" % filter)
     try:
@@ -1220,9 +1232,24 @@ def _archive_imap(mailbox_name, final_archive_name):
     except:
         unexpected_error("you must provide a properly formatted \
         IMAP connection string")
-    imap_srv = imaplib.IMAP4(imap_server)
+    imap_username = getpass.getuser()
+    if options.pwfile:
+        imap_password = open(options.pwfile).read().rstrip()
+    else:
+        imap_password = getpass.getpass()
+        imap_server, imap_folder = imap_str.split('/', 1)
+
+    if mailbox_name[:5] == 'imaps':
+        vprint("Using SSL")
+        imap_srv = imaplib.IMAP4_SSL(imap_server)
+    else:
+        imap_srv = imaplib.IMAP4(imap_server)
     vprint("connected to server %s" % imap_server)
-    result, response = imap_srv.login(imap_username, imap_password)
+    cram_md5 = True
+    if cram_md5:
+        result, response = imap_srv.login_cram_md5(imap_username, imap_password)
+    else:
+        result, response = imap_srv.login(imap_username, imap_password)
     if result != 'OK': unexpected_error("authentication failure")
     vprint("logged in to server as %s" % imap_username)
     result, response = imap_srv.select(imap_folder)
