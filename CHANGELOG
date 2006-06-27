@@ -1,5 +1,13 @@
 
-Version 0.6.2   - ???
+Version 0.6.2   - 27 June 2006
+  * add -F/--filter-append option to append an arbitrary string to the IMAP 
+    filter string
+  * don't delete more than a certain number of messages at a time. The max 
+    command len is limited. Fixes bug 942403 (Archiving large IMAP folders fails)
+  * add SSL support per imaps URL (after patch by Tobias Gruetzmacher)
+  * add -P/--pwfile option to supply the IMAP password, so it does not end up in 
+    the shell history
+  * Fix SyntaxWarning: assignment to None (bug #843890)
   * Use the archive cut date rather than the actual time with the --suffix
     option. (Thanks Manuel Estrada Sainz)
 
