@@ -143,6 +143,7 @@ class Options:
     date_old_max         = None
     delete_old_mail      = 0
     dry_run              = 0
+    filter_append        = None
     include_flagged      = 0
     lockfile_attempts    = 5  
     lockfile_extension   = ".lock"
@@ -171,10 +172,10 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?D:S:Vd:hno:P:qs:uv', 
+            opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:uv', 
                              ["date=", "days=", "delete", "dry-run", "help",
                              "include-flagged", "no-compress", "output-dir=",
-                             "pwfile",
+                             "filter-append", "pwfile",
                              "preserve-unread", "quiet", "size=", "suffix=",
                              "verbose", "version", "warn-duplicate"])
         except getopt.error, msg:
@@ -205,6 +206,8 @@ class Options:
                 self.output_dir = a
             if o in ('-P', '--pwfile'):
                 self.pwfile = a
+            if o in ('-F', '--filter-append'):
+                self.filter_append = a
             if o in ('-h', '-?', '--help'):
                 print usage
                 sys.exit(0)
@@ -591,6 +594,7 @@ Options are as follows:
   -D, --date=DATE       archive messages older than DATE
   -o, --output-dir=DIR  directory to store archives (default: same as original)
   -P, --pwfile=FILE     file to read imap password from (default: None)
+  -F, --filter-append=STRING  append arbitrary string to the IMAP filter string
   -s, --suffix=NAME     suffix for archive filename (default: '%s')
   -S, --size=NUM        only archive messages NUM bytes or larger
   -n, --dry-run         don't write to anything - just show what would be done
@@ -976,6 +980,9 @@ def build_imap_filter():
         filter.append("BIGGER %d" % options.min_size)
     if options.preserve_unread:
         filter.append("SEEN")
+
+    if options.filter_append:
+        filter.append(options.filter_append)
 
     return '(' + string.join(filter, ' ') + ')'
 
