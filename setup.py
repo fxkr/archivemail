@@ -25,6 +25,6 @@ setup(name="archivemail",
       url="http://archivemail.sourceforge.net/",
       author="Paul Rodger",
       author_email="paul@paulrodger.com",
-      scripts=["archivemail"],
+      scripts=["archivemail.py"],
       data_files=[("man/man1", ["archivemail.1"])],
       )
