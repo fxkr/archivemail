@@ -1233,17 +1233,18 @@ def _archive_imap(mailbox_name, final_archive_name):
     filter = build_imap_filter()
     vprint("imap filter: '%s'" % filter)
     try:
+        imap_username, imap_str = imap_str.split('@', 1)
         imap_server, imap_folder = imap_str.split('/', 1)
-        imap_username, imap_str = imap_str.split(':', 1)
-        imap_password, imap_str = imap_str.split('@', 1)
     except:
-        pass
-    imap_username = getpass.getuser()
+         unexpected_error("you must provide a properly formatted \
+         IMAP connection string")
     if options.pwfile:
         imap_password = open(options.pwfile).read().rstrip()
     else:
-        imap_password = getpass.getpass()
-        imap_server, imap_folder = imap_str.split('/', 1)
+        try: 
+            imap_username, imap_password = imap_username.split(':', 1)
+        except: 
+            imap_password = getpass.getpass()
 
     if mailbox_name[:5] == 'imaps':
         vprint("Using SSL")
