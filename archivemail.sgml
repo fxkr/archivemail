@@ -330,6 +330,11 @@ Display brief summary information about how to run <Command/archivemail/.
 <Para>
 To archive an <application/IMAP/-format mailbox, use the format
 <command>imap://username:password@server/mailbox</command> to specify the
+mailbox. You can omit the password from the <acronym/URL/; use the
+<option>--pwfile</option> option to make <command/archivemail/ read the
+password from a file, or just enter it upon request. Substitute '<acronym/imap/'
+with '<acronym/imaps/', and <command/archivemail/ will establish a secure
+<acronym/SSL/ connection. 
 </Para>
 
 <Para>

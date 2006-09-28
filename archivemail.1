@@ -211,6 +211,11 @@ Display brief summary information about how to run \fBarchivemail\fR\&.
 .PP
 To archive an \fBIMAP\fR-format mailbox, use the format
 \fBimap://username:password@server/mailbox\fR to specify the
+mailbox. You can omit the password from the URL; use the
+\fB--pwfile\fR option to make \fBarchivemail\fR read the
+password from a file, or just enter it upon request. Substitute 'imap\&'
+with 'imaps\&', and \fBarchivemail\fR will establish a secure
+SSL connection. 
 .PP
 When reading an \fBmbox\fR-format mailbox, \fBarchivemail\fR will
 create a lockfile with the extension \fI\&.lock\fR so that
