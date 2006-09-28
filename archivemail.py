@@ -685,7 +685,7 @@ def guess_return_path(message):
     assert(message)
 
     for header in ('Return-path', 'From'):
-        address_header = message.get('header')
+        address_header = message.get(header)
         if address_header:
             (name, address) = rfc822.parseaddr(address_header)
             if address:
