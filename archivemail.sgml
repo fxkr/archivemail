@@ -310,7 +310,7 @@ Display brief summary information about how to run <Command/archivemail/.
 </Para>
 
 <Para>
-To archive an <application/IMAP/-format mailbox, use the the format
+To archive an <application/IMAP/-format mailbox, use the format
 <command>imap://username:password@server/mailbox</command> to specify the
 mailbox.
 </Para>
