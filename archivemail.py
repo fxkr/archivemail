@@ -1270,7 +1270,10 @@ def _archive_imap(mailbox_name, final_archive_name):
     for msg_id in message_list:
         result, response = imap_srv.fetch(msg_id, '(RFC822 FLAGS)')
         if result != 'OK': unexpected_error("Failed to fetch message")
-        msg_str = response[0][1]
+        if "\r\n" == os.linesep:
+            msg_str = response[0][1]
+        else:
+            msg_str = response[0][1].replace("\r\n", os.linesep)
         msg_flags = imaplib.ParseFlags(response[1])
         msg = rfc822.Message(cStringIO.StringIO(msg_str))
         add_status_headers_imap(msg, msg_flags)
