@@ -175,7 +175,7 @@ class Options:
             opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:uv', 
                              ["date=", "days=", "delete", "dry-run", "help",
                              "include-flagged", "no-compress", "output-dir=",
-                             "filter-append", "pwfile",
+                             "filter-append=", "pwfile=",
                              "preserve-unread", "quiet", "size=", "suffix=",
                              "verbose", "version", "warn-duplicate"])
         except getopt.error, msg:
