@@ -48,6 +48,14 @@ Use the directory name \fIPATH\fR to store the
 mailbox archives. The default is the same directory as the mailbox to be
 read.
 .TP
+\fB    -P \fIFILE\fB, --pwfile=\fIFILE\fB\fR
+Read IMAP password from file \fIFILE\fR
+instead of from the command line.  
+.TP
+\fB    -F \fISTRING\fB, --filter-append=\fISTRING\fB\fR
+Append \fISTRING\fR to the IMAP filter string. 
+For IMAP wizards. 
+.TP
 \fB    -s \fINAME\fB, --suffix=\fINAME\fB\fR
 Use the suffix \fINAME\fR to create the filename used for archives.  
 The default is \fI_archive\fR\&. For example, if you
@@ -203,7 +211,6 @@ Display brief summary information about how to run \fBarchivemail\fR\&.
 .PP
 To archive an \fBIMAP\fR-format mailbox, use the format
 \fBimap://username:password@server/mailbox\fR to specify the
-mailbox.
 .PP
 When reading an \fBmbox\fR-format mailbox, \fBarchivemail\fR will
 create a lockfile with the extension \fI\&.lock\fR so that

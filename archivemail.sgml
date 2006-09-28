@@ -118,6 +118,24 @@ This option is incompatible with the <Option/--days/ option above.
 mailbox archives. The default is the same directory as the mailbox to be
 read.
 </Para></ListItem>
+
+<VarListEntry>
+<Term>
+    <Option>-P <Replaceable/FILE/, --pwfile=<Replaceable/FILE/</Option>
+</Term>
+<ListItem><Para>Read <acronym/IMAP/ password from file <Replaceable/FILE/
+instead of from the command line.  
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>-F <Replaceable/STRING/,
+    --filter-append=<Replaceable/STRING/</Option>
+</Term>
+<ListItem><Para>Append <Replaceable/STRING/ to the <acronym/IMAP/ filter string. 
+For <acronym/IMAP/ wizards. 
+</Para></ListItem>
 </VarListEntry>
 
 <VarListEntry>
@@ -312,7 +330,6 @@ Display brief summary information about how to run <Command/archivemail/.
 <Para>
 To archive an <application/IMAP/-format mailbox, use the format
 <command>imap://username:password@server/mailbox</command> to specify the
-mailbox.
 </Para>
 
 <Para>
