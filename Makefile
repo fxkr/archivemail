@@ -41,9 +41,5 @@ archivemail.1: archivemail.sgml
 	chmod 644 archivemail.1
 
 archivemail.html: archivemail.sgml
-	jade -t sgml \
-	  -d /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl \
-	  -o archivemail.html \
-	  archivemail.sgml
-	mv r1.html archivemail.html
+	docbook2html -u archivemail.sgml
 	chmod 644 archivemail.html
