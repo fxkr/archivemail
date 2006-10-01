@@ -706,7 +706,9 @@ class TestArchiveMboxSuffix(unittest.TestCase):
         """archiving with specified --suffix arguments"""
         for suffix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
             for execute in ("system_long", "system_short", "package"):
-                self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
+                days_old_max = 180
+                self.mbox_name = make_mbox(messages=3, 
+                    hours_old=(24 * (days_old_max+1)))
                 self.copy_name = tempfile.mktemp()
                 shutil.copyfile(self.mbox_name, self.copy_name)
                 if execute == "system_long":
@@ -725,7 +727,11 @@ class TestArchiveMboxSuffix(unittest.TestCase):
                     sys.exit(1)
                 assert(os.path.exists(self.mbox_name))
                 self.assertEqual(os.path.getsize(self.mbox_name), 0)
-                parsed_suffix = time.strftime(suffix, time.localtime(time.time()))
+
+                parsed_suffix_time = time.time() - days_old_max*24*60*60
+                parsed_suffix = time.strftime(suffix, 
+                    time.localtime(parsed_suffix_time))
+
                 archive_name = self.mbox_name + parsed_suffix + ".gz"
                 assert(os.path.exists(archive_name))
                 self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
