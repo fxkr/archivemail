@@ -977,7 +977,7 @@ def build_imap_filter():
     if not options.include_flagged:
         filter.append("UNFLAGGED")
     if options.min_size:
-        filter.append("BIGGER %d" % options.min_size)
+        filter.append("LARGER %d" % options.min_size)
     if options.preserve_unread:
         filter.append("SEEN")
 
