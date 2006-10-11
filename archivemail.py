@@ -1297,8 +1297,8 @@ def _archive_imap(mailbox_name, final_archive_name):
             for i in range(0, len(message_list), max_delete):
                 imap_srv.store(string.join(message_list[i:i+max_delete], ','),
                     '+FLAGS.SILENT', '\\Deleted')
-        imap_srv.close()
-        imap_srv.logout()
+    imap_srv.close()
+    imap_srv.logout()
     
 ###############  misc  functions  ###############
 
