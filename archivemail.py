@@ -1263,7 +1263,6 @@ def _archive_imap(mailbox_name, final_archive_name):
     vprint("selected imap folder %s" % imap_folder)
     result, response = imap_srv.search(None, filter)
     if result != 'OK': unexpected_error("imap search failed")
-    message_list_str = response[0]
     message_list = response[0].split()
     vprint("%d messages found matching filter" % len(message_list))
 
