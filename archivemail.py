@@ -1289,14 +1289,14 @@ def _archive_imap(mailbox_name, final_archive_name):
         if archive:
             archive.close()
             archive.finalise()
-            # do not delete more than a certain number of messages at a time, because the
-            # command length is limited. This avoids that servers terminate the connection with
-            # EOF or TCP RST.
-            vprint("Deleting %s messages" % len(message_list))
-            max_delete = 100
-            for i in range(0, len(message_list), max_delete):
-                imap_srv.store(string.join(message_list[i:i+max_delete], ','),
-                    '+FLAGS.SILENT', '\\Deleted')
+        # do not delete more than a certain number of messages at a time, because the
+        # command length is limited. This avoids that servers terminate the connection with
+        # EOF or TCP RST.
+        vprint("Deleting %s messages" % len(message_list))
+        max_delete = 100
+        for i in range(0, len(message_list), max_delete):
+            imap_srv.store(string.join(message_list[i:i+max_delete], ','),
+                '+FLAGS.SILENT', '\\Deleted')
     imap_srv.close()
     imap_srv.logout()
     
