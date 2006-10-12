@@ -336,6 +336,7 @@ class Mbox(mailbox.UnixMailbox):
             if not body:
                 break
             self.mbox_file.write(body)
+        self.mbox_file.write(os.linesep)
 
     def remove(self):
         """Close and delete the 'mbox' mailbox file"""
