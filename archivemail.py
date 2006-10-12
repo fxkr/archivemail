@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 ############################################################################
-# Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
+# Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>,
+#           (C) 2006  Peter Poeml <poeml@suse.de>,
+#           (C) 2006  Nikolaus Schulz <microschulz@web.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
