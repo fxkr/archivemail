@@ -157,6 +157,7 @@ class Options:
     output_dir           = None
     pwfile               = None
     preserve_unread      = 0
+    mangle_from          = 1
     quiet                = 0
     read_buffer_size     = 8192
     script_name          = os.path.basename(sys.argv[0])
@@ -179,7 +180,7 @@ class Options:
             opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:uv', 
                              ["date=", "days=", "delete", "dry-run", "help",
                              "include-flagged", "no-compress", "output-dir=",
-                             "filter-append=", "pwfile=",
+                             "filter-append=", "pwfile=", "dont-mangle-from",
                              "preserve-unread", "quiet", "size=", "suffix=",
                              "verbose", "version", "warn-duplicate"])
         except getopt.error, msg:
@@ -225,6 +226,8 @@ class Options:
                 self.min_size = string.atoi(a)
             if o in ('-u', '--preserve-unread'):
                 self.preserve_unread = 1
+            if o == '--dont-mangle-from':
+                self.mangle_from = 0
             if o in ('-v', '--verbose'):
                 self.verbose = 1
             if o in ('-V', '--version'):
@@ -337,14 +340,15 @@ class Mbox(mailbox.UnixMailbox):
         assert(options.read_buffer_size > 0)
         linebuf = ""
         while 1:
-            chunk = msg.fp.read(options.read_buffer_size)
-            # Be careful not to break pattern matching
-            splitindex = chunk.rfind(os.linesep)
-            body = linebuf + chunk[:splitindex]
-            linebuf = chunk[splitindex:]
+            body = msg.fp.read(options.read_buffer_size)
+            if options.mangle_from:
+                # Be careful not to break pattern matching
+                splitindex = body.rfind(os.linesep)
+                nicebody = linebuf + body[:splitindex]
+                linebuf = body[splitindex:]
+                body = from_re.sub('>From ', nicebody)
             if not body:
                 break
-            body = from_re.sub('>From ', body)
             self.mbox_file.write(body)
         self.mbox_file.write(os.linesep)
 
@@ -610,6 +614,7 @@ Options are as follows:
   -S, --size=NUM        only archive messages NUM bytes or larger
   -n, --dry-run         don't write to anything - just show what would be done
   -u, --preserve-unread never archive unread messages
+      --dont-mangle-from  do not mangle From_ in message bodies
       --delete          delete rather than archive old mail (use with caution!)
       --include-flagged messages flagged important can also be archived
       --no-compress     do not compress archives with gzip

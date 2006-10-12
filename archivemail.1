@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "29 September 2006" "SP" ""
+.TH "ARCHIVEMAIL" "1" "12 October 2006" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -176,6 +176,13 @@ message has been read. \fBarchivemail\fR determines if a
 \fBmaildir\fR message has
 been read by looking at the filename. If the filename contains an 'S' after 
 \fI:2,\fR then it assumes the message has been read.
+.TP
+\fB    --dont-mangle-from\fR
+Do not mangle lines in message bodies beginning with "From ".  Since mail user
+agents may interpret such lines as message separators, by default
+\fBarchivemail\fR mangles them by prepending a '>' to these lines (that is,
+the resulting mailbox is in \fBMBOXO\fR-format). See \fBmbox\fR(5) for more
+information.
 .TP
 \fB    --delete\fR
 Delete rather than archive old mail. Use this option with caution!

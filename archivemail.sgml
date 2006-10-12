@@ -27,6 +27,10 @@
 <!ENTITY crontab "<CiteRefEntry>
 <RefEntryTitle><Command/crontab/</RefEntryTitle>
 <ManVolNum/5/</CiteRefEntry>">
+
+<!ENTITY mbox "<CiteRefEntry>
+<RefEntryTitle><Command/mbox/</RefEntryTitle>
+<ManVolNum/5/</CiteRefEntry>">
 ]>
 
 <RefEntry>
@@ -239,6 +243,19 @@ message has been read. <command/archivemail/ determines if a
 <application/maildir/ message has
 been read by looking at the filename. If the filename contains an 'S' after 
 <filename>:2,</filename> then it assumes the message has been read.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>--dont-mangle-from</Option>
+</Term>
+<ListItem><Para>
+Do not mangle lines in message bodies beginning with "From ".  Since mail user
+agents may interpret such lines as message separators, by default
+<command/archivemail/ mangles them by prepending a '>' to these lines (that is,
+the resulting mailbox is in <application/MBOXO/-format). See &mbox; for more
+information.
 </Para></ListItem>
 </VarListEntry>
 
