@@ -335,8 +335,13 @@ class Mbox(mailbox.UnixMailbox):
         # The following while loop is about twice as fast in 
         # practice to 'self.mbox_file.writelines(msg.fp.readlines())'
         assert(options.read_buffer_size > 0)
+        linebuf = ""
         while 1:
-            body = msg.fp.read(options.read_buffer_size)
+            chunk = msg.fp.read(options.read_buffer_size)
+            # Be careful not to break pattern matching
+            splitindex = chunk.rfind(os.linesep)
+            body = linebuf + chunk[:splitindex]
+            linebuf = chunk[splitindex:]
             if not body:
                 break
             body = from_re.sub('>From ', body)
