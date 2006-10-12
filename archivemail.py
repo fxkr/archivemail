@@ -62,6 +62,10 @@ import tempfile
 import time
 import urlparse
 
+# From_ mangling regex. 
+from_re = re.compile(r'^From ', re.MULTILINE)
+
+
 ############## class definitions ###############
 
 class Stats:
@@ -335,6 +339,7 @@ class Mbox(mailbox.UnixMailbox):
             body = msg.fp.read(options.read_buffer_size)
             if not body:
                 break
+            body = from_re.sub('>From ', body)
             self.mbox_file.write(body)
         self.mbox_file.write(os.linesep)
 
