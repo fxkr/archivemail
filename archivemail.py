@@ -1266,32 +1266,32 @@ def _archive_imap(mailbox_name, final_archive_name):
     message_list = response[0].split()
     vprint("%d messages found matching filter" % len(message_list))
 
-    for msg_id in message_list:
-        result, response = imap_srv.fetch(msg_id, '(RFC822 FLAGS)')
-        if result != 'OK': unexpected_error("Failed to fetch message")
-        if "\r\n" == os.linesep:
-            msg_str = response[0][1]
-        else:
-            msg_str = response[0][1].replace("\r\n", os.linesep)
-        msg_flags = imaplib.ParseFlags(response[1])
-        msg = rfc822.Message(cStringIO.StringIO(msg_str))
-        add_status_headers_imap(msg, msg_flags)
-        vprint("processing message '%s'" % msg.get('Message-ID'))
-        if options.warn_duplicates:
-            cache.warn_if_dupe(msg)             
-        if not options.dry_run:
-            if not archive:
-                archive = ArchiveMbox(final_archive_name)
-            archive.write(msg)
-            stats.another_archived()
-    
     if not options.dry_run:
-        if archive:
-            archive.close()
-            archive.finalise()
-        # do not delete more than a certain number of messages at a time, because the
-        # command length is limited. This avoids that servers terminate the connection with
-        # EOF or TCP RST.
+        if not options.delete_old_mail:
+            for msg_id in message_list:
+                result, response = imap_srv.fetch(msg_id, '(RFC822 FLAGS)')
+                if result != 'OK': unexpected_error("Failed to fetch message")
+                if "\r\n" == os.linesep:
+                    msg_str = response[0][1]
+                else:
+                    msg_str = response[0][1].replace("\r\n", os.linesep)
+                msg_flags = imaplib.ParseFlags(response[1])
+                msg = rfc822.Message(cStringIO.StringIO(msg_str))
+                add_status_headers_imap(msg, msg_flags)
+                vprint("processing message '%s'" % msg.get('Message-ID'))
+                if options.warn_duplicates:
+                    cache.warn_if_dupe(msg)             
+                if not archive:
+                    archive = ArchiveMbox(final_archive_name)
+                archive.write(msg)
+                # FIXME: stats are not complete yet.
+                #stats.another_archived()
+            if archive:
+                archive.close()
+                archive.finalise()
+        # do not delete more than a certain number of messages at a time,
+        # because the command length is limited. This avoids that servers
+        # terminate the connection with EOF or TCP RST.
         vprint("Deleting %s messages" % len(message_list))
         max_delete = 100
         for i in range(0, len(message_list), max_delete):
