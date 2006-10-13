@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>12 April 2002</Date></DocInfo>
+<DocInfo><Date>13 October 2006</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -521,7 +521,9 @@ removal.
 
 <RefSect1>
 <Title>Author</Title>
-<SimPara>Paul Rodger &lt;paul at paulrodger dot com&gt;</SimPara>
+<SimPara> This manual page was written by Paul Rodger &lt;paul at paulrodger dot
+com&gt; with later additions by Nikolaus Schulz
+<email>microschulz@web.de</email></SimPara>
 </RefSect1>
 
 </RefEntry>
