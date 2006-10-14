@@ -26,7 +26,10 @@ Website: http://archivemail.sourceforge.net/
 # global administrivia 
 __version__ = "archivemail v0.6.2"
 __cvs_id__ = "$Id$"
-__copyright__ = """Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
+__copyright__ = """\
+Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
+          (C) 2006  Peter Poeml <poeml@suse.de>,
+          (C) 2006  Nikolaus Schulz <microschulz@web.de>
 This is free software; see the source for copying conditions. There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
 
