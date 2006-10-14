@@ -1,5 +1,5 @@
 
-VERSION=0.6.2
+VERSION=$(shell python setup.py --version)
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 SVNROOT=https://svn.sourceforge.net/svnroot/archivemail
