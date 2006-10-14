@@ -23,10 +23,11 @@ sdist: clobber doc
 	python setup.py sdist
 	rm archivemail
 
-bdist_rpm: clobber doc
-	cp archivemail.py archivemail
-	fakeroot python setup.py bdist_rpm
-	rm archivemail
+# FIXME: bdist_rpm chokes on the manpage. 
+#bdist_rpm: clobber doc
+#	cp archivemail.py archivemail
+#	python setup.py bdist_rpm
+#	rm archivemail
 
 tag:
 	# Overwriting tags at least doesn't work with svn << 1.4, 
