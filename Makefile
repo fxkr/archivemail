@@ -20,7 +20,7 @@ clobber: clean
 
 sdist: clobber doc
 	cp archivemail.py archivemail
-	fakeroot python setup.py sdist
+	python setup.py sdist
 	rm archivemail
 
 bdist_rpm: clobber doc
