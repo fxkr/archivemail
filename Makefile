@@ -2,6 +2,7 @@
 VERSION=0.6.2
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
+SVNROOT=https://svn.sourceforge.net/svnroot/archivemail
 
 
 default:
@@ -28,8 +29,15 @@ bdist_rpm: clobber doc
 	rm archivemail
 
 tag:
-	cvs tag -F current
-	cvs tag -F $(VERSION_TAG)
+	# Overwriting tags at least doesn't work with svn << 1.4, 
+	# it silently creates a new subidr.  It *may* work with 
+	# svn 1.4, I haven't tested it. See svn bug #2188.
+	#cvs tag -F current
+	@if svn list "$(SVNROOT)/tags" | grep -qx "$(VERSION_TAG)/\?"; then \
+	    echo "Tag '$(VERSION_TAG)' already exists, aborting"; \
+	else \
+	    svn copy . "$(SVNROOT)/tags/$(VERSION_TAG)"; \
+	fi
 
 upload:
 	(cd dist && lftp -c 'open upload.sf.net && cd incoming && put $(TARFILE)')
