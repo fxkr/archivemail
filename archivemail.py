@@ -36,19 +36,21 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
 import sys
 
 def check_python_version(): 
-    """Abort if we are running on python < v2.0"""
-    too_old_error = "This program requires python v2.0 or greater. " + \
+    """Abort if we are running on python < v2.3"""
+    too_old_error = "This program requires python v2.3 or greater. " + \
       "Your version of python is:\n%s""" % sys.version
     try: 
         version = sys.version_info  # we might not even have this function! :)
-        if (version[0] < 2):
+        if (version[0] < 2) or (version[0] == 2 and version[1] < 3):
             print too_old_error
             sys.exit(1)
     except AttributeError:
         print too_old_error
         sys.exit(1)
 
-check_python_version()  # define & run this early because 'atexit' is new
+# define & run this early because 'atexit' requires Python >= 2.0 
+# (IMAP over SSL requires Python >= 2.3) 
+check_python_version()  
 
 import atexit
 import fcntl
