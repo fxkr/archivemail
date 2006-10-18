@@ -335,7 +335,10 @@ class Mbox(mailbox.UnixMailbox):
 
         vprint("saving message to file '%s'" % self.mbox_file_name)
         unix_from = msg.unixfrom
-        if not unix_from:
+        if unix_from:
+            msg_has_mbox_format = True
+        else:
+            msg_has_mbox_format = False
             unix_from = make_mbox_from(msg)
         self.mbox_file.write(unix_from)
         assert(msg.headers)
@@ -348,7 +351,7 @@ class Mbox(mailbox.UnixMailbox):
         linebuf = ""
         while 1:
             body = msg.fp.read(options.read_buffer_size)
-            if options.mangle_from:
+            if (not msg_has_mbox_format) and options.mangle_from:
                 # Be careful not to break pattern matching
                 splitindex = body.rfind(os.linesep)
                 nicebody = linebuf + body[:splitindex]
@@ -357,7 +360,8 @@ class Mbox(mailbox.UnixMailbox):
             if not body:
                 break
             self.mbox_file.write(body)
-        self.mbox_file.write(os.linesep)
+        if not msg_has_mbox_format:
+            self.mbox_file.write(os.linesep)
 
     def remove(self):
         """Close and delete the 'mbox' mailbox file"""
