@@ -251,10 +251,11 @@ been read by looking at the filename. If the filename contains an 'S' after
     <Option>--dont-mangle-from</Option>
 </Term>
 <ListItem><Para>
-Do not mangle lines in message bodies beginning with "From ".  Since mail user
-agents may interpret such lines as message separators, by default
-<command/archivemail/ mangles them by prepending a '>' to these lines (that is,
-the resulting mailbox is in <application/MBOXO/-format). See &mbox; for more
+Do not mangle lines in message bodies beginning with "From ".  When archiving
+a message from a mailbox not in <application/mbox/ format, by default
+<command/archivemail/ mangles such lines by prepending a '>' to them, since mail
+user agents might otherwise interpret these lines as message separators.
+Messages from <application/mbox/ folders are never mangled.  See &mbox; for more
 information.
 </Para></ListItem>
 </VarListEntry>
