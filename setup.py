@@ -15,7 +15,8 @@ Your version of python is: %s""" % sys.version
         print too_old_error
         sys.exit(1)
 
-check_python_version()  # define & run this early - 'distutils.core' is new
+# define & run this early - 'distutils.core' requires Python >= 2.0
+check_python_version()  
 from distutils.core import setup
 
 setup(name="archivemail",
