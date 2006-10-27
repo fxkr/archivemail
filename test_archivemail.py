@@ -33,22 +33,20 @@ TODO: add tests for:
 import sys
 
 def check_python_version(): 
-    """Abort if we are running on python < v2.1"""
-    too_old_error = """This test script requires python version 2.1 or later.
-This is because it requires the pyUnit 'unittest' module, which only got
-released in python version 2.1. You should still be able to run archivemail on
-python versions 2.0 and above, however -- just not test it.
-Your version of python is: %s""" % sys.version
+    """Abort if we are running on python < v2.3"""
+    too_old_error = "This test script requires python version 2.3 or later. " + \
+      "Your version of python is:\n%s" % sys.version
     try: 
         version = sys.version_info  # we might not even have this function! :)
-        if (version[0] < 2) or ((version[0] == 2) and (version[1] < 1)):
+        if (version[0] < 2) or (version[0] == 2 and version[1] < 3):
             print too_old_error
             sys.exit(1)
     except AttributeError:
         print too_old_error
         sys.exit(1)
 
-check_python_version()  # define & run this early because 'unittest' is new
+# define & run this early because 'unittest' requires Python >= 2.1
+check_python_version()  
 
 import copy
 import fcntl
@@ -72,11 +70,37 @@ except ImportError:
     sys.exit(1)
 
 
+class TestCaseInTempdir(unittest.TestCase):
+    """Base class for testcases that need to create temporary files. 
+    All testcases that create temporary files should be derived from this
+    class, not directly from unittest.TestCase.
+    TestCaseInTempdir provides these methods:
+    
+    setUp()     Creates a safe temporary directory and sets tempfile.tempdir.
+                
+    tearDown()  Recursively removes the temporary directory and unsets
+                tempfile.tempdir.
+
+    Overriding methods should call the ones above."""
+    temproot = None
+
+    def setUp(self):
+        if not self.temproot:
+            assert(not tempfile.tempdir)
+            self.temproot = tempfile.tempdir = tempfile.mkdtemp()
+ 
+    def tearDown(self):
+        assert(tempfile.tempdir == self.temproot)
+        if self.temproot:
+            shutil.rmtree(self.temproot)
+            tempfile.tempdir = self.temproot = None
+
 
 ############ Mbox Class testing ##############
 
-class TestMboxIsEmpty(unittest.TestCase):
+class TestMboxIsEmpty(TestCaseInTempdir):
     def setUp(self):
+        super(TestMboxIsEmpty, self).setUp()
         self.empty_name = make_mbox(messages=0)
         self.not_empty_name = make_mbox(messages=1)
 
@@ -90,14 +114,9 @@ class TestMboxIsEmpty(unittest.TestCase):
         mbox = archivemail.Mbox(self.not_empty_name)
         assert(not mbox.is_empty())
 
-    def tearDown(self):
-        for name in (self.empty_name, self.not_empty_name):
-            if os.path.exists(name):
-                os.remove(name)
-
-
-class TestMboxLeaveEmpty(unittest.TestCase):
+class TestMboxLeaveEmpty(TestCaseInTempdir):
     def setUp(self):
+        super(TestMboxLeaveEmpty, self).setUp()
         self.mbox_name = make_mbox()
         self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.mbox = archivemail.Mbox(self.mbox_name)
@@ -110,13 +129,9 @@ class TestMboxLeaveEmpty(unittest.TestCase):
         new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.assertEqual(new_mode, self.mbox_mode)
 
-    def tearDown(self):
-        if os.path.exists(self.mbox_name):
-            os.remove(self.mbox_name)
-
-
-class TestMboxProcmailLock(unittest.TestCase):
+class TestMboxProcmailLock(TestCaseInTempdir):
     def setUp(self):
+        super(TestMboxProcmailLock, self).setUp()
         self.mbox_name = make_mbox()
         self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.mbox = archivemail.Mbox(self.mbox_name)
@@ -130,13 +145,9 @@ class TestMboxProcmailLock(unittest.TestCase):
         self.mbox.procmail_unlock()
         assert(not os.path.isfile(lock))
 
-    def tearDown(self):
-        if os.path.exists(self.mbox_name):
-            os.remove(self.mbox_name)
-
-
-class TestMboxRemove(unittest.TestCase):
+class TestMboxRemove(TestCaseInTempdir):
     def setUp(self):
+        super(TestMboxRemove, self).setUp()
         self.mbox_name = make_mbox()
         self.mbox = archivemail.Mbox(self.mbox_name)
 
@@ -146,13 +157,10 @@ class TestMboxRemove(unittest.TestCase):
         self.mbox.remove()
         assert(not os.path.exists(self.mbox_name))
 
-    def tearDown(self):
-        if os.path.exists(self.mbox_name):
-            os.remove(self.mbox_name)
 
-
-class TestMboxExclusiveLock(unittest.TestCase):
+class TestMboxExclusiveLock(TestCaseInTempdir):
     def setUp(self):
+        super(TestMboxExclusiveLock, self).setUp()
         self.mbox_name = make_mbox()
         self.mbox = archivemail.Mbox(self.mbox_name)
 
@@ -198,13 +206,10 @@ class TestMboxExclusiveLock(unittest.TestCase):
         fcntl.flock(fd, fcntl.LOCK_UN)
         # END robbery
 
-    def tearDown(self):
-        if os.path.exists(self.mbox_name):
-            os.remove(self.mbox_name)
 
-
-class TestMboxNext(unittest.TestCase):
+class TestMboxNext(TestCaseInTempdir):
     def setUp(self):
+        super(TestMboxNext, self).setUp()
         self.not_empty_name = make_mbox(messages=18)
         self.empty_name = make_mbox(messages=0)
 
@@ -223,14 +228,10 @@ class TestMboxNext(unittest.TestCase):
         msg = mbox.next()
         self.assertEqual(msg, None)
 
-    def tearDown(self):
-        for name in (self.not_empty_name, self.empty_name):
-            if os.path.exists(name):
-                os.remove(name)
 
-
-class TestMboxWrite(unittest.TestCase):
+class TestMboxWrite(TestCaseInTempdir):
     def setUp(self):
+        super(TestMboxWrite, self).setUp()
         self.mbox_read = make_mbox(messages=3)
         self.mbox_write = make_mbox(messages=0)
 
@@ -251,10 +252,6 @@ class TestMboxWrite(unittest.TestCase):
         write = archivemail.Mbox(self.mbox_write, mode="w")
         self.assertRaises(AssertionError, write.write, None)
 
-    def tearDown(self):
-        for name in (self.mbox_write, self.mbox_read):
-            if os.path.exists(name):
-                os.remove(name)
 
 ########## options class testing #################
 
@@ -335,7 +332,7 @@ class TestIsTooOld(unittest.TestCase):
 
 ########## acceptance testing ###########
 
-class TestArchiveMbox(unittest.TestCase):
+class TestArchiveMbox(TestCaseInTempdir):
     """archiving should work based on the date of messages given"""
     old_mbox = None
     new_mbox = None
@@ -344,6 +341,8 @@ class TestArchiveMbox(unittest.TestCase):
 
     def setUp(self):
         archivemail.options.quiet = 1
+        super(TestArchiveMbox, self).setUp()
+ 
 
     def testOld(self):
         """archiving an old mailbox"""
@@ -584,16 +583,13 @@ This is after the ^From line"""
 
     def tearDown(self):
         archivemail.options.quiet = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.old_mbox, self.new_mbox, 
-            self.copy_name, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveMbox, self).tearDown()
 
 
-class TestArchiveMboxTimestamp(unittest.TestCase):
+class TestArchiveMboxTimestamp(TestCaseInTempdir):
     """original mbox timestamps should always be preserved"""
     def setUp(self):
+        super(TestArchiveMboxTimestamp, self).setUp() 
         archivemail.options.quiet = 1
 
     def testNew(self):
@@ -666,14 +662,13 @@ class TestArchiveMboxTimestamp(unittest.TestCase):
 
     def tearDown(self):
         archivemail.options.quiet = 0
-        for name in (self.mbox_name, self.mbox_name + "_archive.gz"):
-            if os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveMboxTimestamp, self).tearDown()
 
 
-class TestArchiveMboxPreserveStatus(unittest.TestCase):
+class TestArchiveMboxPreserveStatus(TestCaseInTempdir):
     """make sure the 'preserve_unread' option works"""
     def setUp(self):
+        super(TestArchiveMboxPreserveStatus, self).setUp()
         archivemail.options.quiet = 1
         archivemail.options.preserve_unread = 1
 
@@ -733,15 +728,13 @@ class TestArchiveMboxPreserveStatus(unittest.TestCase):
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.preserve_unread = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
-            if os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveMboxPreserveStatus, self).tearDown()
 
 
-class TestArchiveMboxSuffix(unittest.TestCase):
+class TestArchiveMboxSuffix(TestCaseInTempdir):
     """make sure the 'suffix' option works"""
     def setUp(self):
+        super(TestArchiveMboxSuffix, self).setUp()
         archivemail.options.quiet = 1
 
     def testSuffix(self):
@@ -786,15 +779,13 @@ class TestArchiveMboxSuffix(unittest.TestCase):
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.archive_suffix = "_archive"
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
-            if os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveMboxSuffix, self).tearDown()
 
 
-class TestArchiveDryRun(unittest.TestCase):
+class TestArchiveDryRun(TestCaseInTempdir):
     """make sure the 'dry-run' option works"""
     def setUp(self):
+        super(TestArchiveDryRun, self).setUp()
         archivemail.options.quiet = 1
         archivemail.options.dry_run = 1
 
@@ -824,15 +815,13 @@ class TestArchiveDryRun(unittest.TestCase):
     def tearDown(self):
         archivemail.options.dry_run = 0
         archivemail.options.quiet = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
-            if os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveDryRun, self).tearDown()
 
 
-class TestArchiveDays(unittest.TestCase):
+class TestArchiveDays(TestCaseInTempdir):
     """make sure the 'days' option works"""
     def setUp(self):
+        super(TestArchiveDays, self).setUp()
         archivemail.options.quiet = 1
 
     def testOld(self):
@@ -890,13 +879,10 @@ class TestArchiveDays(unittest.TestCase):
     def tearDown(self):
         archivemail.options.days_old_max = 180
         archivemail.options.quiet = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveDays, self).tearDown()
 
 
-class TestArchiveDelete(unittest.TestCase):
+class TestArchiveDelete(TestCaseInTempdir):
     """make sure the 'delete' option works"""
     old_mbox = None
     new_mbox = None
@@ -904,6 +890,7 @@ class TestArchiveDelete(unittest.TestCase):
     mbox_name = None
 
     def setUp(self):
+        super(TestArchiveDelete, self).setUp()
         archivemail.options.quiet = 1
         archivemail.options.delete_old_mail = 1
 
@@ -972,16 +959,13 @@ class TestArchiveDelete(unittest.TestCase):
     def tearDown(self):
         archivemail.options.delete_old_mail = 0
         archivemail.options.quiet = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.copy_name, self.new_mbox, 
-            self.old_mbox, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveDelete, self).tearDown()
 
 
-class TestArchiveMboxFlagged(unittest.TestCase):
+class TestArchiveMboxFlagged(TestCaseInTempdir):
     """make sure the 'include_flagged' option works"""
     def setUp(self):
+        super(TestArchiveMboxFlagged, self).setUp()
         archivemail.options.quiet = 1
 
     def testOld(self):
@@ -1059,15 +1043,13 @@ class TestArchiveMboxFlagged(unittest.TestCase):
     def tearDown(self):
         archivemail.options.include_flagged = 0
         archivemail.options.quiet = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
-            if os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveMboxFlagged, self).tearDown()
 
 
-class TestArchiveMboxOutputDir(unittest.TestCase):
+class TestArchiveMboxOutputDir(TestCaseInTempdir):
     """make sure that the 'output-dir' option works"""
     def setUp(self):
+        super(TestArchiveMboxOutputDir, self).setUp()
         archivemail.options.quiet = 1
 
     def testOld(self):
@@ -1106,16 +1088,10 @@ class TestArchiveMboxOutputDir(unittest.TestCase):
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.output_dir = None
-        archive = self.dir_name + "/" + os.path.basename(self.mbox_name) \
-            + "_archive"
-        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
-        if self.dir_name and os.path.isdir(self.dir_name):
-            os.rmdir(self.dir_name)
+        super(TestArchiveMboxOutputDir, self).tearDown()
 
 
-class TestArchiveMboxUncompressed(unittest.TestCase):
+class TestArchiveMboxUncompressed(TestCaseInTempdir):
     """make sure that the 'no_compress' option works"""
     mbox_name = None
     new_mbox = None
@@ -1125,6 +1101,7 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
     def setUp(self):
         archivemail.options.quiet = 1
         archivemail.options.no_compress = 1
+        super(TestArchiveMboxUncompressed, self).setUp()
 
     def testOld(self):
         """archiving an old mailbox uncompressed"""
@@ -1234,16 +1211,13 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.no_compress = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.new_mbox, self.old_mbox, 
-            self.copy_name, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveMboxUncompressed, self).tearDown()
 
 
-class TestArchiveSize(unittest.TestCase):
+class TestArchiveSize(TestCaseInTempdir):
     """check that the 'size' argument works"""
     def setUp(self):
+        super(TestArchiveSize, self).setUp()
         archivemail.options.quiet = 1
 
     def testSmaller(self):
@@ -1307,15 +1281,13 @@ class TestArchiveSize(unittest.TestCase):
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.min_size = None
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, self.copy_name, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveSize, self).tearDown()
 
 
-class TestArchiveMboxMode(unittest.TestCase):
+class TestArchiveMboxMode(TestCaseInTempdir):
     """file mode (permissions) of the original mbox should be preserved"""
     def setUp(self):
+        super(TestArchiveMboxMode, self).setUp()
         archivemail.options.quiet = 1
 
     def testOld(self):
@@ -1365,10 +1337,7 @@ class TestArchiveMboxMode(unittest.TestCase):
 
     def tearDown(self):
         archivemail.options.quiet = 0
-        archive = self.mbox_name + "_archive"
-        for name in (self.mbox_name, archive, archive + ".gz"):
-            if name and os.path.exists(name):
-                os.remove(name)
+        super(TestArchiveMboxMode, self).tearDown()
 
 
 ########## helper routines ############
@@ -1414,8 +1383,9 @@ def append_file(source, dest):
 
 
 def make_mbox(body=None, headers=None, hours_old=0, messages=1):
-    name = tempfile.mktemp()
-    file = open(name, "w")
+    assert(tempfile.tempdir)
+    fd, name = tempfile.mkstemp()
+    file = os.fdopen(fd, "w")
     for count in range(messages):
         msg = make_message(body=body, default_headers=headers, 
             hours_old=hours_old)
