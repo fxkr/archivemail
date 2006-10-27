@@ -170,8 +170,6 @@ class TestMboxExclusiveLock(unittest.TestCase):
 
         # Fork off a subprocess that will lock the file for 2 seconds,
         # unlock it, and then exit.
-        if not hasattr(os, 'fork'):
-            return
         pid = os.fork()
         if pid == 0:
             # In the child, lock the mailbox.
