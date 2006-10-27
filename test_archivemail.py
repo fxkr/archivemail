@@ -415,6 +415,7 @@ This is after the ^From line"""
         for headers in test_headers:
             for option in ('--date=2000-07-29', '-D2000-07-29', 
                 '--date="29 Jul 2000"', '--date="29 July 2000"'):
+                self.setUp()
                 self.mbox_name = make_mbox(messages=3, headers=headers)
                 self.copy_name = tempfile.mktemp()
                 shutil.copyfile(self.mbox_name, self.copy_name)
@@ -431,6 +432,7 @@ This is after the ^From line"""
                 self.tearDown()
             for option in ('--date=2000-07-27', '-D2000-07-27', 
                 '--date="27 Jul 2000"', '--date="27 July 2000"'):
+                self.setUp()
                 self.mbox_name = make_mbox(messages=3, headers=headers)
                 self.copy_name = tempfile.mktemp()
                 shutil.copyfile(self.mbox_name, self.copy_name)
