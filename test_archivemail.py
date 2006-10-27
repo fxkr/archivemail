@@ -348,12 +348,12 @@ class TestArchiveMbox(unittest.TestCase):
     def testOld(self):
         """archiving an old mailbox"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -445,13 +445,13 @@ This is after the ^From line"""
     def testMixed(self):
         """archiving a mixed mailbox"""
         for execute in ("package", "system"):
+            self.setUp()
             self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
             self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_name = tempfile.mktemp()
             shutil.copyfile(self.new_mbox, self.mbox_name)
             append_file(self.old_mbox, self.mbox_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -471,12 +471,12 @@ This is after the ^From line"""
     def testNew(self):
         """archiving a new mailbox""" 
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -495,6 +495,7 @@ This is after the ^From line"""
     def testOldExisting(self):
         """archiving an old mailbox with an existing archive"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.copy_name = tempfile.mktemp()
@@ -504,7 +505,6 @@ This is after the ^From line"""
             append_file(self.mbox_name, self.copy_name) # copy now has 6 msgs
             self.assertEqual(os.system("gzip %s" % archive_name), 0)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -591,15 +591,18 @@ This is after the ^From line"""
 
 class TestArchiveMboxTimestamp(unittest.TestCase):
     """original mbox timestamps should always be preserved"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
     def testNew(self):
         """mbox timestamps should not change after no archival"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
             self.mtime = os.path.getmtime(self.mbox_name) - 66
             self.atime = os.path.getatime(self.mbox_name) - 88
             os.utime(self.mbox_name, (self.atime, self.mtime))
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -616,13 +619,13 @@ class TestArchiveMboxTimestamp(unittest.TestCase):
     def testMixed(self):
         """mbox timestamps should not change after semi-archival"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mtime = os.path.getmtime(self.mbox_name) - 66
             self.atime = os.path.getatime(self.mbox_name) - 88
             os.utime(self.mbox_name, (self.atime, self.mtime))
             archive_name = self.mbox_name + "_archive.gz"
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -639,13 +642,13 @@ class TestArchiveMboxTimestamp(unittest.TestCase):
     def testOld(self):
         """mbox timestamps should not change after archival"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mtime = os.path.getmtime(self.mbox_name) - 66
             self.atime = os.path.getatime(self.mbox_name) - 88
             os.utime(self.mbox_name, (self.atime, self.mtime))
             archive_name = self.mbox_name + "_archive.gz"
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -668,16 +671,19 @@ class TestArchiveMboxTimestamp(unittest.TestCase):
 
 class TestArchiveMboxPreserveStatus(unittest.TestCase):
     """make sure the 'preserve_unread' option works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+        archivemail.options.preserve_unread = 1
+
     def testOldRead(self):
         """archiving an old read mailbox should create an archive"""
         for execute in ("package", "system_long", "system_short"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
                 headers={"Status":"RO"})
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
-                archivemail.options.preserve_unread = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system_long":
                 run = "./archivemail.py --preserve-unread --quiet %s" % \
@@ -701,12 +707,11 @@ class TestArchiveMboxPreserveStatus(unittest.TestCase):
     def testOldUnread(self):
         """archiving an unread mailbox should not create an archive"""
         for execute in ("package", "system_long", "system_short"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
-                archivemail.options.preserve_unread = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system_long":
                 run = "./archivemail.py --preserve-unread --quiet %s" % \
@@ -734,10 +739,14 @@ class TestArchiveMboxPreserveStatus(unittest.TestCase):
 
 class TestArchiveMboxSuffix(unittest.TestCase):
     """make sure the 'suffix' option works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
     def testSuffix(self):
         """archiving with specified --suffix arguments"""
         for suffix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
             for execute in ("system_long", "system_short", "package"):
+                self.setUp()
                 days_old_max = 180
                 self.mbox_name = make_mbox(messages=3, 
                     hours_old=(24 * (days_old_max+1)))
@@ -753,7 +762,6 @@ class TestArchiveMboxSuffix(unittest.TestCase):
                     self.assertEqual(os.system(run), 0)
                 elif execute == "package":
                     archivemail.options.archive_suffix = suffix
-                    archivemail.options.quiet = 1
                     archivemail.archive(self.mbox_name)
                 else:
                     sys.exit(1)
@@ -784,15 +792,18 @@ class TestArchiveMboxSuffix(unittest.TestCase):
 
 class TestArchiveDryRun(unittest.TestCase):
     """make sure the 'dry-run' option works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+        archivemail.options.dry_run = 1
+
     def testOld(self):
         """archiving an old mailbox with the 'dry-run' option"""
         for execute in ("package", "system_long", "system_short"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
-                archivemail.options.dry_run = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system_long":
                 run = "./archivemail.py --dry-run --quiet %s" % self.mbox_name
@@ -819,14 +830,17 @@ class TestArchiveDryRun(unittest.TestCase):
 
 class TestArchiveDays(unittest.TestCase):
     """make sure the 'days' option works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
     def testOld(self):
         """specifying the 'days' option on an older mailbox"""
         for execute in ("package", "system", "system_long"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 12))
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.options.days_old_max = 11
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
@@ -850,11 +864,11 @@ class TestArchiveDays(unittest.TestCase):
     def testNew(self):
         """specifying the 'days' option on a newer mailbox"""
         for execute in ("package", "system", "system_long"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 10))
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.options.days_old_max = 11
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
@@ -887,15 +901,18 @@ class TestArchiveDelete(unittest.TestCase):
     copy_name = None
     mbox_name = None
 
+    def setUp(self):
+        archivemail.options.quiet = 1
+        archivemail.options.delete_old_mail = 1
+
     def testNew(self):
         """archiving a new mailbox with the 'delete' option"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
-                archivemail.options.delete_old_mail = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --delete --quiet %s" % self.mbox_name
@@ -911,14 +928,13 @@ class TestArchiveDelete(unittest.TestCase):
     def testMixed(self):
         """archiving a mixed mailbox with the 'delete' option"""
         for execute in ("package", "system"):
+            self.setUp()
             self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
             self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_name = tempfile.mktemp()
             shutil.copyfile(self.new_mbox, self.mbox_name)
             append_file(self.old_mbox, self.mbox_name)
             if execute == "package":
-                archivemail.options.delete_old_mail = 1
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --delete --quiet %s" % self.mbox_name
@@ -934,12 +950,11 @@ class TestArchiveDelete(unittest.TestCase):
     def testOld(self):
         """archiving an old mailbox with the 'delete' option"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
-                archivemail.options.delete_old_mail = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --delete --quiet %s" % self.mbox_name
@@ -964,15 +979,18 @@ class TestArchiveDelete(unittest.TestCase):
 
 class TestArchiveMboxFlagged(unittest.TestCase):
     """make sure the 'include_flagged' option works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
     def testOld(self):
         """by default, old flagged messages should not be archived"""
         for execute in ("system", "package"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
                 headers={"X-Status":"F"})
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.options.include_flagged = 0
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
@@ -989,12 +1007,12 @@ class TestArchiveMboxFlagged(unittest.TestCase):
     def testIncludeFlaggedNew(self):
         """new flagged messages should not be archived with include_flagged"""
         for execute in ("system", "package"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179), \
                 headers={"X-Status":"F"})
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.options.include_flagged = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
@@ -1012,12 +1030,12 @@ class TestArchiveMboxFlagged(unittest.TestCase):
     def testIncludeFlaggedOld(self):
         """old flagged messages should be archived with include_flagged"""
         for execute in ("system", "package"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
                 headers={"X-Status":"F"})
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.options.include_flagged = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
@@ -1047,9 +1065,13 @@ class TestArchiveMboxFlagged(unittest.TestCase):
 
 class TestArchiveMboxOutputDir(unittest.TestCase):
     """make sure that the 'output-dir' option works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
     def testOld(self):
         """archiving an old mailbox with a sepecified output dir"""
         for execute in ("package", "system_long", "system_short"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
@@ -1057,7 +1079,6 @@ class TestArchiveMboxOutputDir(unittest.TestCase):
             os.mkdir(self.dir_name)
             if execute == "package":
                 archivemail.options.output_dir = self.dir_name
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system_long":
                 run = "./archivemail.py --output-dir=%s --quiet %s" % \
@@ -1106,13 +1127,12 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
     def testOld(self):
         """archiving an old mailbox uncompressed"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.no_compress = 1
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --no-compress --quiet %s" % \
@@ -1133,13 +1153,12 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
     def testNew(self):
         """archiving a new mailbox uncompressed"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.no_compress = 1
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --no-compress --quiet %s" % \
@@ -1159,14 +1178,13 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
     def testMixed(self):
         """archiving a mixed mailbox uncompressed"""
         for execute in ("package", "system"):
+            self.setUp()
             self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
             self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_name = tempfile.mktemp()
             shutil.copyfile(self.new_mbox, self.mbox_name)
             append_file(self.old_mbox, self.mbox_name)
             if execute == "package":
-                archivemail.options.no_compress = 1
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --no-compress --quiet %s" % \
@@ -1185,6 +1203,7 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
     def testOldExists(self):
         """archiving an old mailbox uncopressed with an existing archive"""
         for execute in ("package", "system"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.copy_name = tempfile.mktemp()
@@ -1193,8 +1212,6 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
             shutil.copyfile(self.mbox_name, archive_name) # archive has 3 msgs
             append_file(self.mbox_name, self.copy_name) # copy now has 6 msgs
             if execute == "package":
-                archivemail.options.no_compress = 1
-                archivemail.options.quiet = 1
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
                 run = "./archivemail.py --no-compress --quiet %s" % \
@@ -1224,15 +1241,18 @@ class TestArchiveMboxUncompressed(unittest.TestCase):
 
 class TestArchiveSize(unittest.TestCase):
     """check that the 'size' argument works"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
     def testSmaller(self):
         """giving a size argument smaller than the message"""
         for execute in ("package", "system_long", "system_short"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
             size_arg = os.path.getsize(self.mbox_name) - 1
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.options.min_size = size_arg
                 archivemail.archive(self.mbox_name)
             elif execute == "system_long":
@@ -1258,12 +1278,12 @@ class TestArchiveSize(unittest.TestCase):
     def testBigger(self):
         """giving a size argument bigger than the message"""
         for execute in ("package", "system_long", "system_short"):
+            self.setUp()
             self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
             size_arg = os.path.getsize(self.mbox_name) + 1
             self.copy_name = tempfile.mktemp()
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
-                archivemail.options.quiet = 1
                 archivemail.options.min_size = size_arg
                 archivemail.archive(self.mbox_name)
             elif execute == "system_long":
@@ -1293,14 +1313,17 @@ class TestArchiveSize(unittest.TestCase):
 
 class TestArchiveMboxMode(unittest.TestCase):
     """file mode (permissions) of the original mbox should be preserved"""
+    def setUp(self):
+        archivemail.options.quiet = 1
+
     def testOld(self):
         """after archiving, the original mbox mode should be preserved"""
         for mode in (0666, 0664, 0660, 0640, 0600):
             for execute in ("package", "system"):
+                self.setUp()
                 self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
                 os.chmod(self.mbox_name, mode)
                 if execute == "package":
-                    archivemail.options.quiet = 1
                     archivemail.archive(self.mbox_name)
                 elif execute == "system":
                     run = "./archivemail.py --quiet %s" % self.mbox_name
@@ -1320,10 +1343,10 @@ class TestArchiveMboxMode(unittest.TestCase):
         """after no archiving, the original mbox mode should be preserved"""
         for mode in (0666, 0664, 0660, 0640, 0600):
             for execute in ("package", "system"):
+                self.setUp()
                 self.mbox_name = make_mbox(messages=1, hours_old=(24 * 179))
                 os.chmod(self.mbox_name, mode)
                 if execute == "package":
-                    archivemail.options.quiet = 1
                     archivemail.archive(self.mbox_name)
                 elif execute == "system":
                     run = "./archivemail.py --quiet %s" % self.mbox_name
