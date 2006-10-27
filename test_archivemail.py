@@ -350,7 +350,7 @@ class TestArchiveMbox(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -377,7 +377,7 @@ class TestArchiveMbox(TestCaseInTempdir):
 From is on this line
 This is after the ^From line"""
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), body=body)
-        self.copy_name = tempfile.mktemp()
+        self.copy_name = tempfile.mkstemp()[1]
         shutil.copyfile(self.mbox_name, self.copy_name)
         archivemail.archive(self.mbox_name)
         assert(os.path.exists(self.mbox_name))
@@ -416,7 +416,7 @@ This is after the ^From line"""
                 '--date="29 Jul 2000"', '--date="29 July 2000"'):
                 self.setUp()
                 self.mbox_name = make_mbox(messages=3, headers=headers)
-                self.copy_name = tempfile.mktemp()
+                self.copy_name = tempfile.mkstemp()[1]
                 shutil.copyfile(self.mbox_name, self.copy_name)
                 run = "./archivemail.py -q %s %s" % (option, self.mbox_name)
                 self.assertEqual(os.system(run), 0)
@@ -433,7 +433,7 @@ This is after the ^From line"""
                 '--date="27 Jul 2000"', '--date="27 July 2000"'):
                 self.setUp()
                 self.mbox_name = make_mbox(messages=3, headers=headers)
-                self.copy_name = tempfile.mktemp()
+                self.copy_name = tempfile.mkstemp()[1]
                 shutil.copyfile(self.mbox_name, self.copy_name)
                 run = "./archivemail.py -q %s %s" % (option, self.mbox_name)
                 self.assertEqual(os.system(run), 0)
@@ -449,7 +449,7 @@ This is after the ^From line"""
             self.setUp()
             self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
             self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
-            self.mbox_name = tempfile.mktemp()
+            self.mbox_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.new_mbox, self.mbox_name)
             append_file(self.old_mbox, self.mbox_name)
             if execute == "package":
@@ -475,7 +475,7 @@ This is after the ^From line"""
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -499,7 +499,7 @@ This is after the ^From line"""
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             archive_name = self.mbox_name + "_archive"
             shutil.copyfile(self.mbox_name, self.copy_name) 
             shutil.copyfile(self.mbox_name, archive_name) # archive has 3 msgs
@@ -568,7 +568,7 @@ This is after the ^From line"""
         for headers in weird_headers:
             self.setUp()
             self.mbox_name = make_mbox(messages=3, headers=headers)
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             archivemail.archive(self.mbox_name)
             assert(os.path.exists(self.mbox_name))
@@ -678,7 +678,7 @@ class TestArchiveMboxPreserveStatus(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
                 headers={"Status":"RO"})
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -706,7 +706,7 @@ class TestArchiveMboxPreserveStatus(TestCaseInTempdir):
         for execute in ("package", "system_long", "system_short"):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -745,7 +745,7 @@ class TestArchiveMboxSuffix(TestCaseInTempdir):
                 days_old_max = 180
                 self.mbox_name = make_mbox(messages=3, 
                     hours_old=(24 * (days_old_max+1)))
-                self.copy_name = tempfile.mktemp()
+                self.copy_name = tempfile.mkstemp()[1]
                 shutil.copyfile(self.mbox_name, self.copy_name)
                 if execute == "system_long":
                     run = "./archivemail.py --quiet --suffix='%s' %s" % \
@@ -794,7 +794,7 @@ class TestArchiveDryRun(TestCaseInTempdir):
         for execute in ("package", "system_long", "system_short"):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -829,7 +829,7 @@ class TestArchiveDays(TestCaseInTempdir):
         for execute in ("package", "system", "system_long"):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 12))
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.options.days_old_max = 11
@@ -857,7 +857,7 @@ class TestArchiveDays(TestCaseInTempdir):
         for execute in ("package", "system", "system_long"):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 10))
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.options.days_old_max = 11
@@ -899,7 +899,7 @@ class TestArchiveDelete(TestCaseInTempdir):
         for execute in ("package", "system"):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -920,7 +920,7 @@ class TestArchiveDelete(TestCaseInTempdir):
             self.setUp()
             self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
             self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
-            self.mbox_name = tempfile.mktemp()
+            self.mbox_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.new_mbox, self.mbox_name)
             append_file(self.old_mbox, self.mbox_name)
             if execute == "package":
@@ -941,7 +941,7 @@ class TestArchiveDelete(TestCaseInTempdir):
         for execute in ("package", "system"):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -974,7 +974,7 @@ class TestArchiveMboxFlagged(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
                 headers={"X-Status":"F"})
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.options.include_flagged = 0
@@ -996,7 +996,7 @@ class TestArchiveMboxFlagged(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179), \
                 headers={"X-Status":"F"})
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.options.include_flagged = 1
@@ -1019,7 +1019,7 @@ class TestArchiveMboxFlagged(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
                 headers={"X-Status":"F"})
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.options.include_flagged = 1
@@ -1057,10 +1057,9 @@ class TestArchiveMboxOutputDir(TestCaseInTempdir):
         for execute in ("package", "system_long", "system_short"):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
-            self.dir_name = tempfile.mktemp()
-            os.mkdir(self.dir_name)
+            self.dir_name = tempfile.mkdtemp()
             if execute == "package":
                 archivemail.options.output_dir = self.dir_name
                 archivemail.archive(self.mbox_name)
@@ -1109,7 +1108,7 @@ class TestArchiveMboxUncompressed(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -1135,7 +1134,7 @@ class TestArchiveMboxUncompressed(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
@@ -1160,7 +1159,7 @@ class TestArchiveMboxUncompressed(TestCaseInTempdir):
             self.setUp()
             self.new_mbox = make_mbox(messages=3, hours_old=(24 * 179))
             self.old_mbox = make_mbox(messages=3, hours_old=(24 * 181))
-            self.mbox_name = tempfile.mktemp()
+            self.mbox_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.new_mbox, self.mbox_name)
             append_file(self.old_mbox, self.mbox_name)
             if execute == "package":
@@ -1185,7 +1184,7 @@ class TestArchiveMboxUncompressed(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             archive_name = self.mbox_name + "_archive"
             shutil.copyfile(self.mbox_name, self.copy_name) 
             shutil.copyfile(self.mbox_name, archive_name) # archive has 3 msgs
@@ -1226,7 +1225,7 @@ class TestArchiveSize(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
             size_arg = os.path.getsize(self.mbox_name) - 1
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.options.min_size = size_arg
@@ -1257,7 +1256,7 @@ class TestArchiveSize(TestCaseInTempdir):
             self.setUp()
             self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
             size_arg = os.path.getsize(self.mbox_name) + 1
-            self.copy_name = tempfile.mktemp()
+            self.copy_name = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox_name, self.copy_name)
             if execute == "package":
                 archivemail.options.min_size = size_arg

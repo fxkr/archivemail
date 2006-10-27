@@ -461,7 +461,7 @@ class RetainMbox(Mbox):
 
         """
         assert(final_name)
-        temp_name = tempfile.mktemp("retain")
+        temp_name = tempfile.mkstemp("retain")[1]
         self.mbox_file = open(temp_name, "w")
         self.mbox_file_name = temp_name
         _stale.retain = temp_name
@@ -533,7 +533,7 @@ class ArchiveMbox(Mbox):
             unexpected_error("""There is already a file named '%s'!
 Have you been previously compressing this archive? You probably should 
 uncompress it manually, and try running me again.""" % compressed_archive)
-        temp_name = tempfile.mktemp("archive")
+        temp_name = tempfile.mkstemp("archive")[1]
         if os.path.isfile(final_name):
             vprint("file already exists that is named: %s" % final_name)
             shutil.copy2(final_name, temp_name)
@@ -550,7 +550,7 @@ uncompress it manually, and try running me again.""" % compressed_archive)
 Have you been reading this archive? You probably should re-compress it
 manually, and try running me again.""" % final_name)
 
-        temp_name = tempfile.mktemp("archive.gz")
+        temp_name = tempfile.mkstemp("archive.gz")[1]
         if os.path.isfile(compressed_filename):
             vprint("file already exists that is named: %s" %  \
                 compressed_filename)
@@ -1071,9 +1071,8 @@ def archive(mailbox_name):
     # create a temporary directory for us to work in securely
     old_temp_dir = tempfile.tempdir
     tempfile.tempdir = None
-    new_temp_dir = tempfile.mktemp('archivemail')
+    new_temp_dir = tempfile.mkdtemp('archivemail')
     assert(new_temp_dir)
-    os.mkdir(new_temp_dir)
     _stale.temp_dir = new_temp_dir
     tempfile.tempdir = new_temp_dir
     vprint("set tempfile directory to '%s'" % new_temp_dir)
