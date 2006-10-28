@@ -4,6 +4,7 @@ Version 0.6.2   - 27 June 2006
     filter string
   * don't delete more than a certain number of messages at a time. The max 
     command len is limited. Fixes bug 942403 (Archiving large IMAP folders fails)
+  * IMAP: try CRAM-MD5 login first, if that fails fallback to plain login
   * add SSL support per imaps URL (after patch by Tobias Gruetzmacher)
   * add -P/--pwfile option to supply the IMAP password, so it does not end up in 
     the shell history
