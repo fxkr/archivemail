@@ -131,19 +131,27 @@ class StaleFiles:
         """Delete any temporary files or lockfiles that exist"""
         if self.procmail_lock:
             vprint("removing stale procmail lock '%s'" % self.procmail_lock)
-            try: os.remove(self.procmail_lock)
+            try: 
+                os.remove(self.procmail_lock)
+                self.procmail_lock = None
             except (IOError, OSError): pass
         if self.retain:
             vprint("removing stale retain file '%s'" % self.retain)
-            try: os.remove(self.retain)
+            try: 
+                os.remove(self.retain)
+                self.retain = None
             except (IOError, OSError): pass
         if self.archive:
             vprint("removing stale archive file '%s'" % self.archive)
-            try: os.remove(self.archive)
+            try: 
+                os.remove(self.archive)
+                self.archive = None
             except (IOError, OSError): pass
         if self.temp_dir:
             vprint("removing stale tempfile directory '%s'" % self.temp_dir)
-            try: os.rmdir(self.temp_dir)
+            try: 
+                os.rmdir(self.temp_dir)
+                self.temp_dir = None
             except (IOError, OSError): pass
 
 
