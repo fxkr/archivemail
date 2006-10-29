@@ -141,7 +141,6 @@ class TestMboxProcmailLock(TestCaseInTempdir):
         lock = self.mbox_name + ".lock"
         self.mbox.procmail_lock()
         assert(os.path.isfile(lock))
-        assert(is_world_readable(lock))
         self.mbox.procmail_unlock()
         assert(not os.path.isfile(lock))
 
@@ -1392,11 +1391,6 @@ def make_mbox(body=None, headers=None, hours_old=0, messages=1):
     file.close()
     return name
 
-
-def is_world_readable(path):
-    """Return true if the path is world-readable, false otherwise"""
-    assert(path)
-    return (os.stat(path)[stat.ST_MODE] & stat.S_IROTH)
 
 if __name__ == "__main__":
     unittest.main()
