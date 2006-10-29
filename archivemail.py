@@ -48,11 +48,10 @@ def check_python_version():
         print too_old_error
         sys.exit(1)
 
-# define & run this early because 'atexit' requires Python >= 2.0 
+# define & run this early
 # (IMAP over SSL requires Python >= 2.3) 
 check_python_version()  
 
-import atexit
 import fcntl
 import getopt
 import gzip
@@ -1076,47 +1075,50 @@ def archive(mailbox_name):
         vprint("changing effective user id to: %d" % mailbox_user)
         os.seteuid(mailbox_user)
 
-    # create a temporary directory for us to work in securely
     old_temp_dir = tempfile.tempdir
-    tempfile.tempdir = None
-    new_temp_dir = tempfile.mkdtemp('archivemail')
-    assert(new_temp_dir)
-    _stale.temp_dir = new_temp_dir
-    tempfile.tempdir = new_temp_dir
-    vprint("set tempfile directory to '%s'" % new_temp_dir)
+    try:
+        # create a temporary directory for us to work in securely
+        tempfile.tempdir = None
+        new_temp_dir = tempfile.mkdtemp('archivemail')
+        assert(new_temp_dir)
+        _stale.temp_dir = new_temp_dir
+        tempfile.tempdir = new_temp_dir
+        vprint("set tempfile directory to '%s'" % new_temp_dir)
 
-    if os.path.islink(mailbox_name):
-        unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
-            mailbox_name)
-    if imap_scheme == 'imap' or imap_scheme == 'imaps':
-        vprint("guessing mailbox is of type: imap(s)")
-        _archive_imap(mailbox_name, final_archive_name)
-    elif os.path.isfile(mailbox_name):
-        vprint("guessing mailbox is of type: mbox")
-        _archive_mbox(mailbox_name, final_archive_name)
-    elif os.path.isdir(mailbox_name):
-        cur_path = os.path.join(mailbox_name, "cur")
-        new_path = os.path.join(mailbox_name, "new")
-        if os.path.isdir(cur_path) and os.path.isdir(new_path):
-            vprint("guessing mailbox is of type: maildir")
-            _archive_dir(mailbox_name, final_archive_name, "maildir")
+        if os.path.islink(mailbox_name):
+            unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
+                mailbox_name)
+        if imap_scheme == 'imap' or imap_scheme == 'imaps':
+            vprint("guessing mailbox is of type: imap(s)")
+            _archive_imap(mailbox_name, final_archive_name)
+        elif os.path.isfile(mailbox_name):
+            vprint("guessing mailbox is of type: mbox")
+            _archive_mbox(mailbox_name, final_archive_name)
+        elif os.path.isdir(mailbox_name):
+            cur_path = os.path.join(mailbox_name, "cur")
+            new_path = os.path.join(mailbox_name, "new")
+            if os.path.isdir(cur_path) and os.path.isdir(new_path):
+                vprint("guessing mailbox is of type: maildir")
+                _archive_dir(mailbox_name, final_archive_name, "maildir")
+            else:
+                vprint("guessing mailbox is of type: MH")
+                _archive_dir(mailbox_name, final_archive_name, "mh")
         else:
-            vprint("guessing mailbox is of type: MH")
-            _archive_dir(mailbox_name, final_archive_name, "mh")
-    else:
-        user_error("'%s': no such file or directory" % mailbox_name)
+            user_error("'%s': no such file or directory" % mailbox_name)
 
-    # remove our special temp directory - hopefully empty
-    os.rmdir(new_temp_dir)
-    _stale.temp_dir = None
-    tempfile.tempdir = old_temp_dir
+        # remove our special temp directory - hopefully empty
+        os.rmdir(new_temp_dir)
+        _stale.temp_dir = None
 
-    # if we are running as root, revert the seteuid()/setegid() above
-    if (os.getuid() == 0):
-        vprint("changing effective groupid and userid back to root")
-        os.setegid(former_gid)
-        os.seteuid(0)
+    finally:
+        tempfile.tempdir = old_temp_dir
+        clean_up()
 
+        # if we are running as root, revert the seteuid()/setegid() above
+        if (os.getuid() == 0):
+            vprint("changing effective groupid and userid back to root")
+            os.setegid(former_gid)
+            os.seteuid(0)
 
 def _archive_mbox(mailbox_name, final_archive_name):
     """Archive a 'mbox' style mailbox - used by archive_mailbox()
@@ -1342,7 +1344,6 @@ def set_signal_handlers():
     # Make sure we clean up nicely - we don't want to leave stale procmail
     # lockfiles about if something bad happens to us. This is quite 
     # important, even though procmail will delete stale files after a while.
-    atexit.register(clean_up) # delete stale files on exceptions/normal exit
     signal.signal(signal.SIGHUP, clean_up_signal)   # signal 1
     # SIGINT (signal 2) is handled as a python exception
     signal.signal(signal.SIGQUIT, clean_up_signal)  # signal 3
@@ -1350,7 +1351,7 @@ def set_signal_handlers():
 
 
 def clean_up():
-    """Delete stale files -- to be registered with atexit.register()"""
+    """Delete stale files"""
     vprint("cleaning up ...")
     _stale.clean()
 
