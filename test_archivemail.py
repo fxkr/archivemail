@@ -87,8 +87,9 @@ class TestCaseInTempdir(unittest.TestCase):
     def setUp(self):
         if not self.temproot:
             assert(not tempfile.tempdir)
-            self.temproot = tempfile.tempdir = tempfile.mkdtemp()
- 
+            self.temproot = tempfile.tempdir = \
+                tempfile.mkdtemp(prefix="test-archivemail")
+     
     def tearDown(self):
         assert(tempfile.tempdir == self.temproot)
         if self.temproot:
