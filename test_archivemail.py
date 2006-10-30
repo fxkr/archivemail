@@ -270,7 +270,7 @@ class TestOptionDefaults(unittest.TestCase):
 
     def testDeleteOldMail(self):
         """we should not delete old mail by default"""
-        self.assertEqual(archivemail.options.quiet, 0)
+        self.assertEqual(archivemail.options.delete_old_mail, 0)
 
     def testNoCompress(self):
         """no-compression should be off by default"""
