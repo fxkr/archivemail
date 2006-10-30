@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>13 October 2006</Date></DocInfo>
+<DocInfo><Date>30 October 2006</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -248,7 +248,7 @@ been read by looking at the filename. If the filename contains an 'S' after
 
 <VarListEntry>
 <Term>
-    <Option>--dont-mangle-from</Option>
+    <Option>--dont-mangle</Option>
 </Term>
 <ListItem><Para>
 Do not mangle lines in message bodies beginning with "From ".  When archiving
