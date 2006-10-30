@@ -67,6 +67,7 @@ import string
 import tempfile
 import time
 import urlparse
+import errno
 
 # From_ mangling regex. 
 from_re = re.compile(r'^From ', re.MULTILINE)
@@ -410,21 +411,41 @@ class Mbox(mailbox.UnixMailbox):
 
     def procmail_lock(self):
         """Create a procmail lockfile on the 'mbox' mailbox"""
+        import socket
+        hostname = socket.gethostname()
+        pid = os.getpid()
+        box_dir, prelock_prefix = os.path.split(self.mbox_file_name)
+        prelock_suffix = ".%s.%s%s" % (hostname, pid, options.lockfile_extension)
+        plfd, prelock_name = tempfile.mkstemp(prelock_suffix, prelock_prefix,
+            dir=box_dir)
         lock_name = self.mbox_file_name + options.lockfile_extension
         attempt = 0
-        while os.path.isfile(lock_name):
-            vprint("lockfile '%s' exists - sleeping..." % lock_name)
-            time.sleep(options.lockfile_sleep)
-            attempt = attempt + 1
-            if (attempt >= options.lockfile_attempts):
-                unexpected_error("Giving up waiting for procmail lock '%s'" 
-                    % lock_name)
-        vprint("writing lockfile '%s'" % lock_name)
-        old_umask = os.umask(022) # is this dodgy?
-        lock = open(lock_name, "w")
+        try:
+            while True:
+                attempt = attempt + 1
+                try:
+                    os.link(prelock_name, lock_name)
+                    # We've got the lock.
+                    break
+                except OSError, e:
+                    if os.fstat(plfd)[stat.ST_NLINK] == 2:
+                        # The Linux man page for open(2) claims that in this
+                        # case we have actually succeeded to create the link, 
+                        # and this assumption seems to be folklore. 
+                        # So we've got the lock.
+                        break
+                    if e.errno != errno.EEXIST: raise
+                    # Lockfile already existed, someone else has the lock.
+                    if (attempt >= options.lockfile_attempts):
+                        unexpected_error("Giving up waiting for "
+                            "procmail lock '%s'" % lock_name)
+                    vprint("lockfile '%s' exists - sleeping..." % lock_name)
+                    time.sleep(options.lockfile_sleep)
+        finally:
+            os.close(plfd)
+            os.unlink(prelock_name)
         _stale.procmail_lock = lock_name
-        lock.close()
-        old_umask = os.umask(old_umask)
+        vprint("acquired lockfile '%s'" % lock_name)
 
     def procmail_unlock(self):
         """Delete the procmail lockfile on the 'mbox' mailbox"""
