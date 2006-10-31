@@ -1022,12 +1022,10 @@ def build_imap_filter():
         time_now = time.time()
         secs_old_max = (options.days_old_max * 24 * 60 * 60)
         time_old = time.gmtime(time_now - secs_old_max)
-        time_str = time.strftime('%d-%b-%Y', time_old)
-        filter.append("BEFORE %s" % time_str)
     else:
         time_old = time.gmtime(options.date_old_max)
-        time_str = time.strftime('%d-%b-%Y', time_old)
-        filter.append("BEFORE %s" % time_str)
+    time_str = time.strftime('%d-%b-%Y', time_old)
+    filter.append("BEFORE %s" % time_str)
 
     if not options.include_flagged:
         filter.append("UNFLAGGED")
@@ -1035,7 +1033,6 @@ def build_imap_filter():
         filter.append("LARGER %d" % options.min_size)
     if options.preserve_unread:
         filter.append("SEEN")
-
     if options.filter_append:
         filter.append(options.filter_append)
 
