@@ -1,30 +1,30 @@
 
-Version 0.6.3   - ???
+Version 0.7.0   - ???
   * Fixed long options --filter-append and --pwfile to accept their arguments.
     Closes: #1555935
   * Fixed From_ line generation to actually look for the 'Return-path' and
     'From' headers.  Closes: #1555797
-  * Fixed IMAP authentication/URL parsing.  Require username encoded in URL, but
-    be flexible with the password: handle both --pwfile and URL-encoded
-    password, and fallback to querying the user if neither is present. 
-    Closes: #1555951
+  * Fixed IMAP authentication/URL parsing, which wasn't working at all in
+    v0.6.2.  Require username encoded in URL, but be flexible with the password:
+    handle both --pwfile and URL-encoded password, and fallback to querying the
+    user if neither is present.  Closes: #1555951
   * Convert on-the-wire CRLF to native EOL when saving messages from an IMAP
     folder.  Closes: #1555803
   * Updated man page.  This also addresses #1555951
-  * Fixed unittest failure by updating --suffix testcase: archivemail used to
-    expand date directives in the suffix to the current date, but rev. 94
-    changed that to the archive cut off date.  Based on analysis by Peter Poeml.
-    Thanks, Peter. 
-  * Fixed invalid IMAP filter string for large messages (--size option). 
-    Closes: #863813
-  * Fixed IMAP --dry-run and --delete so they don't download messages.  
-    (Thanks Anand)  Closes: Debian bug #203282
+  * Fixed unittest failure by updating --suffix testcase.  Based on analysis by
+    Peter Poeml.  Thanks, Peter. 
+  * Fixed invalid IMAP filter string for large messages (--size option).
+    (Thanks to the anonymous bug reporter)  Closes: #863813
+  * Fixed IMAP --dry-run so it doesn't download all messages that would be
+    archived.  
+  * Fixed IMAP --delete which didn't work at all.  (Thanks Anand)  
+    Closes: Debian bug #203282
   * Terminate each message in newly written mbox with an empty line if the
     message source is not an mbox-format folder.  (Thanks  Chung-chieh Shan)
     Closes: Debian bug #250410
   * Mangle From_ in message body if the message source is not an mbox-format
     folder.  (Thanks Chung-chieh Shan)  Closes: Debian bug #250402
-  * Added new option --dont-mangle-from to turn off From_ mangling.
+  * Added new option --dont-mangle to turn off From_ mangling.
   * Bumped Python dependency to version 2.3.
   * Fixed unittest TestMboxExclusiveLock which failed on Solaris.  (Thanks Paul
     Rodger)  Closes: #904652
@@ -34,6 +34,14 @@ Version 0.6.3   - ???
     reference to that CVE.  Note that the bug was initially reported to affect
     archivemail itself, too.  This is not correct.  (Thanks Joey Hess)
     Closes: Debian bug #385253
+  * Fixed cleanup of temporary files after test suite failures. 
+  * Fixed dotlocking race condition. 
+  * Stats are now working with IMAP.
+  * Stats now report the total size of a mailbox and of the archived messages
+    therefrom.  
+  * Always barf if the archive destination directory is world-writable.
+  * Distributing man page with the tarball again and fixed distutils setup.
+    Closes: #1574720 (Thanks Grant Goodyear)
 
 Version 0.6.2   - 27 June 2006
   * add -F/--filter-append option to append an arbitrary string to the IMAP 
