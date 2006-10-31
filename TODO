@@ -1,4 +1,12 @@
 
+Only ask for the IMAP password if running interactively. (isatty?)
+
+Require --output-dir for IMAP archiving?  Otherwise we just drop the archive in
+in the current working directory.
+
+Switch to fcntl(2) locking?  That would be NFS-safe.  Perhaps make the locking
+method configurable?
+
 Check all items below, which are from the original author. :-)
 
 .archivemailrc support
