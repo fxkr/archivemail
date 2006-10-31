@@ -260,15 +260,7 @@ class Options:
     def sanity_check(self):
         """Complain bitterly about our options now rather than later"""
         if self.output_dir:
-            if not os.path.isdir(self.output_dir):
-                user_error("output directory does not exist: '%s'" % \
-                    self.output_dir)
-            if not os.access(self.output_dir, os.W_OK):
-                user_error("no write permission on output directory: '%s'" % \
-                    self.output_dir)
-            if is_world_writable(self.output_dir):
-                unexpected_error(("output directory is world-writable: " + \
-                    "%s -- I feel nervous!") % self.output_dir)
+            check_sane_destdir(self.output_dir)
         if self.days_old_max < 1:
             user_error("--days argument must be greater than zero")
         if self.days_old_max >= 10000:
@@ -1097,6 +1089,11 @@ def archive(mailbox_name):
     if options.output_dir:
         final_archive_name = os.path.join(options.output_dir, 
                 os.path.basename(final_archive_name))
+    dest_dir = os.path.dirname(final_archive_name)
+    if not dest_dir:
+        dest_dir = os.getcwd()
+    check_sane_destdir(dest_dir)
+
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
 
     # check to see if we are running as root -- if so, change our effective
@@ -1440,6 +1437,19 @@ def clean_up_signal(signal_number, stack_frame):
     # will abort with sys.exit() and clean_up will be registered 
     # at this stage
     unexpected_error("received signal %s" % signal_number)
+
+
+def check_sane_destdir(dir):
+    """Do a very primitive check if the given directory looks like a reasonable
+    destination directory and bail out if it doesn't."""
+    assert(dir)
+    if not os.path.isdir(dir):
+        user_error("output directory does not exist: '%s'" % dir)
+    if not os.access(dir, os.W_OK):
+        user_error("no write permission on output directory: '%s'" % dir)
+    if is_world_writable(dir):
+        unexpected_error(("output directory is world-writable: '%s' -- "
+            "I feel nervous!") % dir)
 
 
 def is_world_writable(path):
