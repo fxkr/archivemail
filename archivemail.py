@@ -78,10 +78,12 @@ from_re = re.compile(r'^From ', re.MULTILINE)
 class Stats:
     """Class to collect and print statistics about mailbox archival"""
     __archived = 0
+    __archived_size = 0
     __mailbox_name = None
     __archive_name = None
     __start_time = 0
     __total = 0
+    __total_size = 0
 
     def __init__(self, mailbox_name, final_archive_name):
         """Constructor for a new set of statistics.
@@ -98,13 +100,17 @@ class Stats:
         self.__mailbox_name = mailbox_name
         self.__archive_name = final_archive_name + ".gz"
 
-    def another_message(self):
-        """Add one to the internal count of total messages processed"""
+    def another_message(self, size):
+        """Add one to the internal count of total messages processed 
+        and record message size."""
         self.__total = self.__total + 1
+        self.__total_size = self.__total_size + size
 
-    def another_archived(self):
-        """Add one to the internal count of messages archived"""
+    def another_archived(self, size):
+        """Add one to the internal count of messages archived
+        and record message size."""
         self.__archived = self.__archived + 1
+        self.__archived_size = self.__archived_size + size
 
     def display(self):
         """Print statistics about how many messages were archived"""
@@ -115,9 +121,10 @@ class Stats:
             action = "deleted"
         if options.dry_run:
             action = "I would have " + action
-        print "%s: %s %d of %d message(s) in %.1f seconds" % \
+        print "%s: %s %d of %d message(s) (%s of %s) in %.1f seconds" % \
             (self.__mailbox_name, action, self.__archived, self.__total,
-            time_seconds)
+            nice_size_str(self.__archived_size), 
+            nice_size_str(self.__total_size), time_seconds)
             
 
 class StaleFiles:
@@ -913,10 +920,9 @@ def is_unread(message):
     return 1
 
 
-def is_smaller(message, size):
-    """Return true if the message is smaller than size bytes, false otherwise"""
+def sizeof_message(message):
+    """Return size of message in bytes (octets)."""
     assert(message)
-    assert(size > 0)
     file_name = None
     message_size = None
     try:
@@ -939,6 +945,13 @@ def is_smaller(message, size):
         end_offset = message.fp.tell()
         message.rewindbody()
         message_size = message_size + (end_offset - start_offset)
+    return message_size
+
+def is_smaller(message, size):
+    """Return true if the message is smaller than size bytes, false otherwise"""
+    assert(message)
+    assert(size > 0)
+    message_size = sizeof_message(message) 
     if message_size < size:
         vprint("message is too small (%d bytes), minimum bytes : %d" % \
             (message_size, size))
@@ -1013,7 +1026,7 @@ def is_older_than_days(time_message, max_days):
         return 1
     return 0
 
-def build_imap_filter():
+def build_imap_filter(invert = False):
     """Return an imap filter string"""
 
     filter = []
@@ -1036,7 +1049,13 @@ def build_imap_filter():
     if options.filter_append:
         filter.append(options.filter_append)
 
-    return '(' + string.join(filter, ' ') + ')'
+    if not invert:
+        return '(' + string.join(filter, ' ') + ')'
+
+    filter = map(lambda x: 'NOT ' + x, filter)
+    if len(filter) == 1: 
+        return '(' + filter[0] + ')'
+    return reduce(lambda x,y: '(OR ' + x + ' ' + y + ')', filter)
 
 ###############  mailbox operations ###############
 
@@ -1162,12 +1181,13 @@ def _archive_mbox(mailbox_name, final_archive_name):
     if not msg and (original.starting_size > 0):
         user_error("'%s' is not a valid mbox-format mailbox" % mailbox_name)
     while (msg):
-        stats.another_message()
+        msg_size = sizeof_message(msg)
+        stats.another_message(msg_size)
         vprint("processing message '%s'" % msg.get('Message-ID'))
         if options.warn_duplicates:
             cache.warn_if_dupe(msg)             
         if should_archive(msg):
-            stats.another_archived()
+            stats.another_archived(msg_size)
             if options.delete_old_mail:
                 vprint("decision: delete message")
             else:
@@ -1241,12 +1261,13 @@ def _archive_dir(mailbox_name, final_archive_name, type):
 
     msg = original.next()
     while (msg):
-        stats.another_message()
+        msg_size = sizeof_message(msg)
+        stats.another_message(msg_size)
         vprint("processing message '%s'" % msg.get('Message-ID'))
         if options.warn_duplicates:
             cache.warn_if_dupe(msg)             
         if should_archive(msg):
-            stats.another_archived()
+            stats.another_archived(msg_size)
             if options.delete_old_mail:
                 vprint("decision: delete message")
             else:
@@ -1285,7 +1306,9 @@ def _archive_imap(mailbox_name, final_archive_name):
     stats = Stats(mailbox_name, final_archive_name)
     imap_str = mailbox_name[mailbox_name.find('://') + 3:]
     filter = build_imap_filter()
+    inverse_filter = build_imap_filter(invert=True)
     vprint("imap filter: '%s'" % filter)
+    vprint("inverse imap filter: '%s'" % inverse_filter)
     try:
         imap_username, imap_str = imap_str.split('@', 1)
         imap_server, imap_folder = imap_str.split('/', 1)
@@ -1314,11 +1337,42 @@ def _archive_imap(mailbox_name, final_archive_name):
     vprint("logged in to server as %s" % imap_username)
     result, response = imap_srv.select(imap_folder)
     if result != 'OK': unexpected_error("cannot select imap folder")
+    # response is e.g. ['1016'] for 1016 messages in folder
     vprint("selected imap folder %s" % imap_folder)
+    vprint("folder has %s message(s)" % response[0])
+
+    result, response = imap_srv.search(None, inverse_filter)
+    if result != 'OK': unexpected_error("imap search failed")
+    # response is a list with a single item, listing message ids 
+    # like ['1 2 3 1016'] 
+    message_list = response[0].split()
+    vprint("%d messages are not matching filter" % len(message_list))
+
+    max_fetch = 100
+    for i in range(0, len(message_list), max_fetch):
+        result, response = imap_srv.fetch(string.join(message_list[i:i+max_fetch], ','),
+            '(RFC822.SIZE)')
+        if result != 'OK': unexpected_error("Failed to fetch message size")
+        # response is a list with entries like '1016 (RFC822.SIZE 3118)',
+        # where the first number is the message id, the second is the size.
+        for x in response:
+            msg_size = int(x.split()[2][:-1])
+            stats.another_message(msg_size)
+
     result, response = imap_srv.search(None, filter)
     if result != 'OK': unexpected_error("imap search failed")
     message_list = response[0].split()
-    vprint("%d messages found matching filter" % len(message_list))
+    vprint("%d messages are matching filter" % len(message_list))
+
+    for i in range(0, len(message_list), max_fetch):
+        result, response = imap_srv.fetch(string.join(message_list[i:i+max_fetch], ','),
+            '(RFC822.SIZE)')
+        if result != 'OK': unexpected_error("Failed to fetch message size")
+        for x in response:
+            # for the parsing magic see above
+            msg_size = int(x.split()[2][:-1])
+            stats.another_message(msg_size)
+            stats.another_archived(msg_size)
 
     if not options.dry_run:
         if not options.delete_old_mail:
@@ -1338,8 +1392,6 @@ def _archive_imap(mailbox_name, final_archive_name):
                 if not archive:
                     archive = ArchiveMbox(final_archive_name)
                 archive.write(msg)
-                # FIXME: stats are not complete yet.
-                #stats.another_archived()
             if archive:
                 archive.close()
                 archive.finalise()
@@ -1353,6 +1405,8 @@ def _archive_imap(mailbox_name, final_archive_name):
                 '+FLAGS.SILENT', '\\Deleted')
     imap_srv.close()
     imap_srv.logout()
+    if not options.quiet:
+        stats.display()
     
 ###############  misc  functions  ###############
 
@@ -1392,6 +1446,15 @@ def is_world_writable(path):
     """Return true if the path is world-writable, false otherwise""" 
     assert(path)
     return (os.stat(path)[stat.ST_MODE] & stat.S_IWOTH)
+
+
+def nice_size_str(size):
+    """Return given size in bytes as '12kB', '1.2MB'"""
+    kb = size / 1024.0
+    mb = kb / 1024.0
+    if mb >= 1.0: return str(round(mb, 1)) + 'MB'
+    if kb >= 1.0: return str(round(kb)) + 'kB'
+    return str(size) + 'B'
 
 
 # this is where it all happens, folks
