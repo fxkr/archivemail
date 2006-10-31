@@ -28,6 +28,6 @@ setup(name="archivemail",
       author_email="paul@paulrodger.com",
       maintainer="Nikolaus Schulz, Peter Poeml",
       maintainer_email="nikosch@users.sourceforge.net, poeml@users.sourceforge.net",
-      scripts=["archivemail.py"],
+      scripts=["archivemail"],
       data_files=[("man/man1", ["archivemail.1"])],
       )
