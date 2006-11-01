@@ -1341,7 +1341,7 @@ def _archive_imap(mailbox_name, final_archive_name):
 
     result, response = imap_srv.search(None, imap_filter)
     if result != 'OK': unexpected_error("imap search failed")
-    # response is a list with a single item, listing message ids 
+    # response is a list with a single item, listing message sequence numbers
     # like ['1 2 3 1016'] 
     message_list = response[0].split()
     vprint("%d messages are matching filter" % len(message_list))
@@ -1351,7 +1351,8 @@ def _archive_imap(mailbox_name, final_archive_name):
         result, response = imap_srv.fetch('1:*', '(RFC822.SIZE)')
         if result != 'OK': unexpected_error("Failed to fetch message sizes")
         # response is a list with entries like '1016 (RFC822.SIZE 3118)',
-        # where the first number is the message id, the second is the size.
+        # where the first number is the message sequence number, the second is
+        # the size.
         for x in response:
             msn, blurb, msg_size = x.split()
             msg_size = int(msg_size.rstrip(')'))
@@ -1361,8 +1362,8 @@ def _archive_imap(mailbox_name, final_archive_name):
 
     if not options.dry_run:
         if not options.delete_old_mail:
-            for msg_id in message_list:
-                result, response = imap_srv.fetch(msg_id, '(RFC822 FLAGS)')
+            for msn in message_list:
+                result, response = imap_srv.fetch(msn, '(RFC822 FLAGS)')
                 if result != 'OK': unexpected_error("Failed to fetch message")
                 if "\r\n" == os.linesep:
                     msg_str = response[0][1]
