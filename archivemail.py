@@ -1312,7 +1312,7 @@ def _archive_imap(mailbox_name, final_archive_name):
         except ValueError: 
             if (not os.isatty(sys.stdin.fileno())) or options.quiet:
                 unexpected_error("No imap password specified")
-            imap_password = getpass.getpass()
+            imap_password = getpass.getpass('IMAP password: ')
 
     if mailbox_name[:5] == 'imaps':
         imap_srv = imaplib.IMAP4_SSL(imap_server)
