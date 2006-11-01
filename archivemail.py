@@ -1301,15 +1301,15 @@ def _archive_imap(mailbox_name, final_archive_name):
     try:
         imap_username, imap_str = imap_str.split('@', 1)
         imap_server, imap_folder = imap_str.split('/', 1)
-    except:
-         unexpected_error("you must provide a properly formatted \
-         IMAP connection string")
+    except ValueError:
+        unexpected_error("you must provide a properly formatted "
+            "IMAP connection string")
     if options.pwfile:
         imap_password = open(options.pwfile).read().rstrip()
     else:
         try: 
             imap_username, imap_password = imap_username.split(':', 1)
-        except: 
+        except ValueError: 
             imap_password = getpass.getpass()
 
     if mailbox_name[:5] == 'imaps':
@@ -1320,7 +1320,7 @@ def _archive_imap(mailbox_name, final_archive_name):
     vprint("connected to server %s" % imap_server)
     try:
         result, response = imap_srv.login_cram_md5(imap_username, imap_password)
-    except:
+    except imaplib.IMAP4.error:
         result, response = imap_srv.login(imap_username, imap_password)
     if result != 'OK': unexpected_error("authentication failure")
     vprint("logged in to server as %s" % imap_username)
