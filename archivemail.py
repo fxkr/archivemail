@@ -1310,6 +1310,8 @@ def _archive_imap(mailbox_name, final_archive_name):
         try: 
             imap_username, imap_password = imap_username.split(':', 1)
         except ValueError: 
+            if (not os.isatty(sys.stdin.fileno())) or options.quiet:
+                unexpected_error("No imap password specified")
             imap_password = getpass.getpass()
 
     if mailbox_name[:5] == 'imaps':
