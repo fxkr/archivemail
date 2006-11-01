@@ -1313,11 +1313,11 @@ def _archive_imap(mailbox_name, final_archive_name):
             imap_password = getpass.getpass()
 
     if mailbox_name[:5] == 'imaps':
-        vprint("Using SSL")
         imap_srv = imaplib.IMAP4_SSL(imap_server)
+        vprint("established secure connection to server %s" % imap_server)
     else:
         imap_srv = imaplib.IMAP4(imap_server)
-    vprint("connected to server %s" % imap_server)
+        vprint("established connection to server %s" % imap_server)
     try:
         result, response = imap_srv.login_cram_md5(imap_username, imap_password)
     except imaplib.IMAP4.error:
