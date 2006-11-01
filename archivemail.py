@@ -1322,7 +1322,6 @@ def _archive_imap(mailbox_name, final_archive_name):
         result, response = imap_srv.login_cram_md5(imap_username, imap_password)
     except imaplib.IMAP4.error:
         result, response = imap_srv.login(imap_username, imap_password)
-    if result != 'OK': unexpected_error("authentication failure")
     vprint("logged in to server as %s" % imap_username)
 
     result, response = imap_srv.select(imap_folder)
