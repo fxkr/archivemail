@@ -1325,7 +1325,8 @@ def _archive_imap(mailbox_name, final_archive_name):
     vprint("logged in to server as %s" % imap_username)
 
     result, response = imap_srv.select(imap_folder)
-    if result != 'OK': unexpected_error("cannot select imap folder")
+    if result != 'OK': unexpected_error("cannot select imap folder; "
+        "server says '%s'" % response[0])
     vprint("selected imap folder %s" % imap_folder)
     # response is e.g. ['1016'] for 1016 messages in folder
     total_msg_count = int(response[0])
@@ -1339,7 +1340,8 @@ def _archive_imap(mailbox_name, final_archive_name):
     # deleted.
 
     result, response = imap_srv.search(None, imap_filter)
-    if result != 'OK': unexpected_error("imap search failed")
+    if result != 'OK': unexpected_error("imap search failed; server says '%s'" %
+        response[0])
     # response is a list with a single item, listing message sequence numbers
     # like ['1 2 3 1016'] 
     message_list = response[0].split()
@@ -1348,7 +1350,8 @@ def _archive_imap(mailbox_name, final_archive_name):
     # First, gather data for the statistics.
     if total_msg_count > 0:
         result, response = imap_srv.fetch('1:*', '(RFC822.SIZE)')
-        if result != 'OK': unexpected_error("Failed to fetch message sizes")
+        if result != 'OK': unexpected_error("Failed to fetch message sizes; "
+            "server says '%s'" % response[0])
         # response is a list with entries like '1016 (RFC822.SIZE 3118)',
         # where the first number is the message sequence number, the second is
         # the size.
@@ -1363,7 +1366,8 @@ def _archive_imap(mailbox_name, final_archive_name):
         if not options.delete_old_mail:
             for msn in message_list:
                 result, response = imap_srv.fetch(msn, '(RFC822 FLAGS)')
-                if result != 'OK': unexpected_error("Failed to fetch message")
+                if result != 'OK': unexpected_error("Failed to fetch message; "
+                    "server says '%s'" % response[0])
                 if "\r\n" == os.linesep:
                     msg_str = response[0][1]
                 else:
@@ -1386,8 +1390,11 @@ def _archive_imap(mailbox_name, final_archive_name):
         vprint("Deleting %s messages" % len(message_list))
         max_delete = 100
         for i in range(0, len(message_list), max_delete):
-            imap_srv.store(string.join(message_list[i:i+max_delete], ','),
+            result, response = imap_srv.store( \
+                string.join(message_list[i:i+max_delete], ','),
                 '+FLAGS.SILENT', '\\Deleted')
+            if result != 'OK': unexpected_error("Error while deleting "
+                "messages; server says '%s'" % response[0])
     imap_srv.close()
     imap_srv.logout()
     if not options.quiet:
