@@ -1021,7 +1021,7 @@ def is_older_than_days(time_message, max_days):
 def build_imap_filter(invert = False):
     """Return an imap filter string"""
 
-    filter = []
+    imap_filter = []
     old = 0
     if options.date_old_max == None:
         time_now = time.time()
@@ -1030,24 +1030,24 @@ def build_imap_filter(invert = False):
     else:
         time_old = time.gmtime(options.date_old_max)
     time_str = time.strftime('%d-%b-%Y', time_old)
-    filter.append("BEFORE %s" % time_str)
+    imap_filter.append("BEFORE %s" % time_str)
 
     if not options.include_flagged:
-        filter.append("UNFLAGGED")
+        imap_filter.append("UNFLAGGED")
     if options.min_size:
-        filter.append("LARGER %d" % options.min_size)
+        imap_filter.append("LARGER %d" % options.min_size)
     if options.preserve_unread:
-        filter.append("SEEN")
+        imap_filter.append("SEEN")
     if options.filter_append:
-        filter.append(options.filter_append)
+        imap_filter.append(options.filter_append)
 
     if not invert:
-        return '(' + string.join(filter, ' ') + ')'
+        return '(' + string.join(imap_filter, ' ') + ')'
 
-    filter = map(lambda x: 'NOT ' + x, filter)
-    if len(filter) == 1: 
-        return '(' + filter[0] + ')'
-    return reduce(lambda x,y: '(OR ' + x + ' ' + y + ')', filter)
+    imap_filter = map(lambda x: 'NOT ' + x, imap_filter)
+    if len(imap_filter) == 1: 
+        return '(' + imap_filter[0] + ')'
+    return reduce(lambda x,y: '(OR ' + x + ' ' + y + ')', imap_filter)
 
 ###############  mailbox operations ###############
 
@@ -1302,10 +1302,10 @@ def _archive_imap(mailbox_name, final_archive_name):
     archive = None
     stats = Stats(mailbox_name, final_archive_name)
     imap_str = mailbox_name[mailbox_name.find('://') + 3:]
-    filter = build_imap_filter()
-    inverse_filter = build_imap_filter(invert=True)
-    vprint("imap filter: '%s'" % filter)
-    vprint("inverse imap filter: '%s'" % inverse_filter)
+    imap_filter = build_imap_filter()
+    inverse_imap_filter = build_imap_filter(invert=True)
+    vprint("imap filter: '%s'" % imap_filter)
+    vprint("inverse imap filter: '%s'" % inverse_imap_filter)
     try:
         imap_username, imap_str = imap_str.split('@', 1)
         imap_server, imap_folder = imap_str.split('/', 1)
@@ -1338,7 +1338,7 @@ def _archive_imap(mailbox_name, final_archive_name):
     vprint("selected imap folder %s" % imap_folder)
     vprint("folder has %s message(s)" % response[0])
 
-    result, response = imap_srv.search(None, inverse_filter)
+    result, response = imap_srv.search(None, inverse_imap_filter)
     if result != 'OK': unexpected_error("imap search failed")
     # response is a list with a single item, listing message ids 
     # like ['1 2 3 1016'] 
@@ -1356,7 +1356,7 @@ def _archive_imap(mailbox_name, final_archive_name):
             msg_size = int(x.split()[2][:-1])
             stats.another_message(msg_size)
 
-    result, response = imap_srv.search(None, filter)
+    result, response = imap_srv.search(None, imap_filter)
     if result != 'OK': unexpected_error("imap search failed")
     message_list = response[0].split()
     vprint("%d messages are matching filter" % len(message_list))
