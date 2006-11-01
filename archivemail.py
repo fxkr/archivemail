@@ -1018,7 +1018,7 @@ def is_older_than_days(time_message, max_days):
         return 1
     return 0
 
-def build_imap_filter(invert = False):
+def build_imap_filter():
     """Return an imap filter string"""
 
     imap_filter = []
@@ -1041,13 +1041,7 @@ def build_imap_filter(invert = False):
     if options.filter_append:
         imap_filter.append(options.filter_append)
 
-    if not invert:
-        return '(' + string.join(imap_filter, ' ') + ')'
-
-    imap_filter = map(lambda x: 'NOT ' + x, imap_filter)
-    if len(imap_filter) == 1: 
-        return '(' + imap_filter[0] + ')'
-    return reduce(lambda x,y: '(OR ' + x + ' ' + y + ')', imap_filter)
+    return '(' + string.join(imap_filter, ' ') + ')'
 
 ###############  mailbox operations ###############
 
@@ -1303,9 +1297,7 @@ def _archive_imap(mailbox_name, final_archive_name):
     stats = Stats(mailbox_name, final_archive_name)
     imap_str = mailbox_name[mailbox_name.find('://') + 3:]
     imap_filter = build_imap_filter()
-    inverse_imap_filter = build_imap_filter(invert=True)
     vprint("imap filter: '%s'" % imap_filter)
-    vprint("inverse imap filter: '%s'" % inverse_imap_filter)
     try:
         imap_username, imap_str = imap_str.split('@', 1)
         imap_server, imap_folder = imap_str.split('/', 1)
@@ -1332,44 +1324,40 @@ def _archive_imap(mailbox_name, final_archive_name):
         result, response = imap_srv.login(imap_username, imap_password)
     if result != 'OK': unexpected_error("authentication failure")
     vprint("logged in to server as %s" % imap_username)
+
     result, response = imap_srv.select(imap_folder)
     if result != 'OK': unexpected_error("cannot select imap folder")
-    # response is e.g. ['1016'] for 1016 messages in folder
     vprint("selected imap folder %s" % imap_folder)
-    vprint("folder has %s message(s)" % response[0])
+    # response is e.g. ['1016'] for 1016 messages in folder
+    total_msg_count = int(response[0])
+    vprint("folder has %d message(s)" % total_msg_count)
 
-    result, response = imap_srv.search(None, inverse_imap_filter)
+    # IIUIC the message sequence numbers are stable for the whole session, since
+    # we just send SEARCH, FETCH and STORE commands, which should prevent the
+    # server from sending untagged EXPUNGE responses -- see RFC 3501 (IMAP4rev1)
+    # 7.4.1 and RFC 2180 (Multi-Accessed Mailbox Practice).
+    # Worst thing should be that we bail out FETCHing a message that has been
+    # deleted.
+
+    result, response = imap_srv.search(None, imap_filter)
     if result != 'OK': unexpected_error("imap search failed")
     # response is a list with a single item, listing message ids 
     # like ['1 2 3 1016'] 
     message_list = response[0].split()
-    vprint("%d messages are not matching filter" % len(message_list))
+    vprint("%d messages are matching filter" % len(message_list))
 
-    max_fetch = 100
-    for i in range(0, len(message_list), max_fetch):
-        result, response = imap_srv.fetch(string.join(message_list[i:i+max_fetch], ','),
-            '(RFC822.SIZE)')
-        if result != 'OK': unexpected_error("Failed to fetch message size")
+    # First, gather data for the statistics.
+    if total_msg_count > 0:
+        result, response = imap_srv.fetch('1:*', '(RFC822.SIZE)')
+        if result != 'OK': unexpected_error("Failed to fetch message sizes")
         # response is a list with entries like '1016 (RFC822.SIZE 3118)',
         # where the first number is the message id, the second is the size.
         for x in response:
-            msg_size = int(x.split()[2][:-1])
+            msn, blurb, msg_size = x.split()
+            msg_size = int(msg_size.rstrip(')'))
             stats.another_message(msg_size)
-
-    result, response = imap_srv.search(None, imap_filter)
-    if result != 'OK': unexpected_error("imap search failed")
-    message_list = response[0].split()
-    vprint("%d messages are matching filter" % len(message_list))
-
-    for i in range(0, len(message_list), max_fetch):
-        result, response = imap_srv.fetch(string.join(message_list[i:i+max_fetch], ','),
-            '(RFC822.SIZE)')
-        if result != 'OK': unexpected_error("Failed to fetch message size")
-        for x in response:
-            # for the parsing magic see above
-            msg_size = int(x.split()[2][:-1])
-            stats.another_message(msg_size)
-            stats.another_archived(msg_size)
+            if msn in message_list:
+                stats.another_archived(msg_size)
 
     if not options.dry_run:
         if not options.delete_old_mail:
