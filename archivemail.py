@@ -121,7 +121,7 @@ class Stats:
             action = "deleted"
         if options.dry_run:
             action = "I would have " + action
-        print "%s: %s %d of %d message(s) (%s of %s) in %.1f seconds" % \
+        print "%s:\n    %s %d of %d message(s) (%s of %s) in %.1f seconds" % \
             (self.__mailbox_name, action, self.__archived, self.__total,
             nice_size_str(self.__archived_size), 
             nice_size_str(self.__total_size), time_seconds)
