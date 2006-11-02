@@ -42,6 +42,7 @@ Version 0.7.0   - ???
   * Always barf if the archive destination directory is world-writable.
   * Distributing man page with the tarball again and fixed distutils setup.
     Closes: #1574720 (Thanks Grant Goodyear)
+  * Improved IMAP error reporting
 
 Version 0.6.2   - 27 June 2006
   * add -F/--filter-append option to append an arbitrary string to the IMAP 
