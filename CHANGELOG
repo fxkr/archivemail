@@ -1,5 +1,5 @@
 
-Version 0.7.0   - ???
+Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.
     Closes: #1555935
   * Fixed From_ line generation to actually look for the 'Return-path' and
