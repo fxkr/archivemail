@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "30 October 2006" "SP" ""
+.TH "ARCHIVEMAIL" "1" "02 November 2006" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -50,7 +50,8 @@ read.
 .TP
 \fB    -P \fIFILE\fB, --pwfile=\fIFILE\fB\fR
 Read IMAP password from file \fIFILE\fR
-instead of from the command line.  
+instead of from the command line.  Note that this will probably not work if you
+are archiving folders from more than one IMAP account. 
 .TP
 \fB    -F \fISTRING\fB, --filter-append=\fISTRING\fB\fR
 Append \fISTRING\fR to the IMAP filter string. 

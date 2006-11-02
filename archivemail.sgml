@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>30 October 2006</Date></DocInfo>
+<DocInfo><Date>2 November 2006</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -128,7 +128,8 @@ read.
     <Option>-P <Replaceable/FILE/, --pwfile=<Replaceable/FILE/</Option>
 </Term>
 <ListItem><Para>Read <acronym/IMAP/ password from file <Replaceable/FILE/
-instead of from the command line.  
+instead of from the command line.  Note that this will probably not work if you
+are archiving folders from more than one IMAP account. 
 </Para></ListItem>
 </VarListEntry>
 
