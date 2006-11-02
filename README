@@ -25,28 +25,11 @@ by an absolute date or only archive unread messages.
 
 REQUIREMENTS:
 
-archivemail requires python version 2.0 or later, with the optional 'zlib'
-module, although the zlib module comes with most python installations.  If you
-are compiling your own version of python < version 2.2, make sure you
-uncomment the 'zlib' moduile in Modules/Setup in the python source directory.
-
-You can check to see if your version of python has the 'zlib' module by 
-trying this:
-
-    flare:~$ python
-    Python 2.1 (#1, Apr 26 2002, 11:22:45)
-    [GCC 2.95.2 20000220 (Debian GNU/Linux)] on linux2
-    Type "copyright", "credits" or "license" for more information.
-    >>> import zlib
-    >>>
-
-If you get an ImportError, then the zlib python module has not been installed.
-Try upgrading your python distribution.
+archivemail requires python version 2.3. It also uses some optional python
+modules, but these should be pretty much standard; if you get an ImportError
+nonetheless, please report it, thanks. (For contact addresses see below.)
 
 Python is available from http://www.python.org/
-
-If you want to run the bundled test script, you will need python version 2.1
-or later, because we use the PyUnit 'unittest' module. Sorry.
 
 
 INSTALLATION:
@@ -72,7 +55,11 @@ cron.
 The archivemail website is at: http://archivemail.sourceforge.net/
 
 If you have any feedback or bug reports about archivemail, you are very
-welcome to email me.
+welcome to email the maintainers; as of November 2006, these are:
+
+Nikolaus Schulz <microschulz@web.de>
+Peter Poeml <poeml@suse.de>
 
 
--- Paul Rodger <paul at paulrodger dot com>
+-- Paul Rodger <paul at paulrodger dot com>, archivemail author
+   Updated by: Nikolaus Schulz, maintainer
