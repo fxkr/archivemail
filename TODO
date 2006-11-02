@@ -1,5 +1,9 @@
 
-Only ask for the IMAP password if running interactively. (isatty?)
+Be a nicer citizen with respect to mailbox locking. 
+
+Perhaps prune/shorten IMAP mailbox URLs in messages?
+They may be quite long and may contain the sensitive password.
+Perhaps find a clean, lean replacement for all that clutter in the IMAP urls.
 
 Require --output-dir for IMAP archiving?  Otherwise we just drop the archive in
 in the current working directory.
