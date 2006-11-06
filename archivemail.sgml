@@ -343,7 +343,7 @@ Display brief summary information about how to run <Command/archivemail/.
 <RefSect1>
 <Title>Notes</Title>
 <Para>
-<Command/archivemail/ requires &python; version 2.0 or later.
+<Command/archivemail/ requires &python; version 2.3 or later.
 </Para>
 
 <Para>
