@@ -230,7 +230,7 @@ class Options:
                 archive_by = "days"                        
                 self.days_old_max = string.atoi(a)
             if o in ('-o', '--output-dir'):
-                self.output_dir = a
+                self.output_dir = os.path.expanduser(a)
             if o in ('-P', '--pwfile'):
                 self.pwfile = a
             if o in ('-F', '--filter-append'):
