@@ -1,8 +1,50 @@
+Add  note to the man page that the dates of messages in IMAP folders is the IMAP
+server internal date, and may thus differ from both delivery time and the
+message's RFC822 Date header. 
+
+I cannot reproduce Debian bug #255944 (problem with 0 size messages). Hm.
+Checked with rev. 90 and current head (rev. 178). 
+
+Add recursive archiving of mail subfolders? 
+
+Maybe related: perhaps rework IMAP url parsing.  See RFC 3986 (generic URI
+syntax) and RFC 2192 (IMAP url scheme). 
+Note that urlparse.urlparse does not recognise the imaps scheme, and so does not
+split the netloc/authority from the mailbox/path, which would be a really nice
+service to have... 
+
+Line out what we want with respect to multiple selection criteria. 
+Some make sense, but this easily gets too complex, and if only it's a hassle
+with adding all the options.  Hm.  
+
+Reject patch #1036022 "Added option to inverse date compare" after cooling down
+because the patch is both stupid (copy+paste code) and broken.  Don't see why
+anyone should want this/we should support it. 
+If this is reasonable *at all*, I think we'd better go for all the complexity
+to honour _two_ cut off dates (see Debian bug "#184124: archivemail: -D and -d
+should not be incompatible", which is a comparably half-baken thought). </rant>
+
+Add --debug or -vv switch, and move the printing of diagnostic info for each
+message to --debug.  
+
+Perhaps add some more nice stuff like printing of subject, sender... 
+See tracker #868714 "added stats option to archivemail", which has a point.
+Message-Ids are useful for diagnosis, but not very nice to read for humans. 
+
+Regarding the --archive-name option:
+* Do we want this?  Probably, it adds flexibility.
+* I think we should expand date format strings like we do with --suffix
+* Hmm, --output-dir overrides os.dirname(archive_name)... 
+  If no output_dir is given, use $PWD like we do for IMAP, or require -o?
+* Provide short option -a?  Not sure. 
+* The patch in #905657 is not bad.  The Debian package also has a custom
+  --archive-name option, but with a worse implementation.
 
 Be a nicer citizen with respect to mailbox locking. 
 
 Perhaps prune/shorten IMAP mailbox URLs in messages?
 They may be quite long and may contain the sensitive password.
+Also shows up in the process list... 
 Perhaps find a clean, lean replacement for all that clutter in the IMAP urls.
 
 Require --output-dir for IMAP archiving?  Otherwise we just drop the archive in
