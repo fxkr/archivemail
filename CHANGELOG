@@ -1,3 +1,7 @@
+Version 0.7.1   - UNRELEASED
+
+  * Fixed incompatibility with Python 2.5 which broke Maildir handling.
+    Closes: #1670422
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.

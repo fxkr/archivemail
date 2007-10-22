@@ -779,7 +779,7 @@ def guess_delivery_time(message):
     # the headers have no valid dates -- last resort, try the file timestamp
     # this will not work for mbox mailboxes
     try:
-        file_name = message.fp.name
+        file_name = get_filename(message)
     except AttributeError:
         # we are looking at a 'mbox' mailbox - argh! 
         # Just return the current time - this will never get archived :(
@@ -788,7 +788,7 @@ def guess_delivery_time(message):
     if not os.path.isfile(file_name):
         unexpected_error("mailbox file name '%s' has gone missing" % \
             file_name)    
-    time_message = os.path.getmtime(message.fp.name)
+    time_message = os.path.getmtime(file_name)
     vprint("using valid time found from '%s' last-modification time" % \
         file_name)
     return time_message
@@ -806,7 +806,8 @@ def add_status_headers(message):
     """
     status = ""
     x_status = ""
-    match = re.search(":2,(.+)$", message.fp.name)
+    file_name = get_filename(message)
+    match = re.search(":2,(.+)$", file_name)
     if match:
         flags = match.group(1)
         for flag in flags: 
@@ -825,7 +826,7 @@ def add_status_headers(message):
 
     # files in the maildir 'cur' directory are no longer new,
     # they are the same as messages with 'Status: O' headers in mbox
-    last_dir = os.path.basename(os.path.dirname(message.fp.name))
+    last_dir = os.path.basename(os.path.dirname(file_name))
     if last_dir == "cur":
         status = status + "O" 
 
@@ -881,7 +882,7 @@ def is_flagged(message):
         return 1
     file_name = None
     try:
-        file_name = message.fp.name
+        file_name = get_filename(message)
     except AttributeError:
         pass
     # maildir mailboxes use the filename suffix to indicate flagged status
@@ -901,7 +902,7 @@ def is_unread(message):
         return 0
     file_name = None
     try:
-        file_name = message.fp.name
+        file_name = get_filename(message)
     except AttributeError:
         pass
     # maildir mailboxes use the filename suffix to indicate read status
@@ -918,7 +919,7 @@ def sizeof_message(message):
     file_name = None
     message_size = None
     try:
-        file_name = message.fp.name
+        file_name = get_filename(message)
     except AttributeError:
         pass
     if file_name:
@@ -1269,7 +1270,7 @@ def _archive_dir(mailbox_name, final_archive_name, type):
                     if type == "maildir":
                         add_status_headers(msg)
                     archive.write(msg)
-            if not options.dry_run: delete_queue.append(msg.fp.name) 
+            if not options.dry_run: delete_queue.append(get_filename(msg)) 
         else:
             vprint("decision: retain message")
         msg = original.next()
@@ -1463,6 +1464,27 @@ def nice_size_str(size):
     if kb >= 1.0: return str(round(kb)) + 'kB'
     return str(size) + 'B'
 
+def get_filename(msg): 
+    """If the given rfc822.Message can be identified with a file (no mbox),
+    return the filename, otherwise raise AttributeError."""
+    try:
+        return msg.fp.name
+    except AttributeError:
+        # Ugh, that's ugly.  msg.fp is not a plain file, it may be an 
+        # instance of 
+        # a. mailbox._Subfile 
+        #    (msg from mailbox.UnixMailbox, Python <= 2.4) 
+        #    File object is msg.fp.fp, we don't want that
+        # b. mailbox._PartialFile, subclass of mailbox._ProxyFile
+        #    (msg from mailbox.UnixMailbox, Python >= 2.5)
+        #    File object is msg.fp._file, we don't want that
+        # c. mailbox._ProxyFile
+        #    (msg from mailbox.Maildir, Python >= 2.5)
+        #    File object is msg.fp._file, we do want that.
+        if msg.fp.__class__ == mailbox._ProxyFile: 
+            assert(hasattr(mailbox, "_PartialFile"))
+            return msg.fp._file.name
+        raise
 
 # this is where it all happens, folks
 if __name__ == '__main__':
