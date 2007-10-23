@@ -75,6 +75,13 @@ from_re = re.compile(r'^From ', re.MULTILINE)
 
 ############## class definitions ###############
 
+class ArchivemailException(Exception):
+    pass
+class UserError(ArchivemailException): 
+    pass
+class UnexpectedError(ArchivemailException): 
+    pass
+
 class Stats:
     """Class to collect and print statistics about mailbox archival"""
     __archived = 0
@@ -696,8 +703,11 @@ def vprint(string):
 
 
 def unexpected_error(string):
-    """Print the string argument, a 'shutting down' message and abort - 
-    this function never returns"""
+    """Print the string argument, a 'shutting down' message and abort.  Raise
+    UnexpectedErrors if archivemail is run as a module. This function never
+    returns."""
+    if not __name__ == '__main__':
+        raise UnexpectedError(string)
     sys.stderr.write("%s: %s\n" % (options.script_name, string))
     sys.stderr.write("%s: unexpected error encountered - shutting down\n" % 
         options.script_name)
@@ -705,7 +715,10 @@ def unexpected_error(string):
 
 
 def user_error(string):
-    """Print the string argument and abort - this function never returns"""
+    """Print the string argument and abort. Raise UserError if archivemail is
+    run as a module. This function never returns."""
+    if not __name__ == '__main__':
+        raise UserError(string)
     sys.stderr.write("%s: %s\n" % (options.script_name, string))
     sys.exit(1)
 
