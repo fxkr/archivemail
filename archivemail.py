@@ -1312,18 +1312,12 @@ def _archive_imap(mailbox_name, final_archive_name):
     imap_str = mailbox_name[mailbox_name.find('://') + 3:]
     imap_filter = build_imap_filter()
     vprint("imap filter: '%s'" % imap_filter)
-    try:
-        imap_username, imap_str = imap_str.split('@', 1)
-        imap_server, imap_folder = imap_str.split('/', 1)
-    except ValueError:
-        unexpected_error("you must provide a properly formatted "
-            "IMAP connection string")
-    if options.pwfile:
-        imap_password = open(options.pwfile).read().rstrip()
-    else:
-        try: 
-            imap_username, imap_password = imap_username.split(':', 1)
-        except ValueError: 
+    imap_username, imap_password, imap_server, imap_folder = \
+        parse_imap_url(imap_str)
+    if not imap_password: 
+        if options.pwfile:
+            imap_password = open(options.pwfile).read().rstrip()
+        else:
             if (not os.isatty(sys.stdin.fileno())) or options.quiet:
                 unexpected_error("No imap password specified")
             imap_password = getpass.getpass('IMAP password: ')
@@ -1476,6 +1470,40 @@ def nice_size_str(size):
     if mb >= 1.0: return str(round(mb, 1)) + 'MB'
     if kb >= 1.0: return str(round(kb)) + 'kB'
     return str(size) + 'B'
+
+def parse_imap_url(url): 
+    """Parse IMAP URL and return username, password (if appliciable), servername
+    and foldername."""
+
+    def split_qstr(string, delim): 
+        """Split string once at delim, keeping quoted substring intact.
+        Strip and unescape quotes where necessary."""
+        rm = re.match(r'"(.+?(?<!\\))"(.)(.*)', string)
+        if rm:
+            a, d, b = rm.groups()
+            if not d == delim: 
+                raise ValueError
+            a = a.replace('\\"', '"')
+        else:
+            a, b = string.split(delim, 1)
+        return a, b
+
+    password = None
+    try: 
+        if options.pwfile: 
+            username, url = split_qstr(url, '@')
+        else: 
+            try:
+                username, url = split_qstr(url, ':')
+            except ValueError: 
+                # request password interactively later
+                username, url = split_qstr(url, '@')
+            else: 
+                password, url = split_qstr(url, '@')
+        server, folder = url.split('/', 1)
+    except ValueError:
+        unexpected_error("Invalid IMAP connection string")
+    return username, password, server, folder
 
 def get_filename(msg): 
     """If the given rfc822.Message can be identified with a file (no mbox),

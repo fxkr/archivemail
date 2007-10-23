@@ -2,6 +2,9 @@ Version 0.7.1   - UNRELEASED
 
   * Fixed incompatibility with Python 2.5 which broke Maildir handling.
     Closes: #1670422
+  * Username and password in IMAP URLs can now be double-quoted, so it should be
+    no longer a problem if they contain delimiters like the '@' character. 
+    Closes: #1640878
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.
