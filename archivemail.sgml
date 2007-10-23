@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>2 November 2006</Date></DocInfo>
+<DocInfo><Date>23 October 2007</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -349,11 +349,14 @@ Display brief summary information about how to run <Command/archivemail/.
 <Para>
 To archive an <application/IMAP/-format mailbox, use the format
 <command>imap://username:password@server/mailbox</command> to specify the
-mailbox. You can omit the password from the <acronym/URL/; use the
-<option>--pwfile</option> option to make <command/archivemail/ read the
-password from a file, or just enter it upon request. Substitute '<acronym/imap/'
-with '<acronym/imaps/', and <command/archivemail/ will establish a secure
-<acronym/SSL/ connection. 
+mailbox. If your username or password contains the '@' or ':' character,
+you can double-quote it like this:
+<command>imap://"username@bogus.com":"password"@server/mailbox</command>. Use a
+backslash to escape double-quotes that are part of a quoted username or password.
+You can omit the password from the <acronym/URL/; use the <option>--pwfile</option> 
+option to make <command/archivemail/ read the password from a file, or just 
+enter it upon request. Substitute '<acronym/imap/' with '<acronym/imaps/', and 
+<command/archivemail/ will establish a secure <acronym/SSL/ connection. 
 </Para>
 
 <Para>
