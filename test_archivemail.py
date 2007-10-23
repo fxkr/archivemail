@@ -329,6 +329,83 @@ class TestIsTooOld(unittest.TestCase):
             assert(not archivemail.is_older_than_days(time_message=time_msg, 
                 max_days=1))
 
+########## archivemail.parse_imap_url() unit testing #################
+
+class TestParseIMAPUrl(unittest.TestCase): 
+    def setUp(self):
+        archivemail.options.quiet = 1
+        archivemail.options.verbose = 0
+        archivemail.options.pwfile = None
+        
+    urls_withoutpass = [
+            ('imaps://user@example.org@imap.example.org/upperbox/lowerbox',
+                ('user', None, 'example.org@imap.example.org',
+                'upperbox/lowerbox')), 
+            ('imaps://"user@example.org"@imap.example.org/upperbox/lowerbox',
+                ('user@example.org', None, 'imap.example.org',
+                'upperbox/lowerbox')), 
+            ('imaps://user@example.org"@imap.example.org/upperbox/lowerbox',
+                ('user', None, 'example.org"@imap.example.org',
+                'upperbox/lowerbox')), 
+            ('imaps://"user@example.org@imap.example.org/upperbox/lowerbox',
+                ('"user', None, 'example.org@imap.example.org',
+                'upperbox/lowerbox')), 
+            ('imaps://"us\\"er@example.org"@imap.example.org/upperbox/lowerbox',
+                ('us"er@example.org', None, 'imap.example.org',
+                'upperbox/lowerbox')), 
+            ('imaps://user\\@example.org@imap.example.org/upperbox/lowerbox',
+                ('user\\', None, 'example.org@imap.example.org',
+                'upperbox/lowerbox'))
+    ]
+    urls_withpass = [
+            ('imaps://user@example.org:passwd@imap.example.org/upperbox/lowerbox',
+                ('user@example.org', 'passwd', 'imap.example.org',
+                'upperbox/lowerbox'), 
+                ('user', None, 'example.org:passwd@imap.example.org',
+                'upperbox/lowerbox')), 
+            ('imaps://"user@example.org:passwd@imap.example.org/upperbox/lowerbox',
+                ('"user@example.org', "passwd", 'imap.example.org',
+                'upperbox/lowerbox'), 
+                ('"user', None, 'example.org:passwd@imap.example.org',
+                'upperbox/lowerbox')), 
+            ('imaps://u\\ser\\@example.org:"p@sswd"@imap.example.org/upperbox/lowerbox', 
+                ('u\\ser\\@example.org', 'p@sswd', 'imap.example.org',
+                'upperbox/lowerbox'),
+                ('u\\ser\\', None, 'example.org:"p@sswd"@imap.example.org',
+                'upperbox/lowerbox'))
+    ]
+    # These are invalid when the password's not stripped. 
+    urls_onlywithpass = [
+            ('imaps://"user@example.org":passwd@imap.example.org/upperbox/lowerbox',
+                ('user@example.org', "passwd", 'imap.example.org',
+                'upperbox/lowerbox'))
+    ]
+    def testUrlsWithoutPwfile(self):
+        """Parse test urls with --pwfile option unset. This parses a password in
+        the URL, if present."""
+        archivemail.options.pwfile = None
+        for mbstr in self.urls_withpass + self.urls_withoutpass:
+            url = mbstr[0][mbstr[0].find('://')+3:]
+            result = archivemail.parse_imap_url(url)
+            self.assertEqual(result, mbstr[1])
+
+    def testUrlsWithPwfile(self):
+        """Parse test urls with --pwfile set.  In this case the ':' character
+        loses its meaning as a delimiter."""
+        archivemail.options.pwfile = "whocares.txt"
+        for mbstr in self.urls_withpass: 
+            url = mbstr[0][mbstr[0].find('://')+3:]
+            result = archivemail.parse_imap_url(url)
+            self.assertEqual(result, mbstr[2])
+        for mbstr in self.urls_onlywithpass: 
+            url = mbstr[0][mbstr[0].find('://')+3:]
+            self.assertRaises(archivemail.UnexpectedError, 
+                    archivemail.parse_imap_url, url)
+
+    def tearDown(self): 
+        archivemail.options.quiet = 0
+        archivemail.options.verbose = 0
+        archivemail.options.pwfile = None
 
 ########## acceptance testing ###########
 
