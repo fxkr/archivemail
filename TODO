@@ -1,3 +1,10 @@
+Add IMAP tests to the testsuite (upload test messages with IMAP "APPEND
+date-string"). 
+
+Check sf.net and Debian BTS for new bugs. 
+
+Port to email.message and the new mailboxes in Python 2.5.
+
 Add  note to the man page that the dates of messages in IMAP folders is the IMAP
 server internal date, and may thus differ from both delivery time and the
 message's RFC822 Date header. 
