@@ -2,7 +2,7 @@
 VERSION=$(shell python setup.py --version)
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
-SVNROOT=https://svn.sourceforge.net/svnroot/archivemail
+SVNROOT=https://archivemail.svn.sourceforge.net/svnroot/archivemail
 
 
 default:
