@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>23 October 2007</Date></DocInfo>
+<DocInfo><Date>24 October 2007</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -79,6 +79,22 @@ with &gzip;.
 mailboxes, but it will always write archive files to <application/mbox/-format
 mailboxes that are compressed with &gzip;.
 </Para>
+
+<Para>
+To archive an <application/IMAP/-format mailbox, use the format
+<replaceable>imap://username:password@server/mailbox
+</replaceable> to specify the mailbox. 
+You can omit the password from the <acronym/URL/; use the
+<option>--pwfile</option> option to make <command/archivemail/ read the 
+password from a file, or alternatively just enter it upon request. 
+If the <option>--pwfile</option> option is set, <command/archivemail/ does not
+look for a password in the <acronym/URL/, and the colon is not considered a 
+delimiter.
+Substitute '<userinput/imap/' with '<userinput/imaps/', and 
+<command/archivemail/ will establish a secure <acronym/SSL/ connection.  
+See below for more <application/IMAP/ peculiarities. 
+</Para>
+
 
 <Para>
 <Command/archivemail/ has some support for being run as the root user on
@@ -347,19 +363,6 @@ Display brief summary information about how to run <Command/archivemail/.
 </Para>
 
 <Para>
-To archive an <application/IMAP/-format mailbox, use the format
-<command>imap://username:password@server/mailbox</command> to specify the
-mailbox. If your username or password contains the '@' or ':' character,
-you can double-quote it like this:
-<command>imap://"username@bogus.com":"password"@server/mailbox</command>. Use a
-backslash to escape double-quotes that are part of a quoted username or password.
-You can omit the password from the <acronym/URL/; use the <option>--pwfile</option> 
-option to make <command/archivemail/ read the password from a file, or just 
-enter it upon request. Substitute '<acronym/imap/' with '<acronym/imaps/', and 
-<command/archivemail/ will establish a secure <acronym/SSL/ connection. 
-</Para>
-
-<Para>
 When reading an <application/mbox/-format mailbox, <command/archivemail/ will
 create a lockfile with the extension <filename>.lock</filename> so that
 procmail will not deliver to the mailbox while it is being processed. It will
@@ -395,6 +398,26 @@ will use the last-modified file timestamp on <application/MH/ and
 <Command/archivemail/ will refuse to operate on mailboxes that are symbolic 
 links or create tempfiles or archives in world-writable directories.
 </Para>
+
+<RefSect2>
+<Title><acronym/IMAP/ <acronym/URL/s</Title>
+<Para>
+<command/archivemail/'s <application/IMAP/ <acronym/URL/ parser was written
+with the <acronym>RFC</acronym> 2882 (<citetitle>Internet Message
+Format</citetitle>) rules for the <token>local-part</token> of email addresses
+in mind.
+So, rather than enforcing an <acronym/URL/-style encoding of non-<acronym/ascii/
+and reserved characters, it allows to double-quote the username and password.
+If your username or password contains the delimiter characters '@' or ':', just
+quote it like this:
+<replaceable>imap://"username@bogus.com":"password"@imap.bogus.com/mailbox
+</replaceable>.
+You can use a backslash to escape double-quotes that are part of a quoted
+username or password.
+Note that quoting only a substring will not work, and be aware that your shell
+will probably remove unprotected quotes or backslashes. 
+</Para>
+</RefSect2>
 
 </RefSect1>
 
@@ -471,6 +494,19 @@ that are older than 90 days to compressed mailboxes in the
 </screen>
 </Para>
 
+<Para>
+    To archive all mails older than 180 days from the given <application/IMAP/
+    INBOX to a compressed mailbox INBOX_archive.gz in the
+    <filename>$HOME/Mail/Archive</filename> directory, quoting the password and
+    reading it from the environment variable <envar>PASSWORD</envar>:
+</Para>
+<!-- I'm open to suggestions how to avoid making such a super-long line here.  -->
+<screen>
+<prompt>bash$ </prompt><userinput>archivemail -o $HOME/Mail/Archive imaps://user:'"'$PASSWORD'"'@example.org/INBOX</userinput> 
+</screen>
+<Para>
+    Note the protected quotes. 
+</Para>
 </RefSect1>
 
 <RefSect1>
@@ -527,7 +563,8 @@ removal.
 <RefSect1>
 <Title>Author</Title>
 <SimPara> This manual page was written by Paul Rodger &lt;paul at paulrodger dot
-com&gt;. Updated by Nikolaus Schulz <email>microschulz@web.de</email></SimPara>
+com&gt;. Updated and supplemented by Nikolaus Schulz
+<email>microschulz@web.de</email></SimPara>
 </RefSect1>
 
 </RefEntry>
