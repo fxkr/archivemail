@@ -1264,8 +1264,10 @@ def _archive_dir(mailbox_name, final_archive_name, type):
 
     cache = IdentityCache(mailbox_name)
 
-    msg = original.next()
-    while (msg):
+    for msg in original:
+        if not msg: 
+            vprint("ignoring invalid message '%s'" % get_filename(msg))
+            continue
         msg_size = sizeof_message(msg)
         stats.another_message(msg_size)
         vprint("processing message '%s'" % msg.get('Message-ID'))
@@ -1286,7 +1288,6 @@ def _archive_dir(mailbox_name, final_archive_name, type):
             if not options.dry_run: delete_queue.append(get_filename(msg)) 
         else:
             vprint("decision: retain message")
-        msg = original.next()
     vprint("finished reading messages") 
     if not options.dry_run:
         if archive:
