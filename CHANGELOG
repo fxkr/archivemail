@@ -7,8 +7,9 @@ Version 0.7.1   - UNRELEASED
     Closes: #1640878
   * Invalid messages/files in Maildirs caused archivemail to silently stop
     processing mails and claim it's all done.  Now skip these and go ahead. 
-    Closes: #1783369, Debian bug #255944, and Debian bug #305902 also seems to
-        be about this issue. 
+    (Thanks Elan Ruusamäe for tracking this down.) Closes: #1783369.  
+    (The Debian package has a different fix for this problem since 0.6.1-4,
+    closing Debian bugs #255944 and #305902.)
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.
