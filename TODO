@@ -14,12 +14,6 @@ Checked with rev. 90 and current head (rev. 178).
 
 Add recursive archiving of mail subfolders? 
 
-Maybe related: perhaps rework IMAP url parsing.  See RFC 3986 (generic URI
-syntax) and RFC 2192 (IMAP url scheme). 
-Note that urlparse.urlparse does not recognise the imaps scheme, and so does not
-split the netloc/authority from the mailbox/path, which would be a really nice
-service to have... 
-
 Line out what we want with respect to multiple selection criteria. 
 Some make sense, but this easily gets too complex, and if only it's a hassle
 with adding all the options.  Hm.  
