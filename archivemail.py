@@ -851,19 +851,14 @@ def add_status_headers(message):
     if last_dir == "cur":
         status = status + "O" 
 
-    # Maildir messages should not already have 'Status' and 'X-Status'
-    # headers, although I have seen it done. If they do already have them, just
-    # preserve them rather than trying to overwrite/verify them.
-    old_status = message.get('Status')
-    if old_status:
-        vprint("preserving existing Status header '%s'" % old_status)
-    elif status:
+    # Overwrite existing 'Status' and 'X-Status' headers.  They add no value in
+    # maildirs, and we better don't listen to them.
+    del message['Status']
+    if status:
         vprint("converting maildir status into Status header '%s'" % status)
         message['Status'] = status
-    old_x_status = message.get('X-Status')
-    if old_x_status: 
-        vprint("preserving existing X-Status header '%s'" % old_x_status)
-    elif x_status:
+    del message['X-Status']
+    if x_status:
         vprint("converting maildir status into X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
 
@@ -888,18 +883,14 @@ def add_status_headers_imap(message, flags):
     if flags.count("\\Recent") == 0:
         status = status + "O" 
 
-    # As with maildir folders, preserve Status and X-Status headers 
-    # if they exist (they shouldn't)
-    old_status = message.get('Status')
-    if old_status:
-        vprint("preserving existing Status header '%s'" % old_status)
-    elif status:
+    # As with maildir folders, overwrite Status and X-Status headers 
+    # if they exist.
+    del message['Status']
+    if status:
         vprint("converting imap status into Status header '%s'" % status)
         message['Status'] = status
-    old_x_status = message.get('X-Status')
-    if old_x_status: 
-        vprint("preserving existing X-Status header '%s'" % old_x_status)
-    elif x_status:
+    del message['X-Status']
+    if x_status:
         vprint("converting imap status into X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
 
