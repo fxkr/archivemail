@@ -871,11 +871,8 @@ def add_status_headers_imap(message, flags):
             pass # is this Status: D ? 
         else:
             pass # no whingeing here, although it could be a good experiment
-    if flags.count("\\Seen") == 0:
-        if flags.count("\\Recent") == 1:
-            status = status + "N"
-        else:
-            status = status + "O" 
+    if flags.count("\\Recent") == 0:
+        status = status + "O" 
 
     # As with maildir folders, preserve Status and X-Status headers 
     # if they exist (they shouldn't)
