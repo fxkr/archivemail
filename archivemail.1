@@ -41,6 +41,9 @@ See below for more \fBIMAP\fR peculiarities.
 \fBarchivemail\fR has some support for being run as the root user on
 user mailboxes. When running as root, it will \fBseteuid\fR(2) to the owner of the
 mailbox it is reading, creating any archive files as that user. 
+\fBWarning:\fR
+this automatic seteuid feature is insecure and deprecated. 
+It will be removed from later versions of \fBarchivemail\fR\&.
 .SH "OPTIONS"
 .TP
 \fB    -d \fINUM\fB, --days=\fINUM\fB\fR
