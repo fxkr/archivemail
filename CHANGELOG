@@ -22,6 +22,8 @@ Version 0.7.1   - UNRELEASED
   * Expand tilde in argument of long option --pwfile. (Thanks Christian
     Brabandt) Closes: Debian bug #434813
   * archivemail now accepts --days=0 
+  * Fixed crash if --warn-duplicate is used with IMAP (Thanks Christian
+    Brabandt) Closes: Debian bug #434786 (the Debian package already has a fix)
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.

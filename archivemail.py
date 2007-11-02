@@ -1331,6 +1331,7 @@ def _archive_imap(mailbox_name, final_archive_name):
 
     archive = None
     stats = Stats(mailbox_name, final_archive_name)
+    cache = IdentityCache(mailbox_name)
     imap_str = mailbox_name[mailbox_name.find('://') + 3:]
     imap_filter = build_imap_filter()
     vprint("imap filter: '%s'" % imap_filter)
