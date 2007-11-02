@@ -1173,7 +1173,7 @@ def archive(mailbox_name):
         clean_up()
 
         # if we are running as root, revert the seteuid()/setegid() above
-        if (os.getuid() == 0):
+        if former_gid != None:
             vprint("changing effective groupid and userid back to root")
             os.setegid(former_gid)
             os.seteuid(0)
