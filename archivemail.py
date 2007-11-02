@@ -668,6 +668,7 @@ Options are as follows:
   -u, --preserve-unread never archive unread messages
       --dont-mangle     do not mangle From_ in message bodies
       --delete          delete rather than archive old mail (use with caution!)
+      --copy            copy rather than archive old mail 
       --include-flagged messages flagged important can also be archived
       --no-compress     do not compress archives with gzip
       --warn-duplicate  warn about duplicate Message-IDs in the same mailbox
