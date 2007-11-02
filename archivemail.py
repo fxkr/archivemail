@@ -1388,14 +1388,19 @@ def _archive_imap(mailbox_name, final_archive_name):
     if not options.dry_run:
         if not options.delete_old_mail:
             for msn in message_list:
-                result, response = imap_srv.fetch(msn, '(RFC822 FLAGS)')
+                # Fetching message flags and body together always finds \Seen
+                # set.  To check \Seen, we must fetch the flags first. 
+                result, response = imap_srv.fetch(msn, '(FLAGS)')
+                if result != 'OK': unexpected_error("Failed to fetch message "
+                        "flags; server says '%s'" % response[0])
+                msg_flags = imaplib.ParseFlags(response[0])
+                result, response = imap_srv.fetch(msn, '(RFC822)')
                 if result != 'OK': unexpected_error("Failed to fetch message; "
                     "server says '%s'" % response[0])
                 if "\r\n" == os.linesep:
                     msg_str = response[0][1]
                 else:
                     msg_str = response[0][1].replace("\r\n", os.linesep)
-                msg_flags = imaplib.ParseFlags(response[0][0])
                 msg = rfc822.Message(cStringIO.StringIO(msg_str))
                 add_status_headers_imap(msg, msg_flags)
                 vprint("processing message '%s'" % msg.get('Message-ID'))
