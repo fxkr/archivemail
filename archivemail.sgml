@@ -415,6 +415,14 @@ There is no way around this, it's just how <application/IMAP/ works.
 This does not apply, however, if you run <command/archivemail/ with the options
 <option/--dry-run/ or <option/--copy/.
 </Para>
+<Para>
+<command/archivemail/ relies on server-side searches to determine the messages
+that should be archived. 
+When matching dates, <application/IMAP/ servers refer to server internal message 
+dates, and these may differ from both delivery time and the message's 
+<application/Date/ header. 
+Also, there exist broken servers which do not implement server side searches. 
+</Para>
 <RefSect3><Title><acronym/IMAP/ <acronym/URLs/</Title>
 <Para>
 <command/archivemail/'s <application/IMAP/ <acronym/URL/ parser was written

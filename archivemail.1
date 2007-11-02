@@ -267,6 +267,13 @@ probably not show up as 'new' in your user agent later on.
 There is no way around this, it's just how \fBIMAP\fR works. 
 This does not apply, however, if you run \fBarchivemail\fR with the options
 \fB--dry-run\fR or \fB--copy\fR\&.
+.PP
+\fBarchivemail\fR relies on server-side searches to determine the messages
+that should be archived. 
+When matching dates, \fBIMAP\fR servers refer to server internal message 
+dates, and these may differ from both delivery time and the message's 
+\fBDate\fR header. 
+Also, there exist broken servers which do not implement server side searches. 
 .SS "IMAP URLS"
 .PP
 \fBarchivemail\fR\&'s \fBIMAP\fR URL parser was written
