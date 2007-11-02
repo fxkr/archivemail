@@ -294,6 +294,19 @@ Delete rather than archive old mail. Use this option with caution!
 
 <VarListEntry>
 <Term>
+    <Option>--copy</Option>
+</Term>
+<ListItem><Para>
+Copy rather than archive old mail. 
+Creates an archive, but the archived messages are not deleted from the
+originating mailbox, which is left unchanged.
+This is a complement to the <option/--delete/ option, and mainly useful for
+testing purposes. 
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
     <Option>--include-flagged</Option>
 </Term>
 <ListItem><Para>

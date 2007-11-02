@@ -204,6 +204,13 @@ information.
 \fB    --delete\fR
 Delete rather than archive old mail. Use this option with caution!
 .TP
+\fB    --copy\fR
+Copy rather than archive old mail. 
+Creates an archive, but the archived messages are not deleted from the
+originating mailbox, which is left unchanged.
+This is a complement to the \fB--delete\fR option, and mainly useful for
+testing purposes. 
+.TP
 \fB    --include-flagged\fR
 Normally messages that are flagged important are not archived or deleted. If
 you specify this option, these messages can be archived or deleted just like
