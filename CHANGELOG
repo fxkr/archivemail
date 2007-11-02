@@ -10,6 +10,11 @@ Version 0.7.1   - UNRELEASED
     (Thanks Elan Ruusamäe for tracking this down.) Closes: #1783369.  
     (The Debian package has a different fix for this problem since 0.6.1-4,
     closing Debian bugs #255944 and #305902.)
+  * Fixed IMAP message flag conversion which was completely broken. (Thanks
+    Christian Brabandt)  Closes: Debian bug #434807
+  * New option --copy: archive mail, but don't delete it from the mailbox. 
+    This is mainly useful for testing purposes, and complements --delete.
+    Closes: #981865, #988803, #1764851, Debian bug #434798
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.
