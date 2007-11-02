@@ -193,6 +193,7 @@ class Options:
     min_size             = None
     verbose              = 0
     warn_duplicates      = 0
+    copy_old_mail        = 0
 
     def parse_args(self, args, usage):
         """Set our runtime options from the command-line arguments.
@@ -211,7 +212,7 @@ class Options:
                              "include-flagged", "no-compress", "output-dir=",
                              "filter-append=", "pwfile=", "dont-mangle",
                              "preserve-unread", "quiet", "size=", "suffix=",
-                             "verbose", "version", "warn-duplicate"])
+                             "verbose", "version", "warn-duplicate", "copy"])
         except getopt.error, msg:
             user_error(msg)
 
@@ -219,6 +220,8 @@ class Options:
 
         for o, a in opts:
             if o == '--delete':
+                if self.copy_old_mail: 
+                    user_error("found conflicting options --copy and --delete")
                 self.delete_old_mail = 1
             if o == '--include-flagged':
                 self.include_flagged = 1
@@ -259,6 +262,10 @@ class Options:
                 self.mangle_from = 0
             if o in ('-v', '--verbose'):
                 self.verbose = 1
+            if o in ('--copy'):
+                if self.delete_old_mail: 
+                    user_error("found conflicting options --copy and --delete")
+                self.copy_old_mail = 1
             if o in ('-V', '--version'):
                 print __version__ + "\n\n" + __copyright__
                 sys.exit(0)
@@ -1212,7 +1219,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
                     archive.write(msg)
         else:
             vprint("decision: retain message")
-            if not options.dry_run:
+            if not options.dry_run and not options.copy_old_mail:
                 if (not retain):
                     retain = RetainMbox(mailbox_name)
                 retain.write(msg)
@@ -1237,12 +1244,13 @@ def _archive_mbox(mailbox_name, final_archive_name):
                 original.reset_stat()
         elif archive:
             archive.finalise()
-            if retain:
-                retain.finalise()
-            else:
-                # nothing was retained - everything was deleted
-                original.leave_empty()
-                original.reset_stat()
+            if not options.copy_old_mail:
+                if retain:
+                    retain.finalise()
+                else:
+                    # nothing was retained - everything was deleted
+                    original.leave_empty()
+                    original.reset_stat()
         else:
             # There was nothing to archive
             if retain:
@@ -1294,7 +1302,8 @@ def _archive_dir(mailbox_name, final_archive_name, type):
                     if type == "maildir":
                         add_status_headers(msg)
                     archive.write(msg)
-            if not options.dry_run: delete_queue.append(get_filename(msg)) 
+            if not options.dry_run and not options.copy_old_mail:
+                delete_queue.append(get_filename(msg)) 
         else:
             vprint("decision: retain message")
     vprint("finished reading messages") 
@@ -1344,7 +1353,7 @@ def _archive_imap(mailbox_name, final_archive_name):
         result, response = imap_srv.login(imap_username, imap_password)
     vprint("logged in to server as %s" % imap_username)
 
-    if options.dry_run: 
+    if options.dry_run or options.copy_old_mail: 
         result, response = imap_srv.select(imap_folder, readonly=True)
     else:
         result, response = imap_srv.select(imap_folder)
@@ -1412,17 +1421,18 @@ def _archive_imap(mailbox_name, final_archive_name):
             if archive:
                 archive.close()
                 archive.finalise()
-        # do not delete more than a certain number of messages at a time,
-        # because the command length is limited. This avoids that servers
-        # terminate the connection with EOF or TCP RST.
-        vprint("Deleting %s messages" % len(message_list))
-        max_delete = 100
-        for i in range(0, len(message_list), max_delete):
-            result, response = imap_srv.store( \
-                string.join(message_list[i:i+max_delete], ','),
-                '+FLAGS.SILENT', '\\Deleted')
-            if result != 'OK': unexpected_error("Error while deleting "
-                "messages; server says '%s'" % response[0])
+        if not options.copy_old_mail: 
+            vprint("Deleting %s messages" % len(message_list))
+            # do not delete more than a certain number of messages at a time,
+            # because the command length is limited. This avoids that servers
+            # terminate the connection with EOF or TCP RST.
+            max_delete = 100
+            for i in range(0, len(message_list), max_delete):
+                result, response = imap_srv.store( \
+                    string.join(message_list[i:i+max_delete], ','),
+                    '+FLAGS.SILENT', '\\Deleted')
+                if result != 'OK': unexpected_error("Error while deleting "
+                    "messages; server says '%s'" % response[0])
     imap_srv.close()
     imap_srv.logout()
     if not options.quiet:
