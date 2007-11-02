@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "02 November 2007" "SP" ""
+.TH "ARCHIVEMAIL" "1" "03 November 2007" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -263,6 +263,9 @@ If it cannot find any valid date in these headers, it
 will use the last-modified file timestamp on \fBMH\fR and
 \fBMaildir\fR format mailboxes, or the date on the 
 \fBFrom\fR line on \fBmbox\fR-format mailboxes.
+.PP
+The conversion from other formats to \fBmbox\fR(5) will silently overwrite existing
+\fBStatus\fR and \fBX-Status\fR message headers. 
 .PP
 \fBarchivemail\fR will refuse to operate on mailboxes that are symbolic 
 links or create tempfiles or archives in world-writable directories.

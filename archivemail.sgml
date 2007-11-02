@@ -414,6 +414,11 @@ will use the last-modified file timestamp on <application/MH/ and
 </Para>
 
 <Para>
+    The conversion from other formats to &mbox; will silently overwrite existing
+    <application/Status/ and <application/X-Status/ message headers. 
+</Para>
+
+<Para>
 <Command/archivemail/ will refuse to operate on mailboxes that are symbolic 
 links or create tempfiles or archives in world-writable directories.
 </Para>
