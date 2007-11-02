@@ -242,7 +242,7 @@ class Options:
             if o in ('-o', '--output-dir'):
                 self.output_dir = os.path.expanduser(a)
             if o in ('-P', '--pwfile'):
-                self.pwfile = a
+                self.pwfile = os.path.expanduser(a)
             if o in ('-F', '--filter-append'):
                 self.filter_append = a
             if o in ('-h', '-?', '--help'):

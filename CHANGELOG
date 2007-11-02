@@ -19,6 +19,8 @@ Version 0.7.1   - UNRELEASED
     actually switched them before. Closes: #1762907
   * The automatic seteuid feature of archivemail is insecure and thus
     deprecated; it will be removed from later versions. 
+  * Expand tilde in argument of long option --pwfile. (Thanks Christian
+    Brabandt) Closes: Debian bug #434813
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.
