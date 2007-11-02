@@ -17,6 +17,8 @@ Version 0.7.1   - UNRELEASED
     Closes: #981865, #988803, #1764851, Debian bug #434798
   * If running as root, only switch the effective uid and gid back if we have
     actually switched them before. Closes: #1762907
+  * The automatic seteuid feature of archivemail is insecure and thus
+    deprecated; it will be removed from later versions. 
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.

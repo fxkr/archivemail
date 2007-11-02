@@ -1132,6 +1132,8 @@ def archive(mailbox_name):
         os.setegid(mailbox_group)
         vprint("changing effective user id to: %d" % mailbox_user)
         os.seteuid(mailbox_user)
+        user_warning("changing effective user id: this automatic feature "
+            "is deprecated and will be removed from later versions.")
 
     old_temp_dir = tempfile.tempdir
     try:
