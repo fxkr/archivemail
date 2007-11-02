@@ -400,7 +400,16 @@ links or create tempfiles or archives in world-writable directories.
 </Para>
 
 <RefSect2>
-<Title><acronym/IMAP/ <acronym/URL/s</Title>
+<Title><acronym/IMAP/</Title>
+<Para>
+When <command/archivemail/ processes an <application/IMAP/ folder, all messages 
+in that folder will have their <literal/\Recent/ flag unset, and they will 
+probably not show up as 'new' in your user agent later on. 
+There is no way around this, it's just how <application/IMAP/ works. 
+This does not apply, however, if you run <command/archivemail/ with the options
+<option/--dry-run/ or <option/--copy/.
+</Para>
+<RefSect3><Title><acronym/IMAP/ <acronym/URLs/</Title>
 <Para>
 <command/archivemail/'s <application/IMAP/ <acronym/URL/ parser was written
 with the <acronym>RFC</acronym> 2882 (<citetitle>Internet Message
@@ -417,6 +426,7 @@ username or password.
 Note that quoting only a substring will not work, and be aware that your shell
 will probably remove unprotected quotes or backslashes. 
 </Para>
+</RefSect3>
 </RefSect2>
 
 </RefSect1>

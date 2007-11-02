@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "24 October 2007" "SP" ""
+.TH "ARCHIVEMAIL" "1" "02 November 2007" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -256,6 +256,14 @@ will use the last-modified file timestamp on \fBMH\fR and
 .PP
 \fBarchivemail\fR will refuse to operate on mailboxes that are symbolic 
 links or create tempfiles or archives in world-writable directories.
+.SS "IMAP"
+.PP
+When \fBarchivemail\fR processes an \fBIMAP\fR folder, all messages 
+in that folder will have their \\Recent flag unset, and they will 
+probably not show up as 'new' in your user agent later on. 
+There is no way around this, it's just how \fBIMAP\fR works. 
+This does not apply, however, if you run \fBarchivemail\fR with the options
+\fB--dry-run\fR or \fB--copy\fR\&.
 .SS "IMAP URLS"
 .PP
 \fBarchivemail\fR\&'s \fBIMAP\fR URL parser was written
