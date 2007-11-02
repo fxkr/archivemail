@@ -275,8 +275,8 @@ class Options:
         """Complain bitterly about our options now rather than later"""
         if self.output_dir:
             check_sane_destdir(self.output_dir)
-        if self.days_old_max < 1:
-            user_error("--days argument must be greater than zero")
+        if self.days_old_max < 0:
+            user_error("--days argument must be positive")
         if self.days_old_max >= 10000:
             user_error("--days argument must be less than 10000")
         if self.min_size is not None and self.min_size < 1:
