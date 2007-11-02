@@ -5,13 +5,6 @@ Check sf.net and Debian BTS for new bugs.
 
 Port to email.message and the new mailboxes in Python 2.5.
 
-Add  note to the man page that the dates of messages in IMAP folders is the IMAP
-server internal date, and may thus differ from both delivery time and the
-message's RFC822 Date header. 
-
-I cannot reproduce Debian bug #255944 (problem with 0 size messages). Hm.
-Checked with rev. 90 and current head (rev. 178). 
-
 Add recursive archiving of mail subfolders? 
 
 Line out what we want with respect to multiple selection criteria. 
