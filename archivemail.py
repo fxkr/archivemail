@@ -1383,7 +1383,7 @@ def _archive_imap(mailbox_name, final_archive_name):
                     msg_str = response[0][1]
                 else:
                     msg_str = response[0][1].replace("\r\n", os.linesep)
-                msg_flags = imaplib.ParseFlags(response[1])
+                msg_flags = imaplib.ParseFlags(response[0][0])
                 msg = rfc822.Message(cStringIO.StringIO(msg_str))
                 add_status_headers_imap(msg, msg_flags)
                 vprint("processing message '%s'" % msg.get('Message-ID'))
