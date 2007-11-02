@@ -1332,7 +1332,10 @@ def _archive_imap(mailbox_name, final_archive_name):
         result, response = imap_srv.login(imap_username, imap_password)
     vprint("logged in to server as %s" % imap_username)
 
-    result, response = imap_srv.select(imap_folder)
+    if options.dry_run: 
+        result, response = imap_srv.select(imap_folder, readonly=True)
+    else:
+        result, response = imap_srv.select(imap_folder)
     if result != 'OK': unexpected_error("cannot select imap folder; "
         "server says '%s'" % response[0])
     vprint("selected imap folder %s" % imap_folder)
