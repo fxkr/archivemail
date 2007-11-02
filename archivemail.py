@@ -846,10 +846,16 @@ def add_status_headers(message):
     # Maildir messages should not already have 'Status' and 'X-Status'
     # headers, although I have seen it done. If they do already have them, just
     # preserve them rather than trying to overwrite/verify them.
-    if not message.get('Status') and status:
+    old_status = message.get('Status')
+    if old_status:
+        vprint("preserving existing Status header '%s'" % old_status)
+    elif status:
         vprint("converting maildir status into Status header '%s'" % status)
         message['Status'] = status
-    if not message.get('X-Status') and x_status:
+    old_x_status = message.get('X-Status')
+    if old_x_status: 
+        vprint("preserving existing X-Status header '%s'" % old_x_status)
+    elif x_status:
         vprint("converting maildir status into X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
 
@@ -876,10 +882,16 @@ def add_status_headers_imap(message, flags):
 
     # As with maildir folders, preserve Status and X-Status headers 
     # if they exist (they shouldn't)
-    if not message.get('Status') and status:
+    old_status = message.get('Status')
+    if old_status:
+        vprint("preserving existing Status header '%s'" % old_status)
+    elif status:
         vprint("converting imap status into Status header '%s'" % status)
         message['Status'] = status
-    if not message.get('X-Status') and x_status:
+    old_x_status = message.get('X-Status')
+    if old_x_status: 
+        vprint("preserving existing X-Status header '%s'" % old_x_status)
+    elif x_status:
         vprint("converting imap status into X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
 
