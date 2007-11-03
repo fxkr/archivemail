@@ -379,9 +379,6 @@ Display brief summary information about how to run <Command/archivemail/.
 <Title>Notes</Title>
 <Para>
 <Command/archivemail/ requires &python; version 2.3 or later.
-</Para>
-
-<Para>
 When reading an <application/mbox/-format mailbox, <command/archivemail/ will
 create a lockfile with the extension <filename>.lock</filename> so that
 procmail will not deliver to the mailbox while it is being processed. It will
@@ -394,11 +391,10 @@ mailbox while it is being read.
 <Command/archivemail/ will always attempt to preserve the mode,
 last-access and last-modify times of the input mailbox. However, archive
 mailboxes are always created with a mode of <application/0600/.
-</Para>
-
-<Para>
 If <Command/archivemail/ finds a pre-existing archive mailbox it
 will append rather than overwrite that archive.
+<Command/archivemail/ will refuse to operate on mailboxes that are symbolic 
+links or create tempfiles or archives in world-writable directories.
 </Para>
 
 <Para>
@@ -414,13 +410,8 @@ will use the last-modified file timestamp on <application/MH/ and
 </Para>
 
 <Para>
-    The conversion from other formats to &mbox; will silently overwrite existing
+    A conversion from other formats to &mbox; will silently overwrite existing
     <application/Status/ and <application/X-Status/ message headers. 
-</Para>
-
-<Para>
-<Command/archivemail/ will refuse to operate on mailboxes that are symbolic 
-links or create tempfiles or archives in world-writable directories.
 </Para>
 
 <RefSect2>
@@ -436,9 +427,9 @@ This does not apply, however, if you run <command/archivemail/ with the options
 <Para>
 <command/archivemail/ relies on server-side searches to determine the messages
 that should be archived. 
-When matching dates, <application/IMAP/ servers refer to server internal message 
-dates, and these may differ from both delivery time and the message's 
-<application/Date/ header. 
+When matching message dates, <application/IMAP/ servers refer to server internal
+message dates, and these may differ from both delivery time of a message and 
+its <application/Date/ header. 
 Also, there exist broken servers which do not implement server side searches. 
 </Para>
 <RefSect3><Title><acronym/IMAP/ <acronym/URLs/</Title>

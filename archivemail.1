@@ -239,7 +239,6 @@ Display brief summary information about how to run \fBarchivemail\fR\&.
 .SH "NOTES"
 .PP
 \fBarchivemail\fR requires \fBpython\fR(1) version 2.3 or later.
-.PP
 When reading an \fBmbox\fR-format mailbox, \fBarchivemail\fR will
 create a lockfile with the extension \fI\&.lock\fR so that
 procmail will not deliver to the mailbox while it is being processed. It will
@@ -250,9 +249,10 @@ mailbox while it is being read.
 \fBarchivemail\fR will always attempt to preserve the mode,
 last-access and last-modify times of the input mailbox. However, archive
 mailboxes are always created with a mode of \fB0600\fR\&.
-.PP
 If \fBarchivemail\fR finds a pre-existing archive mailbox it
 will append rather than overwrite that archive.
+\fBarchivemail\fR will refuse to operate on mailboxes that are symbolic 
+links or create tempfiles or archives in world-writable directories.
 .PP
 \fBarchivemail\fR attempts to find the delivery date of a message by
 looking for valid dates in the following headers, in order of precedence: 
@@ -264,11 +264,8 @@ will use the last-modified file timestamp on \fBMH\fR and
 \fBMaildir\fR format mailboxes, or the date on the 
 \fBFrom\fR line on \fBmbox\fR-format mailboxes.
 .PP
-The conversion from other formats to \fBmbox\fR(5) will silently overwrite existing
+A conversion from other formats to \fBmbox\fR(5) will silently overwrite existing
 \fBStatus\fR and \fBX-Status\fR message headers. 
-.PP
-\fBarchivemail\fR will refuse to operate on mailboxes that are symbolic 
-links or create tempfiles or archives in world-writable directories.
 .SS "IMAP"
 .PP
 When \fBarchivemail\fR processes an \fBIMAP\fR folder, all messages 
@@ -280,9 +277,9 @@ This does not apply, however, if you run \fBarchivemail\fR with the options
 .PP
 \fBarchivemail\fR relies on server-side searches to determine the messages
 that should be archived. 
-When matching dates, \fBIMAP\fR servers refer to server internal message 
-dates, and these may differ from both delivery time and the message's 
-\fBDate\fR header. 
+When matching message dates, \fBIMAP\fR servers refer to server internal
+message dates, and these may differ from both delivery time of a message and 
+its \fBDate\fR header. 
 Also, there exist broken servers which do not implement server side searches. 
 .SS "IMAP URLS"
 .PP
