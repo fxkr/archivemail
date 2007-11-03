@@ -298,6 +298,7 @@ Note that quoting only a substring will not work, and be aware that your shell
 will probably remove unprotected quotes or backslashes. 
 .SH "EXAMPLES"
 .PP
+.PP
 To archive all messages in the mailbox \fIdebian-user\fR that
 are older than 180 days to a compressed mailbox called
 \fIdebian-user_archive.gz\fR in the current directory: 
@@ -305,6 +306,7 @@ are older than 180 days to a compressed mailbox called
 .nf
 bash$ \fBarchivemail debian-user\fR
 .fi
+.PP
 .PP
 To archive all messages in the mailbox \fIdebian-user\fR that
 are older than 180 days to a compressed mailbox called
@@ -315,6 +317,7 @@ year is April, 2002) in the current directory:
 bash$ \fBarchivemail --suffix '_%B_%Y' debian-user\fR
 .fi
 .PP
+.PP
 To archive all messages in the mailbox \fIcm-melb\fR that
 are older than the first of January 2002 to a compressed mailbox called
 \fIcm-melb_archive.gz\fR in the current directory: 
@@ -323,11 +326,13 @@ are older than the first of January 2002 to a compressed mailbox called
 bash$ \fBarchivemail --date'1 Jan 2002' cm-melb\fR
 .fi
 .PP
+.PP
 Exactly the same as the above example, using an ISO date format instead:
 
 .nf
 bash$ \fBarchivemail --date=2002-01-01 cm-melb\fR
 .fi
+.PP
 .PP
 To delete all messages in the mailbox \fIspam\fR that
 are older than 30 days:
@@ -335,6 +340,7 @@ are older than 30 days:
 .nf
 bash$ \fBarchivemail --delete --days=30 spam\fR
 .fi
+.PP
 .PP
 To archive all read messages in the mailbox \fIincoming\fR that
 are older than 180 days to a compressed mailbox called
@@ -344,6 +350,7 @@ are older than 180 days to a compressed mailbox called
 bash$ \fBarchivemail --preserve-unread incoming\fR
 .fi
 .PP
+.PP
 To archive all messages in the mailbox \fIreceived\fR that
 are older than 180 days to an uncompressed mailbox called 
 \fIreceived_archive\fR in the current directory:
@@ -352,6 +359,7 @@ are older than 180 days to an uncompressed mailbox called
 bash$ \fBarchivemail --no-compress received\fR
 .fi
 .PP
+.PP
 To archive all mailboxes in the directory \fI$HOME/Mail\fR 
 that are older than 90 days to compressed mailboxes in the
 \fI$HOME/Mail/Archive\fR directory:
@@ -359,6 +367,7 @@ that are older than 90 days to compressed mailboxes in the
 .nf
 bash$ \fBarchivemail -d90 -o $HOME/Mail/Archive $HOME/Mail/*\fR
 .fi
+.PP
 .PP
 To archive all mails older than 180 days from the given \fBIMAP\fR
 INBOX to a compressed mailbox INBOX_archive.gz in the

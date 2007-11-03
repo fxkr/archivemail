@@ -457,6 +457,7 @@ will probably remove unprotected quotes or backslashes.
 <RefSect1>
 <Title>Examples</Title>
 
+<InformalExample>
 <Para>
 To archive all messages in the mailbox <filename>debian-user</filename> that
 are older than 180 days to a compressed mailbox called
@@ -465,7 +466,9 @@ are older than 180 days to a compressed mailbox called
 <prompt>bash$ </prompt><userinput>archivemail debian-user</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
 To archive all messages in the mailbox <filename>debian-user</filename> that
 are older than 180 days to a compressed mailbox called
@@ -475,7 +478,9 @@ year is April, 2002) in the current directory:
 <prompt>bash$ </prompt><userinput>archivemail --suffix '_%B_%Y' debian-user</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
 To archive all messages in the mailbox <filename>cm-melb</filename> that
 are older than the first of January 2002 to a compressed mailbox called
@@ -484,14 +489,18 @@ are older than the first of January 2002 to a compressed mailbox called
 <prompt>bash$ </prompt><userinput>archivemail --date'1 Jan 2002' cm-melb</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
 Exactly the same as the above example, using an ISO date format instead:
 <screen>
 <prompt>bash$ </prompt><userinput>archivemail --date=2002-01-01 cm-melb</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
 To delete all messages in the mailbox <filename>spam</filename> that
 are older than 30 days:
@@ -499,7 +508,9 @@ are older than 30 days:
 <prompt>bash$ </prompt><userinput>archivemail --delete --days=30 spam</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
 To archive all read messages in the mailbox <filename>incoming</filename> that
 are older than 180 days to a compressed mailbox called
@@ -508,7 +519,9 @@ are older than 180 days to a compressed mailbox called
 <prompt>bash$ </prompt><userinput>archivemail --preserve-unread incoming</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
 To archive all messages in the mailbox <filename>received</filename> that
 are older than 180 days to an uncompressed mailbox called 
@@ -517,7 +530,9 @@ are older than 180 days to an uncompressed mailbox called
 <prompt>bash$ </prompt><userinput>archivemail --no-compress received</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
 To archive all mailboxes in the directory <filename>$HOME/Mail</filename> 
 that are older than 90 days to compressed mailboxes in the
@@ -526,7 +541,9 @@ that are older than 90 days to compressed mailboxes in the
 <prompt>bash$ </prompt><userinput>archivemail -d90 -o $HOME/Mail/Archive $HOME/Mail/*</userinput>
 </screen>
 </Para>
+</InformalExample>
 
+<InformalExample>
 <Para>
     To archive all mails older than 180 days from the given <application/IMAP/
     INBOX to a compressed mailbox INBOX_archive.gz in the
@@ -540,6 +557,7 @@ that are older than 90 days to compressed mailboxes in the
 <Para>
     Note the protected quotes. 
 </Para>
+</InformalExample>
 </RefSect1>
 
 <RefSect1>
