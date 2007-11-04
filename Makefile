@@ -49,6 +49,6 @@ archivemail.1: archivemail.sgml
 	docbook2man archivemail.sgml
 	chmod 644 archivemail.1
 
-archivemail.html: archivemail.sgml
-	docbook2html -u archivemail.sgml
+archivemail.html: archivemail.sgml db2html.dsl
+	docbook2html --dsl db2html.dsl -u archivemail.sgml
 	chmod 644 archivemail.html
