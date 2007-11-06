@@ -1,27 +1,7 @@
-body { 
-    font-family: "Times New Roman", serif; 
-    font-size: 12pt; 
-    padding: 2%; 
-    line-height: 130%; 
-    margin: 0; 
-    /*color: #036;*/
-}
-h1 { 
-    font-size: 220%; 
-    font-weight: bold; 
-    /*text-align: center;*/
-    padding: 0 0 0.4em 0.1em; 
-    margin: 0 0 0.5em 0; 
-    border-bottom: 2px solid black;
-}
+@import "style.css"; 
 h2 {
-    margin: 1em 0 0.8em 0; 
-    padding: 0; 
     font-variant: small-caps; 
     font-size: 170%; 
-}
-pre, tt, kbd, code, pre samp {
-   font-family: "Courier 10 Pitch", Courier, "Courier New", monospace;
 }
 .INFORMALEXAMPLE {
     margin-bottom: 1.2em; 

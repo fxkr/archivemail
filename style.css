@@ -1,1 +1,54 @@
-BODY { background: white; color: black; }
+body { 
+    font-family: "Times New Roman", serif; 
+    font-size: 12pt; 
+    padding: 2%; 
+    line-height: 130%; 
+    margin: 0; 
+    /*color: #036;*/
+}
+h1 { 
+    font-size: 220%; 
+    font-weight: bold; 
+    padding: 0 0 0.4em 0.1em; 
+    /*margin: 0 0 0.5em 0; */
+    margin: 0; 
+    /*border-bottom: 2px solid black;*/
+}
+hr { 
+    border: 1px #b8b8b8 solid; 
+}
+h1 + hr {
+    margin-top: 0;
+    margin-bottom: 1.7em; 
+}
+h2 {
+    margin: 1em 0 0.8em 0; 
+    padding: 0; 
+    font-size: 150%;
+}
+pre, tt, kbd, code, pre samp {
+   font-family: "Courier 10 Pitch", Courier, "Courier New", monospace;
+}
+img {border: none;}
+a {
+    text-decoration: underline;
+}
+a:link {
+    /*color: #0073c7;*/
+    color: blue; 
+    background-color: inherit;
+}
+
+a:visited {
+    /*color: #5A88B5;*/
+    color: #844084; 
+    background-color: inherit;
+}
+
+/*
+a:hover,
+a:active {
+    color: #0073c7;
+    background-color: #f0f0f0;
+}
+*/
