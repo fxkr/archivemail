@@ -1,7 +1,23 @@
+Release blockers for 0.7.1
+--------------------------
+
+Implement --all. (?)  Check patch from #1764846.
+
+Check sf.net and Debian BTS for new bugs.  Again.
+
+------------ EO: release blockers -------------
+
+Implement --include-draft.  But before, think about it again.  (This is feature
+request #1569305.)
+
+Create temporary archive mbox in /tmp only if we don't have write permissions in
+the mbox directory.  Currently, if /tmp resides on another filesystem, we have
+to copy the entire box to its destination. 
+
+Implement a fallback if an IMAP server doesn't support SEARCH. (Ouch!)
+
 Add IMAP tests to the testsuite (upload test messages with IMAP "APPEND
 date-string"). 
-
-Check sf.net and Debian BTS for new bugs. 
 
 Port to email.message and the new mailboxes in Python 2.5.
 
