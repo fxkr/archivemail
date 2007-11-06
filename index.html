@@ -4,12 +4,26 @@
 <head>
 <meta http-equiv="Content-type" 
       content="text/html;charset=us-ascii">
-    <title>archivemail - a tool for archiving and compressing old email</title>
+    <title>archivemail &ndash; a tool for archiving and compressing old email</title>
     <link title="archivemail style" rel=stylesheet href="style.css" 
     type="text/css">
 <style type="text/css">
 /*<![CDATA[*/
-span.mail {text-decoration: underline;}
+.command {font-weight: bold;}
+.example {
+    /*background-color: #e0e0e0;*/
+    padding: 0 2em; 
+}
+#status {
+    float: right; 
+    width: 10em
+    margin-left: 4em; 
+    margin-top: 1.3em;
+    padding: 3ex; 
+    border: 1px solid #777777; 
+    line-height: 160%; 
+}
+/*span.mail {text-decoration: underline;}*/
 /*]]>*/
 </style>
 </head>
@@ -17,17 +31,22 @@ span.mail {text-decoration: underline;}
    
 <h1>archivemail</h1>
 
-<h2>Description</h2>
-
+<hr>
+<div id="status">
+    <strong>Latest version: 0.7.1</strong><br>
+    Released on 2007-11-07
+</div>
+<h2>What is it?</h2>
 <p>
-<strong>archivemail</strong> is a tool written in <a
-href="http://www.python.org/">Python</a> for archiving and compressing old
-email in mailboxes. It can move messages older than the specified number of
-days to a separate <a href="http://www.qmail.org/man/man5/mbox.html">mbox
-format</a> mailbox that is compressed with <a
-href="http://www.gzip.org/">gzip</a>, or optionally just delete old email.
+<span class="command">archivemail</span> is a tool for archiving and compressing
+old email in mailboxes. 
+It moves messages older than the specified number of
+days to a separate <a title="mbox(5) man page" 
+href="http://www.qmail.org/man/man5/mbox.html">mbox format</a> mailbox that is 
+compressed with <span class="command">gzip</span>.
+It can also just delete old email rather than archive it. 
 
-<h2>Why should I use it?</h2>
+<h2>What can it do for me?</h2>
 <p>
 Maybe some of your mailboxes are quite large (eg, over 10,000 messages) and
 they are taking a while to load in your mail reader. Perhaps they are taking
@@ -41,119 +60,132 @@ compressed mailbox will mean:
 <li>You won't be confronted with semi-obsolete mail all the time.
 </ol>
 <p>
+You can also use <span class="command">archivemail</span> as a simple backup
+tool. 
 
-If you would prefer to just delete old email rather than archive it,
-<strong>archivemail</strong> can do that too.
-</p>
-
-<h2>Current Release</h2>
-<p>
-	The current release is version <a
-	href="http://prdownloads.sourceforge.net/archivemail/archivemail-0.7.0.tar.gz?download">0.7.0</a>,
-	and is ready for download.  Older versions are available <a
-	href="http://sourceforge.net/project/showfiles.php?group_id=49630">here</a>.
-</p>
-
-
-<h2>Features</h2>
-
+<h2>Features overview</h2>
 <ul>
-<li>Support for archiving 
-    <a href="http://www.imap.org/">IMAP</a>,
-    <a href="http://www.qmail.org/man/man5/mbox.html">mbox</a>,
-    <a href="http://www.faqs.org/faqs/mail/mh-faq/">MH</a> and 
-    <a href="http://www.qmail.org/man/man5/maildir.html">maildir</a> format
+<li>Supports archiving 
+    <a title="about IMAP" href="http://www.imap.org/">IMAP</a>,
+    <a title="mbox(5) man page" href="http://www.qmail.org/man/man5/mbox.html">mbox</a>,
+    <a title="MH FAQ" href="http://www.faqs.org/faqs/mail/mh-faq/">MH</a> and 
+    <a title="maildir(5) man page" 
+        href="http://www.qmail.org/man/man5/maildir.html">Maildir</a> format 
     mailboxes.
-<li>You can configure the amount of days before mail is considered old -- 
-    with the default being 180 days.
-<li>Messages that are flagged important are not archived or deleted unless you
-    specify the <em>--include-flagged</em> option.
-<li>Optionally warn about duplicate Message-IDs in a mailbox.
-<li>You can specify an option so that unread mail is never archived.
-<li>Allows you to store the compressed archive mailboxes in a directory of
+<li>Old mail can be either archived or just deleted. 
+<li>The age in days that is considered old is configurable &ndash; it defaults
+    to 180 days.
+    You can also set an absolute limit date. 
+<li>Messages that are flagged important are not archived or deleted unless
+    explicitely requested.
+<!--<li>You can specify an option so that unread mail is never archived.-->
+<li>Can be configured to preserve unread mail. 
+<li>Can be configured to only archive messages over a given byte size.
+<li>Stores the compressed archive mailboxes in a directory of
     your choice, with an extension of your choice.
-<li>Support for deleting old mail rather than archiving it.
-<li>Optional ability to archive messages older than an absolute date with the
-    <em>--date</em> option.
-<li>Ability to only archive messages over a certain byte size.
-<li>IMAPS/SSL support.
-<li>Arbitrary IMAP filter strings can added on the commandline.
+<li>Easy read-only testing, not touching your valuable data. 
+<li>Supports IMAPS/SSL.
+<li>When archiving IMAP mailboxes, the message selection can be refined by
+    extending the underlying IMAP <code>SEARCH</code> command with arbitrary
+    search keys (you will have to cope with the raw IMAP protocol, though).
 </ul>
 
 <h2>Documentation</h2>
-<ul>
-<li> <a href="manpage.html">HTML version of the archivemail manpage</a>
-<li> <a href="README">README</a> file
-<li> <a href="CHANGELOG">CHANGELOG</a> 
-<li> <a href="TODO">TODO</a> list
-<li> <a href="RELNOTES">Release notes</a> for the latest version
-</ul>
-
-
-<h2>Articles</h2>
-<ul>
-<li> Emmanuel Seyman wrote an 
-<a href="http://muttfr.org/gen.php3/2002/11/20/108,1,0,0,1.php3">article</a>
-about archivemail for <a href="http://www.muttfr.org/">muttfr.org</a>, a
-French website about <a href="http://www.mutt.org/">mutt</a>.
-</ul>
-
-<h2>License</h2>
 <p>
-This software is licensed under the 
-<a href="http://www.gnu.org/licenses/licenses.html#GPL">GNU GPL</a>. 
-See the file <a href="COPYING">COPYING</a> for more information. 
+The <a href="manpage.html">archivemail manpage</a> is the primary documentation
+for <span class="command">archivemail</span>.
+To see what has changed in the latest version, check the <a
+    href="RELNOTES">release notes</a>. 
+If you want to have a closer look at the current development status, here's the 
+<a title="changelog in subversion HEAD" href=
+"http://archivemail.svn.sourceforge.net/viewvc/archivemail/trunk/CHANGELOG?revision=HEAD&amp;view=markup">
+CHANGELOG</a> and the <a title="TODO list in subversion HEAD" href=
+"http://archivemail.svn.sourceforge.net/viewvc/archivemail/trunk/TODO?revision=HEAD&amp;view=markup">
+TODO list</a>, fresh from the repository. 
+
+<h2>Where can I get it?</h2>
+<p>
+You can grab the latest version of <span class="command">archivemail</span>
+directly from the <a
+href="http://sourceforge.net/project/showfiles.php?group_id=49630">archivemail
+download area</a> at Sourceforge. 
+There will hopefully be up-to-date binary RPM packages at the 
+<a href="http://software.opensuse.org/download/server:/mail/">OpenSUSE build
+service</a> for SUSE Linux and Fedora Core 5 soon.  
+Also, many Linux distributions provide packages; e.g. there is a 
+<a href="http://packages.debian.org/unstable/archivemail">Debian
+package</a>.
+
+<p>
+<span class="command">archivemail</span> is written in Python, and hacking it is
+easy and fun; you can check out the source from the subversion repository with
+the following command: 
+<div class="example">
+<kbd>svn co https://archivemail.svn.sourceforge.net/svnroot/archivemail/trunk</kbd>
+</div>
+<p>
+See also the short <a href="http://sourceforge.net/svn/?group_id=49630">
+introduction to subversion access</a> at sourceforge. 
+
+<!-- 2007-11-06: this site has problems, and I cannot read the mentioned article. 
+    <h3>Articles</h3>
+    <p>
+    Emmanuel Seyman wrote an 
+    <a href="http://muttfr.org/gen.php3/2002/11/20/108,1,0,0,1.php3">article
+    about archivemail</a> for <a href="http://www.muttfr.org/">muttfr.org</a>, a
+    French website about <a href="http://www.mutt.org/">mutt</a>.
+-->
+
+<h2>Getting involved</h2>
+<ul> 
+    <li>Visit the <a
+        href="http://sourceforge.net/tracker/?group_id=49630">archivemail
+        tracker</a> to browse and/or submit bug reports and feature requests.
+    <li>You can subscribe to the <a
+        href="http://lists.sourceforge.net/lists/listinfo/archivemail-user">archivemail-user
+        mailing list</a>.  
+    This is a low traffic, subscribers-only list.  
+<li>Check out the <a href="http://sourceforge.net/projects/archivemail/">project page
+    for archivemail</a> at Sourceforge for a general overview.
+</ul>
 
 <h2>Requirements</h2>
 <p>
-<strong>archivemail</strong> requires python version 2.3. It also uses some
-optional python modules, but these should be pretty much standard; if you get an
-ImportError nonetheless, please report it, thanks. (For contact addresses see
-below.)
+<span class="command">archivemail</span> requires Python 2.3 or newer. 
+It also uses some optional python modules, but these should be pretty much
+standard; if you get an ImportError nonetheless, please 
+<a title="jump to the archivemail tracker" 
+href="http://sourceforge.net/tracker/?group_id=49630">report it</a>, thanks. 
 
+<h2>License</h2>
 <p>
-
-Python is available from 
-<a href="http://www.python.org/">http://www.python.org/</a>
-
-<h2>Download</h2>
-<p>
-<strong>archivemail</strong> can be downloaded from the 
-<a href="http://sourceforge.net/project/showfiles.php?group_id=49630">archivemail 
-download area on Sourceforge</a> or via 
-<a href="http://sourceforge.net/svn/?group_id=49630">Subversion</a>. 
-<p>
-There should soon be binary RPM packages at
-<a href="http://software.opensuse.org/download/server:/mail/">the OpenSUSE build
-service</a> for SUSE Linux and Fedora Core 5.  There is also a 
-<a href="http://packages.debian.org/unstable/mail/archivemail.html">debian
-package</a>.
-
-<h2>Support</h2>
-<ul>
-<li><a href="http://sourceforge.net/tracker/?group_id=49630">Browse/submit 
-     bug reports.</a>
-<li>The <a href="http://lists.sourceforge.net/lists/listinfo/archivemail-user">archivemail-user</a> mailing list.
-<li><a href="http://sourceforge.net/projects/archivemail/">Project page
-    for archivemail</a> on Sourceforge.
-</ul>
+This software is licensed under the terms of the 
+<a href="http://www.gnu.org/licenses/licenses.html#GPL">GNU GPL</a>, either
+version 2 of the license, or any later version. 
 
 <h2>Credits</h2>
 <p>
-<strong>archivemail</strong> was written by Paul Rodger
-&lt;<span class="mail">paul <em>at</em> paulrodger <em>dot</em>
-com</span>&gt;<br>
-and is currently maintained by Peter Poeml &lt;<span class="mail">poeml
-<em>at</em> suse <em>dot</em> de</span>&gt;, Nikolaus Schulz
-&lt;<span class="mail">microschulz <em>at</em> web <em>dot</em>
-de</span>&gt; and Brandon Knitter.
+<span class="command">archivemail</span> was written by Paul Rodger
+<code>&lt;paul <em>at</em> paulrodger <em>dot</em>
+    com&gt;</code>
+and is currently maintained by Peter Poeml <code>&lt;poeml
+    <em>at</em> suse <em>dot</em> de&gt;</code>, Nikolaus Schulz <code><a href=
+"mailto:microschulz@web.de">&lt;microschulz@web.de&gt;</a></code>
+and Brandon Knitter.
 
 <hr>
 <p>
 <!-- sourceforge logo start --> 
 <a href="http://sourceforge.net">
-    <img src="http://sourceforge.net/sflogo.php?group_id=49630&amp;type=3" 
-    width="125" height="37" alt="SourceForge.net Logo">
+<!-- white: -->
+    <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=49630&amp;type=2"
+    width="125" height="37" 
+    alt="SourceForge.net Logo">
+<!-- blue: 
+    <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=49630&amp;type=4"
+    width="125" height="37" 
+    alt="SourceForge.net Logo">
+-->
 </a>
 <!-- sourceforge logo end --> 
 </body>
