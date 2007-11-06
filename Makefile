@@ -24,6 +24,7 @@ sdist: clobber doc
 	rm archivemail
 
 # FIXME: bdist_rpm chokes on the manpage. 
+#        This is python/distutils bug #644744
 #bdist_rpm: clobber doc
 #	cp archivemail.py archivemail
 #	python setup.py bdist_rpm
