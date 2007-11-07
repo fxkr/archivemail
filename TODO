@@ -1,11 +1,15 @@
-Release blockers for 0.7.1
---------------------------
-
-Implement --all. (?)  Check patch from #1764846.
-
 Check sf.net and Debian BTS for new bugs.  Again.
 
------------- EO: release blockers -------------
+IMAP: ensure mailbox archives are properly named.  Currently imap folder names
+are mapped like this:
+
+  IMAP URL    |  resulting mbox_archive
+  ------------+------------------------
+  test.box    |  test.box_archive.gz
+  test/box    |  box_archive.gz
+
+
+Implement --all. (?)  Check patch from #1764846.
 
 Implement --include-draft.  But before, think about it again.  (This is feature
 request #1569305.)
@@ -19,7 +23,8 @@ Implement a fallback if an IMAP server doesn't support SEARCH. (Ouch!)
 Add IMAP tests to the testsuite (upload test messages with IMAP "APPEND
 date-string"). 
 
-Port to email.message and the new mailboxes in Python 2.5.
+Try to port archivemail to email.message and the new mailboxes in Python 2.5.
+Is these flexible enough for our needs?
 
 Add recursive archiving of mail subfolders? 
 
