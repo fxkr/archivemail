@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>24 October 2007</Date></DocInfo>
+<DocInfo><Date>7 November 2007</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -62,22 +62,25 @@
 <Title>Description</Title>
 
 <Para>
-<Command/archivemail/ is a tool written in &python; for archiving and
-compressing old email in mailboxes. 
-</Para>
-
-<Para>
+archivemail is a tool for archiving and compressing old email in mailboxes.
 By default it will read the mailbox <Replaceable/MAILBOX/, moving messages
 that are older that the specified number of days (180 by default) to a
-<application/mbox/-format mailbox in the same directory that is compressed
-with &gzip;.  
+&mbox;-format mailbox in the same directory that is compressed
+with &gzip;.
+It can also just delete old email rather than archive it.
 </Para>
 
 <Para>
 <Command/archivemail/ supports reading  <application/IMAP/,
 <application/Maildir/, <application/MH/ and <application/mbox/-format
-mailboxes, but it will always write archive files to <application/mbox/-format
-mailboxes that are compressed with &gzip;.
+mailboxes, but always writes <application/mbox/-format archives.
+</Para>
+
+<Para>
+    Messages that are flagged important are not archived or deleted unless
+    explicitely requested with the <Option>--include-flagged</Option> option.
+    Also, <command/archivemail/ can be configured not to archive unread mail, or
+    to only archive messages larger than a specified size. 
 </Para>
 
 <Para>
@@ -321,7 +324,7 @@ any other message.
     <Option>--no-compress</Option>
 </Term>
 <ListItem><Para>
-Do not compress any archives using &gzip;.
+Do not compress any archives.
 </Para></ListItem>
 </VarListEntry>
 
@@ -449,6 +452,14 @@ username or password.
 Note that quoting only a substring will not work, and be aware that your shell
 will probably remove unprotected quotes or backslashes. 
 </Para>
+<Para>
+<application/IMAP/ servers supporting subfolders may use any character as a
+mailbox path separator, that is, as an equivalent to the slash character on Unix
+systems. 
+If you are archiving an IMAP subfolder, first <command/archivemail/ will try 
+to open a given mailbox name unchanged; if this fails, it will interpret any
+slashes in the <acronym/URL/ as path separators and try again. 
+</Para>
 </RefSect3>
 </RefSect2>
 
@@ -565,11 +576,8 @@ that are older than 90 days to compressed mailboxes in the
 <Para>
 Probably the best way to run <Command/archivemail/ is from your &crontab;
 file, using the <Option>--quiet</Option> option.
-</Para>
-
-<Para>
-Don't forget to try the <Option>--dry-run</Option> option for non-destructive
-testing.
+Don't forget to try the <Option>--dry-run</Option> and perhaps the
+<Option>--copy</Option> option for non-destructive testing.
 </Para>
 </RefSect1>
 
@@ -582,10 +590,22 @@ testing.
 <RefSect1>
 <Title>Bugs</Title>
 <SimPara>
-There is no support yet for reading <application/MMDF/ or
-<application/Babyl/-format mailboxes. In fact, <Command/archivemail/ will
-probably think it is reading an <application/mbox/-format mailbox and cause
-all sorts of problems.
+If an <application/IMAP/ mailbox path contains slashes, the archive filename
+will be derived from the basename of the mailbox. 
+If the server's folder separator differs from the Unix slash and is used in the
+<application/IMAP/ <acronym/URL/, however, the whole path will be considered
+the basename of the mailbox. 
+E.g. the two <acronym/URL/s
+<userinput>imap://user@example.com/folder/subfolder</userinput> and
+<userinput>imap://user@example.com/folder.subfolder</userinput> will be
+archived in <filename>subfolder_archive.gz</filename> and
+<filename>folder.subfolder_archive.gz</filename>, respectively, although they
+might refer to the same <application/IMAP/ mailbox. 
+</SimPara>
+<SimPara>
+<command/archivemail/ does not support reading <application/MMDF/ or
+<application/Babyl/-format mailboxes. In fact, it will probably think it is 
+reading an <application/mbox/-format mailbox and cause all sorts of problems.
 </SimPara>
 
 <SimPara>

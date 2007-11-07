@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "03 November 2007" "SP" ""
+.TH "ARCHIVEMAIL" "1" "07 November 2007" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -13,18 +13,21 @@ archivemail \- archive and compress your old email
 
 .SH "DESCRIPTION"
 .PP
-\fBarchivemail\fR is a tool written in \fBpython\fR(1) for archiving and
-compressing old email in mailboxes. 
-.PP
+archivemail is a tool for archiving and compressing old email in mailboxes.
 By default it will read the mailbox \fIMAILBOX\fR, moving messages
 that are older that the specified number of days (180 by default) to a
-\fBmbox\fR-format mailbox in the same directory that is compressed
-with \fBgzip\fR(1)\&.  
+\fBmbox\fR(5)-format mailbox in the same directory that is compressed
+with \fBgzip\fR(1)\&.
+It can also just delete old email rather than archive it.
 .PP
 \fBarchivemail\fR supports reading  \fBIMAP\fR,
 \fBMaildir\fR, \fBMH\fR and \fBmbox\fR-format
-mailboxes, but it will always write archive files to \fBmbox\fR-format
-mailboxes that are compressed with \fBgzip\fR(1)\&.
+mailboxes, but always writes \fBmbox\fR-format archives.
+.PP
+Messages that are flagged important are not archived or deleted unless
+explicitely requested with the \fB--include-flagged\fR option.
+Also, \fBarchivemail\fR can be configured not to archive unread mail, or
+to only archive messages larger than a specified size. 
 .PP
 To archive an \fBIMAP\fR-format mailbox, use the format
 \fIimap://username:password@server/mailbox\fR to specify the mailbox. 
@@ -217,7 +220,7 @@ you specify this option, these messages can be archived or deleted just like
 any other message.
 .TP
 \fB    --no-compress\fR
-Do not compress any archives using \fBgzip\fR(1)\&.
+Do not compress any archives.
 .TP
 \fB    --warn-duplicate\fR
 Warn about duplicate \fBMessage-ID\fRs that appear in the input
@@ -296,6 +299,13 @@ You can use a backslash to escape double-quotes that are part of a quoted
 username or password.
 Note that quoting only a substring will not work, and be aware that your shell
 will probably remove unprotected quotes or backslashes. 
+.PP
+\fBIMAP\fR servers supporting subfolders may use any character as a
+mailbox path separator, that is, as an equivalent to the slash character on Unix
+systems. 
+If you are archiving an IMAP subfolder, first \fBarchivemail\fR will try 
+to open a given mailbox name unchanged; if this fails, it will interpret any
+slashes in the URL as path separators and try again. 
 .SH "EXAMPLES"
 .PP
 .PP
@@ -383,18 +393,28 @@ Note the protected quotes.
 .PP
 Probably the best way to run \fBarchivemail\fR is from your \fBcrontab\fR(5)
 file, using the \fB--quiet\fR option.
-.PP
-Don't forget to try the \fB--dry-run\fR option for non-destructive
-testing.
+Don't forget to try the \fB--dry-run\fR and perhaps the
+\fB--copy\fR option for non-destructive testing.
 .SH "EXIT STATUS"
 .PP
 Normally the exit status is 0. Nonzero indicates an unexpected error.
 .SH "BUGS"
 .PP
-There is no support yet for reading \fBMMDF\fR or
-\fBBabyl\fR-format mailboxes. In fact, \fBarchivemail\fR will
-probably think it is reading an \fBmbox\fR-format mailbox and cause
-all sorts of problems.
+If an \fBIMAP\fR mailbox path contains slashes, the archive filename
+will be derived from the basename of the mailbox. 
+If the server's folder separator differs from the Unix slash and is used in the
+\fBIMAP\fR URL, however, the whole path will be considered
+the basename of the mailbox. 
+E.g. the two URLs
+\fBimap://user@example.com/folder/subfolder\fR and
+\fBimap://user@example.com/folder.subfolder\fR will be
+archived in \fIsubfolder_archive.gz\fR and
+\fIfolder.subfolder_archive.gz\fR, respectively, although they
+might refer to the same \fBIMAP\fR mailbox. 
+.PP
+\fBarchivemail\fR does not support reading \fBMMDF\fR or
+\fBBabyl\fR-format mailboxes. In fact, it will probably think it is 
+reading an \fBmbox\fR-format mailbox and cause all sorts of problems.
 .PP
 \fBarchivemail\fR is still too slow, but if you are running from \fBcrontab\fR(5)
 you won't care. Archiving \fBmaildir\fR-format mailboxes should be
