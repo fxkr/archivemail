@@ -866,7 +866,6 @@ def add_status_headers_imap(message, flags):
     """Add Status and X-Status headers to a message from an imap mailbox."""
     status = ""
     x_status = ""
-    flags = list(flags) # convert from tuple
     for flag in flags: 
         if flag == "\\Draft": # (draft): the user considers this message a draft
             pass # does this make any sense in mbox? 
@@ -886,13 +885,18 @@ def add_status_headers_imap(message, flags):
     # As with maildir folders, overwrite Status and X-Status headers 
     # if they exist.
     del message['Status']
+    vprint("converting imap status (%s)..." % " ".join(flags))
     if status:
-        vprint("converting imap status into Status header '%s'" % status)
+        vprint("generating Status header '%s'" % status)
         message['Status'] = status
+    else: 
+        vprint("not generating Status header")
     del message['X-Status']
     if x_status:
-        vprint("converting imap status into X-Status header '%s'" % x_status)
+        vprint("generating X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
+    else: 
+        vprint("not generating X-Status header")
 
 def is_flagged(message):
     """return true if the message is flagged important, false otherwise"""
