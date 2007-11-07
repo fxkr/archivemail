@@ -1,50 +1,34 @@
-Date: Fri, 03 Nov 2006 00:11:10 +0100
-Subject: archivemail 0.7 released with security fixes
+Date: Wed, 07 Nov 2007 23:12:26 +0100
+Subject: archivemail 0.7.1 released
 
 
 Hi folks, 
 
-archivemail 0.7.0 is ready for download.  This release comes with many and
-important fixes, some of which address security issues; I strongly recommend to
-upgrade.
+archivemail 0.7.1 was released today.  This is a maintenance release with
+numerous fixes.  Most notably, archivemail should now work flawlessly with
+python 2.5; this was long overdue.  Again, there are quite important fixes in
+the IMAP code.  And like with 0.7.0, there's one new feature (the new --copy
+option, see below).  
 
-Despite the major version change, this is mostly a maintenance release, with
-notable fixes in the IMAP code.  There's actually just one new feature (size
-stats, see below) if you don't count what in theory was already there, but just
-didn't work. :-)
+Here are the main items from the changelog, roughly ordered by priority:
 
-Okay, here are my pet items from the changelog, roughly ordered by priority:
-
-* Fixed unsafe creation of temporary files in the test suite.
-  This addresses Debian bug #385253, and reading the BTS log, it seems this
-  issue was assigned CVE-2006-4245, although I cannot find any further
-  reference to that CVE.  Note that the bug was initially reported to affect
-  archivemail itself, too.  This is not correct.  
-* Fixed dotlocking race condition. 
-* IMAP was broken in v0.6.2 and is now working again.
-* New feature: stats now report the total size of a mailbox and of the archived
-  messages therefrom.  
-* archivemail now writes valid mbox(5) archives and by default mangles From_
-  lines; the latter can be disabled with the new option --dont-mangle (see the
-  man page for the details; see also Debian bugs #250410 and #250402)
-* archivemail finally converts on-the-wire CRLF to native EOL when saving
-  messages from an IMAP folder. 
-* Fixed IMAP --delete which never worked at all.  
-* Fixed IMAP --dry-run so it doesn't download all messages that would be
-  archived.  
-* Fixed IMAP --size which never worked at all.
-* archivemail now requires Python version >= 2.3.
-* Fixed unittest failures.
-* Distributing man page with the tarball again and fixed distutils setup.
-  
-
-The changes in this release probably better had went into several minor
-releases, when we would have something like v0.6.6 now, but I was carried away
-with bugfixing...  
-
-In other news, archivemail has new maintainers, namely Peter Poeml and Nikolaus
-Schulz (that's me, hi!).  The former maintainer Brandon Knitter is currently not
-active on the project. 
+  * Fixed incompatibility with Python 2.5 which broke Maildir handling.
+  * Fixed IMAP message flag conversion which was completely broken. 
+  * Username and password in IMAP URLs can now be double-quoted, so it should be
+    no longer a problem if they contain delimiters like the '@' character.
+  * New option --copy: archive mail, but don't delete it from the mailbox.
+    This is mainly useful for testing purposes, and complements --delete.
+  * IMAP: if selecting the mailbox fails, archivemail detects the server's
+    mailbox hierarchy delimiter, replaces slashes in the mailbox name with the
+    delimiter and tries again. 
+  * When converting from other formats to mbox, archivemail used to preserve
+    existing 'Status' and 'X-Status' mbox headers; these are now silently
+    overwritten to ensure they have correct values.
+  * Invalid messages/files in Maildirs caused archivemail to silently stop
+    processing mails and claim it's all done.  Now skip these and go ahead.
+  * The automatic seteuid feature of archivemail is insecure and thus
+    deprecated; it will be removed from later versions.
+  * archivemail now accepts --days=0
 
 Cheers, 
 Nikolaus
