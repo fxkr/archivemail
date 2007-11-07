@@ -3,19 +3,21 @@ VERSION=$(shell python setup.py --version)
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 SVNROOT=https://archivemail.svn.sourceforge.net/svnroot/archivemail
-
+HTDOCS=htdocs-$(VERSION)
 
 default:
 	@echo "no default target"
 
 clean:
 	rm -f *.pyc manpage.links manpage.refs manpage.log
+	rm -rf $(HTDOCS)
 
 test:
 	python test_archivemail.py
 
 clobber: clean
 	rm -rf build dist
+	rm -f $(HTDOCS).tgz
 
 
 sdist: clobber doc
@@ -45,6 +47,12 @@ upload:
 	(cd dist && lftp -c 'open upload.sf.net && cd incoming && put $(TARFILE)')
 
 doc: archivemail.1 archivemail.html
+
+htdocs: index.html archivemail.html RELNOTES style.css manpage.css
+	install -d -m 775 $(HTDOCS)
+	install -m 664 $^ $(HTDOCS)
+	cd $(HTDOCS) && mv archivemail.html manpage.html
+	tar czf $(HTDOCS).tgz $(HTDOCS)
 
 archivemail.1: archivemail.sgml
 	docbook2man archivemail.sgml
