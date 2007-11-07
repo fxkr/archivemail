@@ -262,7 +262,7 @@ class Options:
                 self.mangle_from = 0
             if o in ('-v', '--verbose'):
                 self.verbose = 1
-            if o in ('--copy'):
+            if o == '--copy':
                 if self.delete_old_mail: 
                     user_error("found conflicting options --copy and --delete")
                 self.copy_old_mail = 1
@@ -880,7 +880,7 @@ def add_status_headers_imap(message, flags):
             pass # is this Status: D ? 
         else:
             pass # no whingeing here, although it could be a good experiment
-    if flags.count("\\Recent") == 0:
+    if not "\\Recent" in flags:
         status = status + "O" 
 
     # As with maildir folders, overwrite Status and X-Status headers 
@@ -1072,17 +1072,13 @@ def archive(mailbox_name):
 
     Arguments:
     mailbox_name -- the filename/dirname of the mailbox to be archived
-    final_archive_name -- the filename of the 'mbox' mailbox to archive
-                          old messages to - appending if the archive 
-                          already exists
-
     """
     assert(mailbox_name) 
 
     # strip any trailing slash (we could be archiving a maildir or MH format
     # mailbox and somebody was pressing <tab> in bash) - we don't want to use
     # the trailing slash in the archive name
-    mailbox_name = re.sub("/$", "", mailbox_name)
+    mailbox_name = mailbox_name.rstrip("/")
     assert(mailbox_name) 
 
     set_signal_handlers()
@@ -1359,7 +1355,7 @@ def _archive_imap(mailbox_name, final_archive_name):
             unexpected_error(errmsg)
         vprint("Selecting '%s' failed; server says: '%s'. Trying to "
                 "fix mailbox path..." % (imap_folder, response[0]))
-        delim = get_delim(imap_srv)
+        delim = imap_getdelim(imap_srv)
         if not delim:
             unexpected_error(errmsg)
         imap_folder = imap_folder.replace(os.path.sep, delim)
@@ -1419,10 +1415,7 @@ def _archive_imap(mailbox_name, final_archive_name):
                 result, response = imap_srv.fetch(msn, '(RFC822)')
                 if result != 'OK': unexpected_error("Failed to fetch message; "
                     "server says '%s'" % response[0])
-                if "\r\n" == os.linesep:
-                    msg_str = response[0][1]
-                else:
-                    msg_str = response[0][1].replace("\r\n", os.linesep)
+                msg_str = response[0][1].replace("\r\n", os.linesep)
                 msg = rfc822.Message(cStringIO.StringIO(msg_str))
                 vprint("processing message '%s'" % msg.get('Message-ID'))
                 add_status_headers_imap(msg, msg_flags)
@@ -1547,7 +1540,7 @@ def parse_imap_url(url):
         unexpected_error("Invalid IMAP connection string")
     return username, password, server, folder
 
-def get_delim(imap_server): 
+def imap_getdelim(imap_server): 
     """Return the IMAP server's hierarchy delimiter. Assumes there is only one."""
     # This function will break if the LIST reply doesn't meet our expectations. 
     # Imaplib and IMAP itself are both little beasts, and I do not know how
