@@ -1337,24 +1337,24 @@ def _archive_imap(mailbox_name, final_archive_name):
             imap_password = getpass.getpass('IMAP password: ')
 
     if mailbox_name[:5] == 'imaps':
+        vprint("establishing secure connection to server %s" % imap_server)
         imap_srv = imaplib.IMAP4_SSL(imap_server)
-        vprint("established secure connection to server %s" % imap_server)
     else:
+        vprint("establishing connection to server %s" % imap_server)
         imap_srv = imaplib.IMAP4(imap_server)
-        vprint("established connection to server %s" % imap_server)
+    vprint("logging in to server as %s" % imap_username)
     try:
         result, response = imap_srv.login_cram_md5(imap_username, imap_password)
     except imaplib.IMAP4.error:
         result, response = imap_srv.login(imap_username, imap_password)
-    vprint("logged in to server as %s" % imap_username)
 
+    vprint("selecting imap folder '%s'" % imap_folder)
     if options.dry_run or options.copy_old_mail: 
         result, response = imap_srv.select(imap_folder, readonly=True)
     else:
         result, response = imap_srv.select(imap_folder)
     if result != 'OK': unexpected_error("cannot select imap folder; "
         "server says '%s'" % response[0])
-    vprint("selected imap folder %s" % imap_folder)
     # response is e.g. ['1016'] for 1016 messages in folder
     total_msg_count = int(response[0])
     vprint("folder has %d message(s)" % total_msg_count)
@@ -1366,6 +1366,7 @@ def _archive_imap(mailbox_name, final_archive_name):
     # Worst thing should be that we bail out FETCHing a message that has been
     # deleted.
 
+    vprint("searching messages matching criteria")
     result, response = imap_srv.search(None, imap_filter)
     if result != 'OK': unexpected_error("imap search failed; server says '%s'" %
         response[0])
@@ -1376,6 +1377,7 @@ def _archive_imap(mailbox_name, final_archive_name):
 
     # First, gather data for the statistics.
     if total_msg_count > 0:
+        vprint("fetching size of messages...")
         result, response = imap_srv.fetch('1:*', '(RFC822.SIZE)')
         if result != 'OK': unexpected_error("Failed to fetch message sizes; "
             "server says '%s'" % response[0])
@@ -1391,6 +1393,7 @@ def _archive_imap(mailbox_name, final_archive_name):
 
     if not options.dry_run:
         if not options.delete_old_mail:
+            vprint("fetching messages...")
             for msn in message_list:
                 # Fetching message flags and body together always finds \Seen
                 # set.  To check \Seen, we must fetch the flags first. 
@@ -1406,8 +1409,8 @@ def _archive_imap(mailbox_name, final_archive_name):
                 else:
                     msg_str = response[0][1].replace("\r\n", os.linesep)
                 msg = rfc822.Message(cStringIO.StringIO(msg_str))
-                add_status_headers_imap(msg, msg_flags)
                 vprint("processing message '%s'" % msg.get('Message-ID'))
+                add_status_headers_imap(msg, msg_flags)
                 if options.warn_duplicates:
                     cache.warn_if_dupe(msg)             
                 if not archive:
@@ -1428,6 +1431,7 @@ def _archive_imap(mailbox_name, final_archive_name):
                     '+FLAGS.SILENT', '\\Deleted')
                 if result != 'OK': unexpected_error("Error while deleting "
                     "messages; server says '%s'" % response[0])
+    vprint("Closing mailbox and terminating connection.")
     imap_srv.close()
     imap_srv.logout()
     if not options.quiet:
