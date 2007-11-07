@@ -1364,8 +1364,8 @@ def _archive_imap(mailbox_name, final_archive_name):
         if result == 'OK': 
             vprint("successfully selected imap folder %s" % imap_folder)
         else: 
-            unexpected_error("cannot select imap folder; " 
-                    "server says '%s'" % response[0])
+            # Report original mailbox path. 
+            unexpected_error(errmsg)
     # response is e.g. ['1016'] for 1016 messages in folder
     total_msg_count = int(response[0])
     vprint("folder has %d message(s)" % total_msg_count)
