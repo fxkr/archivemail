@@ -1,4 +1,4 @@
-Version 0.7.1   - UNRELEASED
+Version 0.7.1   - 7 November 2007
 
   * Fixed incompatibility with Python 2.5 which broke Maildir handling.
     Closes: #1670422
@@ -27,6 +27,9 @@ Version 0.7.1   - UNRELEASED
   * When converting from other formats to mbox, archivemail used to preserve
     existing 'Status' and 'X-Status' mbox headers; these are now silently
     overwritten to ensure they have correct values.
+  * IMAP: if selecting the mailbox fails, archivemail detects the server's
+    mailbox hierarchy delimiter, replaces slashes in the mailbox name with the
+    delimiter and tries again. Closes: #1826757, Debian bug #368112
 
 Version 0.7.0   - 2 November 2006
   * Fixed long options --filter-append and --pwfile to accept their arguments.
