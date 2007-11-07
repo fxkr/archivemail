@@ -1348,16 +1348,18 @@ def _archive_imap(mailbox_name, final_archive_name):
     except imaplib.IMAP4.error:
         result, response = imap_srv.login(imap_username, imap_password)
 
-    vprint("selecting imap folder '%s'" % imap_folder)
-    # Open mailbox read-only? 
     roflag = options.dry_run or options.copy_old_mail
+    if roflag:
+        vprint("examining imap folder '%s' read-only" % imap_folder)
+    else:
+        vprint("selecting imap folder '%s'" % imap_folder)
     # First try the given folder name, if this doesn't work, try to fix it. 
     result, response = imap_srv.select(imap_folder, roflag)
     if result != 'OK':
         errmsg = "cannot select imap folder; server says '%s'" % response[0]
         if not os.path.sep in imap_folder: 
             unexpected_error(errmsg)
-        vprint("Selecting '%s' failed; server says: '%s'. Trying to "
+        vprint("Selecting '%s' failed; server says: '%s'.\nTrying to "
                 "fix mailbox path..." % (imap_folder, response[0]))
         delim = imap_getdelim(imap_srv)
         if not delim:
