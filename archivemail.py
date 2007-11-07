@@ -1349,12 +1349,27 @@ def _archive_imap(mailbox_name, final_archive_name):
         result, response = imap_srv.login(imap_username, imap_password)
 
     vprint("selecting imap folder '%s'" % imap_folder)
-    if options.dry_run or options.copy_old_mail: 
-        result, response = imap_srv.select(imap_folder, readonly=True)
-    else:
-        result, response = imap_srv.select(imap_folder)
-    if result != 'OK': unexpected_error("cannot select imap folder; "
-        "server says '%s'" % response[0])
+    # Open mailbox read-only? 
+    roflag = options.dry_run or options.copy_old_mail
+    # First try the given folder name, if this doesn't work, try to fix it. 
+    result, response = imap_srv.select(imap_folder, roflag)
+    if result != 'OK':
+        errmsg = "cannot select imap folder; server says '%s'" % response[0]
+        if not os.path.sep in imap_folder: 
+            unexpected_error(errmsg)
+        vprint("Selecting '%s' failed; server says: '%s'. Trying to "
+                "fix mailbox path..." % (imap_folder, response[0]))
+        delim = get_delim(imap_srv)
+        if not delim:
+            unexpected_error(errmsg)
+        imap_folder = imap_folder.replace(os.path.sep, delim)
+        vprint("Selecting '%s'" % imap_folder)
+        result, response = imap_srv.select(imap_folder, roflag)
+        if result == 'OK': 
+            vprint("successfully selected imap folder %s" % imap_folder)
+        else: 
+            unexpected_error("cannot select imap folder; " 
+                    "server says '%s'" % response[0])
     # response is e.g. ['1016'] for 1016 messages in folder
     total_msg_count = int(response[0])
     vprint("folder has %d message(s)" % total_msg_count)
@@ -1531,6 +1546,33 @@ def parse_imap_url(url):
     except ValueError:
         unexpected_error("Invalid IMAP connection string")
     return username, password, server, folder
+
+def get_delim(imap_server): 
+    """Return the IMAP server's hierarchy delimiter. Assumes there is only one."""
+    # This function will break if the LIST reply doesn't meet our expectations. 
+    # Imaplib and IMAP itself are both little beasts, and I do not know how
+    # fragile this function will be in the wild.
+    try: 
+        result, response = imap_server.list(pattern='""')
+    except ValueError:
+        # Stolen from offlineimap: 
+        # Some buggy IMAP servers do not respond well to LIST "" ""
+        # Work around them.
+        result, response = imap_server.list(pattern='%')
+    if result != 'OK': unexpected_error("Error listing directory; "
+        "server says '%s'" % response[0])
+    # Response should be a list of strings like 
+    # '(\\Noselect \\HasChildren) "." "boxname"'
+    # We parse only the first list item and just grab the delimiter. 
+    try: 
+        i = response[0].index(')')
+    except (ValueError, AttributeError): 
+        unexpected_error("get_delim(): cannot parse %s" % str(response[0]))
+    delim = response[0][i+2:i+5].strip('"')
+    vprint("Found mailbox hierarchy delimiter: '%s'" % delim)
+    if delim == "NIL": 
+        return None
+    return delim
 
 def get_filename(msg): 
     """If the given rfc822.Message can be identified with a file (no mbox),
