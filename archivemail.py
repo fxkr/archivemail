@@ -1560,7 +1560,7 @@ def imap_getdelim(imap_server):
     try: 
         i = response[0].index(')')
     except (ValueError, AttributeError): 
-        unexpected_error("get_delim(): cannot parse %s" % str(response[0]))
+        unexpected_error("get_delim(): cannot parse '%s'" % response[0])
     delim = response[0][i+2:i+5].strip('"')
     vprint("Found mailbox hierarchy delimiter: '%s'" % delim)
     if delim == "NIL": 
