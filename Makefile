@@ -48,7 +48,8 @@ upload:
 
 doc: archivemail.1 archivemail.html
 
-htdocs: index.html archivemail.html RELNOTES style.css manpage.css
+htdocs: $(HTDOCS).tgz
+$(HTDOCS).tgz: index.html archivemail.html RELNOTES style.css manpage.css
 	install -d -m 775 $(HTDOCS)
 	install -m 664 $^ $(HTDOCS)
 	cd $(HTDOCS) && mv archivemail.html manpage.html
