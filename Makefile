@@ -62,3 +62,5 @@ archivemail.html: archivemail.sgml db2html.dsl
 	docbook2html --dsl db2html.dsl -u archivemail.sgml
 	chmod 644 archivemail.html
 	tidy -modify -indent -f /dev/null archivemail.html || true
+
+.PHONY: clean test clobber sdist tag upload doc htdocs 
