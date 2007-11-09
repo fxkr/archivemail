@@ -30,10 +30,15 @@ Here are the main items from the changelog, roughly ordered by priority:
     deprecated; it will be removed from later versions.
   * archivemail now accepts --days=0
 
-UPDATE 
-------
+
+NEWSFLASH
+---------
+
 Date: Fri, 09 Nov 2007 15:33:54 +0100 
-Released v0.7.2, fixing a crash with IMAP and python << 2.5. 
+Subject: archivemail 0.7.2 released
+
+  * This release fixes a crash with IMAP and python << 2.5. 
+
 
 Cheers, 
 Nikolaus
