@@ -1115,17 +1115,19 @@ def archive(mailbox_name):
     # check to see if we are running as root -- if so, change our effective
     # userid and groupid to that of the original mailbox
 
-    former_gid = None # groupid doesn't have to be '0' for root on solaris 8?
+    running_setuid = False
     if (os.getuid() == 0) and os.path.exists(mailbox_name):
-        former_gid = os.getgid(); # remember this so we can change back
+        former_gid = os.getgid() # groupid doesn't have to be '0' for root on solaris 8?
         mailbox_user = os.stat(mailbox_name)[stat.ST_UID]
         mailbox_group = os.stat(mailbox_name)[stat.ST_GID]
-        vprint("changing effective group id to: %d" % mailbox_group)
-        os.setegid(mailbox_group)
-        vprint("changing effective user id to: %d" % mailbox_user)
-        os.seteuid(mailbox_user)
-        user_warning("changing effective user id: this automatic feature "
-            "is deprecated and will be removed from later versions.")
+        if (mailbox_user, mailbox_group) != (0, former_gid): 
+            running_setuid = True
+            vprint("changing effective group id to: %d" % mailbox_group)
+            os.setegid(mailbox_group)
+            vprint("changing effective user id to: %d" % mailbox_user)
+            os.seteuid(mailbox_user)
+            user_warning("changing effective user id: this automatic feature "
+                "is deprecated and will be removed from later versions.")
 
     old_temp_dir = tempfile.tempdir
     try:
@@ -1167,7 +1169,7 @@ def archive(mailbox_name):
         clean_up()
 
         # if we are running as root, revert the seteuid()/setegid() above
-        if former_gid != None:
+        if running_setuid:
             vprint("changing effective groupid and userid back to root")
             os.setegid(former_gid)
             os.seteuid(0)
