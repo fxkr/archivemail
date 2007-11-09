@@ -1349,6 +1349,9 @@ def _archive_imap(mailbox_name, final_archive_name):
         result, response = imap_srv.login(imap_username, imap_password)
 
     roflag = options.dry_run or options.copy_old_mail
+    # Work around python bug #1277098 (still pending in python << 2.5)
+    if not roflag: 
+        roflag = None
     if roflag:
         vprint("examining imap folder '%s' read-only" % imap_folder)
     else:
