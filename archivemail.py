@@ -24,7 +24,7 @@ Website: http://archivemail.sourceforge.net/
 """
 
 # global administrivia 
-__version__ = "archivemail v0.7.1"
+__version__ = "archivemail v0.7.2"
 __svn_id__ = "$Id$"
 __copyright__ = """\
 Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
