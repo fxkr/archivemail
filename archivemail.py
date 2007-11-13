@@ -748,9 +748,9 @@ def make_mbox_from(message):
     assert(message)
     address = guess_return_path(message)
     time_message = guess_delivery_time(message)
-    gm_date = time.gmtime(time_message)
-    assert(gm_date)
-    date_string = time.asctime(gm_date)
+    date = time.localtime(time_message)
+    assert(date)
+    date_string = time.asctime(date)
     mbox_from = "From %s %s\n" % (address, date_string)
     return mbox_from
 
@@ -779,21 +779,22 @@ def guess_delivery_time(message):
     # get more desparate as we go through the array
     for header in ('Delivery-date', 'Date', 'Resent-Date'):
         try:
-            date = message.getdate(header)
+            date = message.getdate_tz(header)
             if date:
-                time_message = time.mktime(date)
+                time_message = rfc822.mktime_tz(date)
                 vprint("using valid time found from '%s' header" % header)
                 return time_message
         except (IndexError, ValueError, OverflowError): pass
     # as a second-last resort, try the date from the 'From_' line (ugly)
     # this will only work from a mbox-format mailbox
     if (message.unixfrom):
-        header = re.sub("From \S+", "", message.unixfrom)
-        header = string.strip(header)
-        date = rfc822.parsedate(header)
+        # Hmm. This will break with full-blown RFC 2822 addr-spec's. 
+        header = message.unixfrom.split(None, 2)[-1]
+        # Interpret no timezone as localtime
+        date = rfc822.parsedate_tz(header)
         if date:
             try:
-                time_message = time.mktime(date)
+                time_message = rfc822.mktime_tz(date)
                 vprint("using valid time found from unix 'From_' header")
                 return time_message
             except (ValueError, OverflowError): pass

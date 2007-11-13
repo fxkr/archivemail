@@ -1,3 +1,9 @@
+Version 0.7.3   - UNRELEASED
+
+ * Fixed date header parsing to be precise with timezone information.  Also,
+   when writing From_ line timestamps, don't use UTC but local time, without
+   timezone information.
+
 Version 0.7.2   - 9 November 2007
 
   * IMAP: fixed crash by working around python bug #1277098, which is still pending
