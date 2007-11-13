@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "07 November 2007" "SP" ""
+.TH "ARCHIVEMAIL" "1" "13 November 2007" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -260,8 +260,9 @@ links or create tempfiles or archives in world-writable directories.
 \fBarchivemail\fR attempts to find the delivery date of a message by
 looking for valid dates in the following headers, in order of precedence: 
 \fBDelivery-date\fR,
-\fBDate\fR and
-\fBResent-Date\fR\&.
+\fBReceived\fR, 
+\fBResent-Date\fR and
+\fBDate\fR\&.
 If it cannot find any valid date in these headers, it
 will use the last-modified file timestamp on \fBMH\fR and
 \fBMaildir\fR format mailboxes, or the date on the 

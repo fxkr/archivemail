@@ -777,14 +777,20 @@ def guess_delivery_time(message):
     assert(message)
     # try to guess the delivery date from various headers
     # get more desparate as we go through the array
-    for header in ('Delivery-date', 'Date', 'Resent-Date'):
-        try:
-            date = message.getdate_tz(header)
+    for header in 'Delivery-date', 'Received', 'Resent-Date', 'Date':
+        try: 
+            if header == 'Received': 
+                # This should be good enough for almost all headers in the wild; 
+                # if we're guessing wrong, parsedate_tz() will fail graciously. 
+                token = message.getrawheader(header).rsplit(';', 1)[-1]
+            else: 
+                token = message.get(header)
+            date = rfc822.parsedate_tz(token)
             if date:
                 time_message = rfc822.mktime_tz(date)
                 vprint("using valid time found from '%s' header" % header)
                 return time_message
-        except (IndexError, ValueError, OverflowError): pass
+        except (AttributeError, IndexError, ValueError, OverflowError): pass
     # as a second-last resort, try the date from the 'From_' line (ugly)
     # this will only work from a mbox-format mailbox
     if (message.unixfrom):

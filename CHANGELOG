@@ -3,6 +3,12 @@ Version 0.7.3   - UNRELEASED
  * Fixed date header parsing to be precise with timezone information.  Also,
    when writing From_ line timestamps, don't use UTC but local time, without
    timezone information.
+ * To determine the delivery date of a message, archivemail now looks for the
+   timestamp of the latest 'Received' header before resorting to 'Date' or
+   'Resent-Date'.  This should give much better results when there is no
+   'Delivery-date' header.  (Thanks Andrew Ferrier & Christian Brabandt)
+   Closes: #1481316, #1764855, Debian bug #272666.
+ * If present, the 'Resent-date' header now takes precedence over 'Date'. 
 
 Version 0.7.2   - 9 November 2007
 

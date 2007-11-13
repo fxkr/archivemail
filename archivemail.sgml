@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>7 November 2007</Date></DocInfo>
+<DocInfo><Date>13 November 2007</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -404,8 +404,9 @@ links or create tempfiles or archives in world-writable directories.
 <Command/archivemail/ attempts to find the delivery date of a message by
 looking for valid dates in the following headers, in order of precedence: 
 <application/Delivery-date/,
-<application/Date/ and
-<application/Resent-Date/.
+<application/Received/, 
+<application/Resent-Date/ and
+<application/Date/.
 If it cannot find any valid date in these headers, it
 will use the last-modified file timestamp on <application/MH/ and
 <application/Maildir/ format mailboxes, or the date on the 
