@@ -779,7 +779,7 @@ def guess_delivery_time(message):
     # get more desparate as we go through the array
     for header in ('Delivery-date', 'Date', 'Resent-Date'):
         try:
-            date = message.getdate_tz(header)
+            date = message.getdate(header)
             if date:
                 time_message = time.mktime(date)
                 vprint("using valid time found from '%s' header" % header)
