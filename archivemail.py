@@ -779,7 +779,7 @@ def guess_delivery_time(message):
     # get more desparate as we go through the array
     for header in ('Delivery-date', 'Date', 'Resent-Date'):
         try:
-            date = message.getdate(header)
+            date = message.getdate_tz(header)
             if date:
                 time_message = time.mktime(date)
                 vprint("using valid time found from '%s' header" % header)
@@ -853,14 +853,16 @@ def add_status_headers(message):
 
     # Overwrite existing 'Status' and 'X-Status' headers.  They add no value in
     # maildirs, and we better don't listen to them.
-    del message['Status']
     if status:
         vprint("converting maildir status into Status header '%s'" % status)
         message['Status'] = status
-    del message['X-Status']
+    else: 
+        del message['Status']
     if x_status:
         vprint("converting maildir status into X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
+    else: 
+        del message['X-Status']
 
 def add_status_headers_imap(message, flags):
     """Add Status and X-Status headers to a message from an imap mailbox."""
@@ -884,19 +886,19 @@ def add_status_headers_imap(message, flags):
 
     # As with maildir folders, overwrite Status and X-Status headers 
     # if they exist.
-    del message['Status']
     vprint("converting imap status (%s)..." % " ".join(flags))
     if status:
         vprint("generating Status header '%s'" % status)
         message['Status'] = status
     else: 
         vprint("not generating Status header")
-    del message['X-Status']
+        del message['Status']
     if x_status:
         vprint("generating X-Status header '%s'" % x_status)
         message['X-Status'] = x_status
     else: 
         vprint("not generating X-Status header")
+        del message['X-Status']
 
 def is_flagged(message):
     """return true if the message is flagged important, false otherwise"""
