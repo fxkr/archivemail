@@ -10,6 +10,20 @@ LOCKING & Co:
   sane way, see Debian bug #349068.  mbox_sync_mailbox() in the mutt code might
   be an example how to write back a changed mailbox. 
 * Double-check the entire locking code. 
+* FIXME: no locking at all is applied to the archives. 
+
+Seems like existing archives are not read or validated in any way.  New archive
+data is blindly appended...  Probably okay, but should be documented. 
+
+I don't like the representation of mboxes as python objects, it's unclean. 
+E.g. the archive mbox object is a subclass of mailbox.UnixMailbox, but this
+super class is not used in any way, it's not even initialized.  Makes sense,
+since we need write-only access, and UnixMailbox is read-only.  But should it be
+a subclass at all, then? 
+.
+Also, the original mbox and the "retain mbox" are separate objects.  This is
+disputable.  E.g. the finalise() method of the retain mbox overwrites the
+existing original mbox, and I feel that's really unclean.  
 
 IMAP SEARCH BEFORE disregards time and timezone information.  This should at
 least be documented.  E.g. I've found that '-d 0' didn't match all messages in
