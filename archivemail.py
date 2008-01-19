@@ -1347,7 +1347,7 @@ def _archive_imap(mailbox_name, final_archive_name):
                 unexpected_error("No imap password specified")
             imap_password = getpass.getpass('IMAP password: ')
 
-    if mailbox_name[:5] == 'imaps':
+    if mailbox_name[:5].lower() == 'imaps':
         vprint("establishing secure connection to server %s" % imap_server)
         imap_srv = imaplib.IMAP4_SSL(imap_server)
     else:
