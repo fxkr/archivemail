@@ -1,3 +1,10 @@
+Integrate --debug-imap option into yet-to-be-implemented -vv switch? 
+I had the idea to provide separate debugging info levels anyway, see --debug
+below.
+
+Gracefully close IMAP connection upon unexptected error (currently archivemail
+just terminates). 
+
 LOCKING & Co:
 * switch to or add fcntl() locking; when combining with flock, be careful not to
   break on Solaris/FreeBSD, where flock() is just fcntl() so using both would
