@@ -1353,10 +1353,12 @@ def _archive_imap(mailbox_name, final_archive_name):
     else:
         vprint("establishing connection to server %s" % imap_server)
         imap_srv = imaplib.IMAP4(imap_server)
-    vprint("logging in to server as %s" % imap_username)
-    try:
+    # What about having an option that makes archivemail never try cram-md5?
+    if "AUTH=CRAM-MD5" in imap_srv.capabilities: 
+        vprint("authenticating (cram-md5) to server as %s" % imap_username)
         result, response = imap_srv.login_cram_md5(imap_username, imap_password)
-    except imaplib.IMAP4.error:
+    else:
+        vprint("logging in to server as %s" % imap_username)
         result, response = imap_srv.login(imap_username, imap_password)
 
     roflag = options.dry_run or options.copy_old_mail
