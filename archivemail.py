@@ -1347,7 +1347,8 @@ def _archive_imap(mailbox_name, final_archive_name):
                 unexpected_error("No imap password specified")
             imap_password = getpass.getpass('IMAP password: ')
 
-    if mailbox_name[:5].lower() == 'imaps':
+    is_ssl = mailbox_name[:5].lower() == 'imaps'
+    if is_ssl: 
         vprint("establishing secure connection to server %s" % imap_server)
         imap_srv = imaplib.IMAP4_SSL(imap_server)
     else:
@@ -1357,9 +1358,15 @@ def _archive_imap(mailbox_name, final_archive_name):
     if "AUTH=CRAM-MD5" in imap_srv.capabilities: 
         vprint("authenticating (cram-md5) to server as %s" % imap_username)
         result, response = imap_srv.login_cram_md5(imap_username, imap_password)
-    else:
+    elif not "LOGINDISABLED" in imap_srv.capabilities: 
         vprint("logging in to server as %s" % imap_username)
         result, response = imap_srv.login(imap_username, imap_password)
+    else: 
+        if not is_ssl: 
+            user_error("imap server %s has login disabled (hint: "
+                             "try ssl/imaps)" % imap_server)
+        else: # Shouldn't happen
+            unexpected_error("imap server %s has login disabled!" % imap_server)
 
     roflag = options.dry_run or options.copy_old_mail
     # Work around python bug #1277098 (still pending in python << 2.5)
