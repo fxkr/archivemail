@@ -192,6 +192,7 @@ class Options:
     script_name          = os.path.basename(sys.argv[0])
     min_size             = None
     verbose              = 0
+    debug_imap           = 0
     warn_duplicates      = 0
     copy_old_mail        = 0
 
@@ -212,7 +213,8 @@ class Options:
                              "include-flagged", "no-compress", "output-dir=",
                              "filter-append=", "pwfile=", "dont-mangle",
                              "preserve-unread", "quiet", "size=", "suffix=",
-                             "verbose", "version", "warn-duplicate", "copy"])
+                             "verbose", "debug-imap=", "version", 
+                             "warn-duplicate", "copy"])
         except getopt.error, msg:
             user_error(msg)
 
@@ -262,6 +264,8 @@ class Options:
                 self.mangle_from = 0
             if o in ('-v', '--verbose'):
                 self.verbose = 1
+            if o == '--debug-imap': 
+                self.debug_imap = int(a)
             if o == '--copy':
                 if self.delete_old_mail: 
                     user_error("found conflicting options --copy and --delete")
@@ -673,6 +677,7 @@ Options are as follows:
       --no-compress     do not compress archives with gzip
       --warn-duplicate  warn about duplicate Message-IDs in the same mailbox
   -v, --verbose         report lots of extra debugging information
+      --debug-imap=NUM  set IMAP debugging output level (0 is none)
   -q, --quiet           quiet mode - print no statistics (suitable for crontab)
   -V, --version         display version information
   -h, --help            display this message
@@ -1331,6 +1336,8 @@ def _archive_imap(mailbox_name, final_archive_name):
     import cStringIO
     import getpass
 
+    vprint("Setting imaplib.Debug = %d" % options.debug_imap)
+    imaplib.Debug = options.debug_imap
     archive = None
     stats = Stats(mailbox_name, final_archive_name)
     cache = IdentityCache(mailbox_name)
