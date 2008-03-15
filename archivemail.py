@@ -1049,10 +1049,7 @@ def is_older_than_days(time_message, max_days):
     time_message -- the delivery date of the message measured in seconds
                     since the epoch
     max_days -- maximum number of days before message is considered old
-       
     """
-    assert(max_days >= 1)
-
     time_now = time.time()
     if time_message > time_now:
         vprint("warning: message has date in the future")
