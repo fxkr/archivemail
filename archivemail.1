@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "13 November 2007" "SP" ""
+.TH "ARCHIVEMAIL" "1" "15 March 2008" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -228,6 +228,14 @@ mailbox.
 .TP
 \fB    -v, --verbose\fR
 Reports lots of extra debugging information about what is going on.
+.TP
+\fB    --debug-imap=\fINUM\fB\fR
+Set IMAP debugging level. This makes \fBarchivemail\fR dump its
+conversation with the IMAP server and some internal IMAP
+processing to stdout\&.  Higher values for \fINUM\fR give more
+elaborate output.  Set \fINUM\fR to 4 to see all exchanged 
+IMAP commands.  (Actually, \fINUM\fR is just passed 
+literally to imaplib.Debug\&.)
 .TP
 \fB    -q, --quiet\fR
 Turns on quiet mode. Do not print any statistics about how many messages were

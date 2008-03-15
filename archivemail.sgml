@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>13 November 2007</Date></DocInfo>
+<DocInfo><Date>15 March 2008</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -343,6 +343,20 @@ mailbox.</Para></ListItem>
 </Term>
 <ListItem><Para>
 Reports lots of extra debugging information about what is going on.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
+    <Option>--debug-imap=<Replaceable/NUM/</Option>
+</Term>
+<ListItem><Para>
+Set <acronym/IMAP/ debugging level. This makes <Command/archivemail/ dump its
+conversation with the <acronym/IMAP/ server and some internal <acronym/IMAP/
+processing to <Literal/stdout/.  Higher values for <Replaceable/NUM/ give more
+elaborate output.  Set <Replaceable/NUM/ to 4 to see all exchanged 
+<acronym/IMAP/ commands.  (Actually, <Replaceable/NUM/ is just passed 
+literally to <Literal/imaplib.Debug/.)
 </Para></ListItem>
 </VarListEntry>
 
