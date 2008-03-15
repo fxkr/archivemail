@@ -722,6 +722,42 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
         super(TestArchiveMboxTimestamp, self).tearDown()
 
 
+class TestArchiveMboxAll(TestCaseInTempdir): 
+    def setUp(self):
+        super(TestArchiveMboxAll, self).setUp()
+        archivemail.options.quiet = 1
+        archivemail.options.archive_all = 1
+
+    def testNew(self):
+        """archiving --all messages in a new mailbox""" 
+        for execute in ("package", "system"):
+            self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
+            self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+            self.copy_name = tempfile.mkstemp()[1]
+            shutil.copyfile(self.mbox_name, self.copy_name)
+            if execute == "package":
+                archivemail.archive(self.mbox_name)
+            elif execute == "system":
+                run = "./archivemail.py --all --quiet %s" % self.mbox_name
+                self.assertEqual(os.system(run), 0)
+            else:
+                sys.exit(1)
+            assert(os.path.exists(self.mbox_name))
+            self.assertEqual(os.path.getsize(self.mbox_name), 0)
+            new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
+            self.assertEqual(self.mbox_mode, new_mode)
+            archive_name = self.mbox_name + "_archive.gz"
+            assert(os.path.exists(archive_name))
+            self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
+            archive_name = self.mbox_name + "_archive"
+            assert(os.path.exists(archive_name))
+            assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+
+    def tearDown(self):
+        archivemail.options.quiet = 0
+        archivemail.options.archive_all = 0
+        super(TestArchiveMboxAll, self).tearDown()
+
 class TestArchiveMboxPreserveStatus(TestCaseInTempdir):
     """make sure the 'preserve_unread' option works"""
     def setUp(self):

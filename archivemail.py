@@ -195,6 +195,7 @@ class Options:
     debug_imap           = 0
     warn_duplicates      = 0
     copy_old_mail        = 0
+    archive_all          = 0
 
     def parse_args(self, args, usage):
         """Set our runtime options from the command-line arguments.
@@ -214,7 +215,7 @@ class Options:
                              "filter-append=", "pwfile=", "dont-mangle",
                              "preserve-unread", "quiet", "size=", "suffix=",
                              "verbose", "debug-imap=", "version", 
-                             "warn-duplicate", "copy"])
+                             "warn-duplicate", "copy", "all"])
         except getopt.error, msg:
             user_error(msg)
 
@@ -270,6 +271,8 @@ class Options:
                 if self.delete_old_mail: 
                     user_error("found conflicting options --copy and --delete")
                 self.copy_old_mail = 1
+            if o == '--all': 
+                self.archive_all = 1
             if o in ('-V', '--version'):
                 print __version__ + "\n\n" + __copyright__
                 sys.exit(0)
@@ -674,6 +677,7 @@ Options are as follows:
       --delete          delete rather than archive old mail (use with caution!)
       --copy            copy rather than archive old mail 
       --include-flagged messages flagged important can also be archived
+      --all             archive all messages 
       --no-compress     do not compress archives with gzip
       --warn-duplicate  warn about duplicate Message-IDs in the same mailbox
   -v, --verbose         report lots of extra debugging information
@@ -996,6 +1000,8 @@ def is_smaller(message, size):
 
 def should_archive(message):
     """Return true if we should archive the message, false otherwise"""
+    if options.archive_all:
+        return 1
     old = 0
     time_message = guess_delivery_time(message)
     if options.date_old_max == None:
@@ -1341,8 +1347,6 @@ def _archive_imap(mailbox_name, final_archive_name):
     stats = Stats(mailbox_name, final_archive_name)
     cache = IdentityCache(mailbox_name)
     imap_str = mailbox_name[mailbox_name.find('://') + 3:]
-    imap_filter = build_imap_filter()
-    vprint("imap filter: '%s'" % imap_filter)
     imap_username, imap_password, imap_server, imap_folder = \
         parse_imap_url(imap_str)
     if not imap_password: 
@@ -1412,14 +1416,19 @@ def _archive_imap(mailbox_name, final_archive_name):
     # Worst thing should be that we bail out FETCHing a message that has been
     # deleted.
 
-    vprint("searching messages matching criteria")
-    result, response = imap_srv.search(None, imap_filter)
-    if result != 'OK': unexpected_error("imap search failed; server says '%s'" %
-        response[0])
-    # response is a list with a single item, listing message sequence numbers
-    # like ['1 2 3 1016'] 
-    message_list = response[0].split()
-    vprint("%d messages are matching filter" % len(message_list))
+    if options.archive_all:
+        message_list = range(1, total_msg_count+1)
+    else:
+        imap_filter = build_imap_filter()
+        vprint("imap filter: '%s'" % imap_filter)
+        vprint("searching messages matching criteria")
+        result, response = imap_srv.search(None, imap_filter)
+        if result != 'OK': unexpected_error("imap search failed; server says '%s'" %
+            response[0])
+        # response is a list with a single item, listing message sequence numbers
+        # like ['1 2 3 1016'] 
+        message_list = response[0].split()
+        vprint("%d messages are matching filter" % len(message_list))
 
     # First, gather data for the statistics.
     if total_msg_count > 0:

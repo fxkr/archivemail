@@ -310,6 +310,15 @@ testing purposes.
 
 <VarListEntry>
 <Term>
+    <Option>--all</Option>
+</Term>
+<ListItem><Para>
+Archive all messages, without distinction.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
     <Option>--include-flagged</Option>
 </Term>
 <ListItem><Para>
