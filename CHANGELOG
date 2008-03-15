@@ -9,6 +9,13 @@ Version 0.7.3   - UNRELEASED
    'Delivery-date' header.  (Thanks Andrew Ferrier & Christian Brabandt)
    Closes: #1481316, #1764855, Debian bug #272666.
  * If present, the 'Resent-date' header now takes precedence over 'Date'. 
+ * IMAP: recognize when a server advertises LOGINDISABLED.
+ * New option --debug-imap; this just sets imaplib.Debug, thereby dumping
+   archivemail's chat with the server to stdout. 
+ * Fixed crash with Python 2.5 when archiving an empty maildir. (Thanks
+   "Aidant") Closes: #1878940.
+ * New option --all to archive all messages in a mailbox.  Closes: #1764846.
+ * Fixed a crash when archiving maildirs with --days=0. (Thanks John Goerzen)
 
 Version 0.7.2   - 9 November 2007
 
