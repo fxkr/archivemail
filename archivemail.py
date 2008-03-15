@@ -29,7 +29,7 @@ __svn_id__ = "$Id$"
 __copyright__ = """\
 Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
           (C) 2006  Peter Poeml <poeml@suse.de>,
-          (C) 2006,2007  Nikolaus Schulz <microschulz@web.de>
+          (C) 2006-2008  Nikolaus Schulz <microschulz@web.de>
 This is free software; see the source for copying conditions. There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
 
