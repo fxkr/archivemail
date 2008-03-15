@@ -1287,7 +1287,6 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         original = mailbox.MHMailbox(mailbox_name)
     else:
         unexpected_error("unknown type: %s" % type)        
-    assert(original)
 
     cache = IdentityCache(mailbox_name)
 
