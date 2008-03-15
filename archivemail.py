@@ -71,7 +71,7 @@ import errno
 
 # From_ mangling regex. 
 from_re = re.compile(r'^From ', re.MULTILINE)
-
+imapsize_re = re.compile(r'^(?P<msn>[0-9]+) \(RFC822\.SIZE (?P<size>[0-9]+)\)')
 
 ############## class definitions ###############
 
@@ -1432,8 +1432,8 @@ def _archive_imap(mailbox_name, final_archive_name):
         # where the first number is the message sequence number, the second is
         # the size.
         for x in response:
-            msn, blurb, msg_size = x.split()
-            msg_size = int(msg_size.rstrip(')'))
+            m = imapsize_re.match(x)
+            msn, msg_size = m.group('msn'), int(m.group('size'))
             stats.another_message(msg_size)
             if msn in message_list:
                 stats.another_archived(msg_size)
@@ -1590,14 +1590,14 @@ def imap_getdelim(imap_server):
         result, response = imap_server.list(pattern='%')
     if result != 'OK': unexpected_error("Error listing directory; "
         "server says '%s'" % response[0])
+
     # Response should be a list of strings like 
     # '(\\Noselect \\HasChildren) "." "boxname"'
     # We parse only the first list item and just grab the delimiter. 
-    try: 
-        i = response[0].index(')')
-    except (ValueError, AttributeError): 
-        unexpected_error("get_delim(): cannot parse '%s'" % response[0])
-    delim = response[0][i+2:i+5].strip('"')
+    m = re.match(r'\([^\)]*\) (?P<delim>"."|NIL)', response[0])
+    if not m: 
+        unexpected_error("imap_getdelim(): cannot parse '%s'" % response[0])
+    delim = m.group('delim').strip('"')
     vprint("Found mailbox hierarchy delimiter: '%s'" % delim)
     if delim == "NIL": 
         return None
