@@ -1414,7 +1414,7 @@ def _archive_imap(mailbox_name, final_archive_name):
     # deleted.
 
     if options.archive_all:
-        message_list = range(1, total_msg_count+1)
+        message_list = [str(n) for n in range(1, total_msg_count+1)]
     else:
         imap_filter = build_imap_filter()
         vprint("imap filter: '%s'" % imap_filter)
