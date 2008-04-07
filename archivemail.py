@@ -1482,6 +1482,73 @@ def _archive_imap(mailbox_name, final_archive_name):
     if not options.quiet:
         stats.display()
     
+
+###############  IMAP  functions  ###############
+
+
+def parse_imap_url(url): 
+    """Parse IMAP URL and return username, password (if appliciable), servername
+    and foldername."""
+
+    def split_qstr(string, delim): 
+        """Split string once at delim, keeping quoted substring intact.
+        Strip and unescape quotes where necessary."""
+        rm = re.match(r'"(.+?(?<!\\))"(.)(.*)', string)
+        if rm:
+            a, d, b = rm.groups()
+            if not d == delim: 
+                raise ValueError
+            a = a.replace('\\"', '"')
+        else:
+            a, b = string.split(delim, 1)
+        return a, b
+
+    password = None
+    try: 
+        if options.pwfile: 
+            username, url = split_qstr(url, '@')
+        else: 
+            try:
+                username, url = split_qstr(url, ':')
+            except ValueError: 
+                # request password interactively later
+                username, url = split_qstr(url, '@')
+            else: 
+                password, url = split_qstr(url, '@')
+        server, folder = url.split('/', 1)
+    except ValueError:
+        unexpected_error("Invalid IMAP connection string")
+    return username, password, server, folder
+
+
+def imap_getdelim(imap_server): 
+    """Return the IMAP server's hierarchy delimiter. Assumes there is only one."""
+    # This function will break if the LIST reply doesn't meet our expectations. 
+    # Imaplib and IMAP itself are both little beasts, and I do not know how
+    # fragile this function will be in the wild.
+    try: 
+        result, response = imap_server.list(pattern='""')
+    except ValueError:
+        # Stolen from offlineimap: 
+        # Some buggy IMAP servers do not respond well to LIST "" ""
+        # Work around them.
+        result, response = imap_server.list(pattern='%')
+    if result != 'OK': unexpected_error("Error listing directory; "
+        "server says '%s'" % response[0])
+
+    # Response should be a list of strings like 
+    # '(\\Noselect \\HasChildren) "." "boxname"'
+    # We parse only the first list item and just grab the delimiter. 
+    m = re.match(r'\([^\)]*\) (?P<delim>"."|NIL)', response[0])
+    if not m: 
+        unexpected_error("imap_getdelim(): cannot parse '%s'" % response[0])
+    delim = m.group('delim').strip('"')
+    vprint("Found mailbox hierarchy delimiter: '%s'" % delim)
+    if delim == "NIL": 
+        return None
+    return delim
+
+
 ###############  misc  functions  ###############
 
 
@@ -1543,66 +1610,6 @@ def nice_size_str(size):
     if kb >= 1.0: return str(round(kb)) + 'kB'
     return str(size) + 'B'
 
-def parse_imap_url(url): 
-    """Parse IMAP URL and return username, password (if appliciable), servername
-    and foldername."""
-
-    def split_qstr(string, delim): 
-        """Split string once at delim, keeping quoted substring intact.
-        Strip and unescape quotes where necessary."""
-        rm = re.match(r'"(.+?(?<!\\))"(.)(.*)', string)
-        if rm:
-            a, d, b = rm.groups()
-            if not d == delim: 
-                raise ValueError
-            a = a.replace('\\"', '"')
-        else:
-            a, b = string.split(delim, 1)
-        return a, b
-
-    password = None
-    try: 
-        if options.pwfile: 
-            username, url = split_qstr(url, '@')
-        else: 
-            try:
-                username, url = split_qstr(url, ':')
-            except ValueError: 
-                # request password interactively later
-                username, url = split_qstr(url, '@')
-            else: 
-                password, url = split_qstr(url, '@')
-        server, folder = url.split('/', 1)
-    except ValueError:
-        unexpected_error("Invalid IMAP connection string")
-    return username, password, server, folder
-
-def imap_getdelim(imap_server): 
-    """Return the IMAP server's hierarchy delimiter. Assumes there is only one."""
-    # This function will break if the LIST reply doesn't meet our expectations. 
-    # Imaplib and IMAP itself are both little beasts, and I do not know how
-    # fragile this function will be in the wild.
-    try: 
-        result, response = imap_server.list(pattern='""')
-    except ValueError:
-        # Stolen from offlineimap: 
-        # Some buggy IMAP servers do not respond well to LIST "" ""
-        # Work around them.
-        result, response = imap_server.list(pattern='%')
-    if result != 'OK': unexpected_error("Error listing directory; "
-        "server says '%s'" % response[0])
-
-    # Response should be a list of strings like 
-    # '(\\Noselect \\HasChildren) "." "boxname"'
-    # We parse only the first list item and just grab the delimiter. 
-    m = re.match(r'\([^\)]*\) (?P<delim>"."|NIL)', response[0])
-    if not m: 
-        unexpected_error("imap_getdelim(): cannot parse '%s'" % response[0])
-    delim = m.group('delim').strip('"')
-    vprint("Found mailbox hierarchy delimiter: '%s'" % delim)
-    if delim == "NIL": 
-        return None
-    return delim
 
 def get_filename(msg): 
     """If the given rfc822.Message can be identified with a file (no mbox),
