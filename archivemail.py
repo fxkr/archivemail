@@ -1555,6 +1555,20 @@ def imap_smart_select(srv, mailbox):
     if result != 'OK':
         unexpected_error("selecting '%s' failed; server says: '%s'." \
                 % (mailbox, response[0]))
+    if not options.copy_old_mail: 
+        # Sanity check that we don't silently fail to delete messages. 
+        # As to the following indices: IMAP4.response(key) returns 
+        # a tuple (key, ['<all_items>']) if the key is found, (key, [None])
+        # otherwise.  Imaplib just *loves* to nest trivial lists!  
+        permflags = srv.response("PERMANENTFLAGS")[1][0]
+        if permflags: 
+            permflags = permflags.strip('()').lower().split()
+            if not '\\deleted' in permflags: 
+                unexpected_error("Server doesn't allow deleting messages in " \
+                        "'%s'." % mailbox)
+        elif "IMAP4REV1" in srv.capabilities: 
+            vprint("Suspect IMAP4rev1 server, doesn't send PERMANENTFLAGS " \
+                    "upon SELECT")
 
 
 def imap_find_mailbox(srv, mailbox):
