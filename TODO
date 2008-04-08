@@ -35,8 +35,8 @@ existing original mbox, and I feel that's really unclean.
 IMAP SEARCH BEFORE disregards time and timezone information.  This should at
 least be documented.  E.g. I've found that '-d 0' didn't match all messages in
 an IMAP mailbox.  This is because the SEARCH key is (BEFORE 14-Nov-2007) on 14
-November, not matching messages that arrived today.  Do we need an '--all'
-option to fix this? 
+November, not matching messages that arrived today.  (This problem is probably 
+fixed for most use cases by the --all option.) 
 
 Document mbox format issues: link to
 http://homepages.tesco.net/~J.deBoynePollard/FGA/mail-mbox-formats.html, 
@@ -58,8 +58,6 @@ are mapped like this:
   test.box    |  test.box_archive.gz
   test/box    |  box_archive.gz
 
-
-Implement --all. (?)  Check patch from #1764846.
 
 Implement --include-draft.  But before, think about it again.  (This is feature
 request #1569305.)
