@@ -1371,21 +1371,8 @@ def _archive_imap(mailbox_name, final_archive_name):
         user_error("imap server %s has login disabled (hint: "
                              "try ssl/imaps)" % imap_server)
 
-    imap_folder = imap_find_mailbox(imap_srv, imap_folder)
-    roflag = options.dry_run or options.copy_old_mail
-    # Work around python bug #1277098 (still pending in python << 2.5)
-    if not roflag: 
-        roflag = None
-    if roflag:
-        vprint("examining imap folder '%s' read-only" % imap_folder)
-    else:
-        vprint("selecting imap folder '%s'" % imap_folder)
-    result, response = imap_srv.select(imap_folder, roflag)
-    if result != 'OK':
-        unexpected_error("selecting '%s' failed; server says: '%s'." \
-                % (imap_folder, response[0]))
-    # response is e.g. ['1016'] for 1016 messages in folder
-    total_msg_count = int(response[0])
+    imap_smart_select(imap_srv, imap_folder)
+    total_msg_count = int(imap_srv.response("EXISTS")[1][0])
     vprint("folder has %d message(s)" % total_msg_count)
 
     # IIUIC the message sequence numbers are stable for the whole session, since
@@ -1550,6 +1537,24 @@ def imap_get_namespace(srv):
     ns = re.findall(r'\("([^"]*)" (?:"(.)"|NIL)', response[0])
     assert(ns)
     return ns
+
+
+def imap_smart_select(imap_srv, imap_folder): 
+    """Select the given mailbox on the IMAP server, correcting an invalid
+    mailbox path if possible."""
+    imap_folder = imap_find_mailbox(imap_srv, imap_folder)
+    roflag = options.dry_run or options.copy_old_mail
+    # Work around python bug #1277098 (still pending in python << 2.5)
+    if not roflag: 
+        roflag = None
+    if roflag:
+        vprint("examining imap folder '%s' read-only" % imap_folder)
+    else:
+        vprint("selecting imap folder '%s'" % imap_folder)
+    result, response = imap_srv.select(imap_folder, roflag)
+    if result != 'OK':
+        unexpected_error("selecting '%s' failed; server says: '%s'." \
+                % (imap_folder, response[0]))
 
 
 def imap_find_mailbox(srv, mailbox):
