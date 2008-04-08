@@ -1555,7 +1555,7 @@ def imap_smart_select(srv, mailbox):
     if result != 'OK':
         unexpected_error("selecting '%s' failed; server says: '%s'." \
                 % (mailbox, response[0]))
-    if not options.copy_old_mail: 
+    if not roflag: 
         # Sanity check that we don't silently fail to delete messages. 
         # As to the following indices: IMAP4.response(key) returns 
         # a tuple (key, ['<all_items>']) if the key is found, (key, [None])
