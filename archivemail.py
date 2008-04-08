@@ -1539,22 +1539,22 @@ def imap_get_namespace(srv):
     return ns
 
 
-def imap_smart_select(imap_srv, imap_folder): 
+def imap_smart_select(srv, mailbox): 
     """Select the given mailbox on the IMAP server, correcting an invalid
     mailbox path if possible."""
-    imap_folder = imap_find_mailbox(imap_srv, imap_folder)
+    mailbox = imap_find_mailbox(srv, mailbox)
     roflag = options.dry_run or options.copy_old_mail
     # Work around python bug #1277098 (still pending in python << 2.5)
     if not roflag: 
         roflag = None
     if roflag:
-        vprint("examining imap folder '%s' read-only" % imap_folder)
+        vprint("examining imap folder '%s' read-only" % mailbox)
     else:
-        vprint("selecting imap folder '%s'" % imap_folder)
-    result, response = imap_srv.select(imap_folder, roflag)
+        vprint("selecting imap folder '%s'" % mailbox)
+    result, response = srv.select(mailbox, roflag)
     if result != 'OK':
         unexpected_error("selecting '%s' failed; server says: '%s'." \
-                % (imap_folder, response[0]))
+                % (mailbox, response[0]))
 
 
 def imap_find_mailbox(srv, mailbox):
