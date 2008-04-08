@@ -16,6 +16,7 @@ Version 0.7.3   - UNRELEASED
    "Aidant") Closes: #1878940.
  * New option --all to archive all messages in a mailbox.  Closes: #1764846.
  * Fixed a crash when archiving maildirs with --days=0. (Thanks John Goerzen)
+ * IMAP: automatically add NAMESPACE prefix to a mailbox path if necessary. 
 
 Version 0.7.2   - 9 November 2007
 

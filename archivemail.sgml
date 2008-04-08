@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>15 March 2008</Date></DocInfo>
+<DocInfo><Date>8 April 2008</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -479,12 +479,11 @@ Note that quoting only a substring will not work, and be aware that your shell
 will probably remove unprotected quotes or backslashes. 
 </Para>
 <Para>
-<application/IMAP/ servers supporting subfolders may use any character as a
-mailbox path separator, that is, as an equivalent to the slash character on Unix
-systems. 
-If you are archiving an IMAP subfolder, first <command/archivemail/ will try 
-to open a given mailbox name unchanged; if this fails, it will interpret any
-slashes in the <acronym/URL/ as path separators and try again. 
+<command/archivemail/ tries to be smart when handling mailbox paths. 
+In particular, it will automatically add an <acronym/IMAP/ <literal/NAMESPACE/ 
+prefix to the mailbox path if necessary; and if you are archiving a subfolder,
+you can use the slash as a path separator instead of the <acronym/IMAP/ server's
+internal representation.
 </Para>
 </RefSect3>
 </RefSect2>

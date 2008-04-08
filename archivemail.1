@@ -314,12 +314,11 @@ username or password.
 Note that quoting only a substring will not work, and be aware that your shell
 will probably remove unprotected quotes or backslashes. 
 .PP
-\fBIMAP\fR servers supporting subfolders may use any character as a
-mailbox path separator, that is, as an equivalent to the slash character on Unix
-systems. 
-If you are archiving an IMAP subfolder, first \fBarchivemail\fR will try 
-to open a given mailbox name unchanged; if this fails, it will interpret any
-slashes in the URL as path separators and try again. 
+\fBarchivemail\fR tries to be smart when handling mailbox paths. 
+In particular, it will automatically add an IMAP NAMESPACE 
+prefix to the mailbox path if necessary; and if you are archiving a subfolder,
+you can use the slash as a path separator instead of the IMAP server's
+internal representation.
 .SH "EXAMPLES"
 .PP
 .PP

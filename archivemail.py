@@ -1371,6 +1371,7 @@ def _archive_imap(mailbox_name, final_archive_name):
         user_error("imap server %s has login disabled (hint: "
                              "try ssl/imaps)" % imap_server)
 
+    imap_folder = imap_find_mailbox(imap_srv, imap_folder)
     roflag = options.dry_run or options.copy_old_mail
     # Work around python bug #1277098 (still pending in python << 2.5)
     if not roflag: 
@@ -1379,25 +1380,10 @@ def _archive_imap(mailbox_name, final_archive_name):
         vprint("examining imap folder '%s' read-only" % imap_folder)
     else:
         vprint("selecting imap folder '%s'" % imap_folder)
-    # First try the given folder name, if this doesn't work, try to fix it. 
     result, response = imap_srv.select(imap_folder, roflag)
     if result != 'OK':
-        errmsg = "cannot select imap folder; server says '%s'" % response[0]
-        if not os.path.sep in imap_folder: 
-            unexpected_error(errmsg)
-        vprint("Selecting '%s' failed; server says: '%s'.\nTrying to "
-                "fix mailbox path..." % (imap_folder, response[0]))
-        delim = imap_getdelim(imap_srv)
-        if not delim:
-            unexpected_error(errmsg)
-        imap_folder = imap_folder.replace(os.path.sep, delim)
-        vprint("Selecting '%s'" % imap_folder)
-        result, response = imap_srv.select(imap_folder, roflag)
-        if result == 'OK': 
-            vprint("successfully selected imap folder %s" % imap_folder)
-        else: 
-            # Report original mailbox path. 
-            unexpected_error(errmsg)
+        unexpected_error("selecting '%s' failed; server says: '%s'." \
+                % (imap_folder, response[0]))
     # response is e.g. ['1016'] for 1016 messages in folder
     total_msg_count = int(response[0])
     vprint("folder has %d message(s)" % total_msg_count)
@@ -1547,6 +1533,77 @@ def imap_getdelim(imap_server):
     if delim == "NIL": 
         return None
     return delim
+
+
+def imap_get_namespace(srv):
+    """Return the IMAP namespace prefixes and hierarchy delimiters."""
+    assert('NAMESPACE' in srv.capabilities)
+    result, response = srv.namespace()
+    if result != 'OK': 
+        unexpected_error("Cannot retrieve IMAP namespace; server says: '%s'" 
+            % response[0])
+    vprint("NAMESPACE response: %s" % repr(response[0]))
+    # Typical response is e.g.
+    # ['(("INBOX." ".")) NIL (("#shared." ".")("shared." "."))'] or
+    # ['(("" ".")) NIL NIL'], see RFC 2342.
+    # Make a reasonable guess parsing this beast. 
+    ns = re.findall(r'\("([^"]*)" (?:"(.)"|NIL)', response[0])
+    assert(ns)
+    return ns
+
+
+def imap_find_mailbox(srv, mailbox):
+    """Find the given mailbox on the IMAP server, correcting an invalid
+    mailbox path if possible.  Return the found mailbox name.""" 
+    for curbox in imap_guess_mailboxnames(srv, mailbox): 
+        vprint("Looking for mailbox '%s'..." % curbox)
+        result, response = srv.list(pattern=curbox)
+        if result != 'OK': 
+            unexpected_error("LIST command failed; " \
+                "server says: '%s'" % response[0])
+        # Say we queried for the mailbox "foo". 
+        # Upon success, response is e.g. ['(\\HasChildren) "." "foo"'].
+        # Upon failure, response is [None].  Funky imaplib!
+        if response[0] != None: 
+            break
+    else: 
+        user_error("Cannot find mailbox '%s' on server." % mailbox)
+    vprint("Found mailbox '%s'" % curbox)
+    # Catch \NoSelect here to avoid misleading errors later. 
+    m = re.match(r'\((?P<attrs>[^\)]*)\)', response[0])
+    if '\\noselect' in m.group('attrs').lower().split(): 
+        user_error("Server indicates that mailbox '%s' is not selectable" \
+            % curbox)
+    return curbox
+
+
+def imap_guess_mailboxnames(srv, mailbox): 
+    """Return a list of possible real IMAP mailbox names in descending order
+    of preference, compiled by prepending an IMAP namespace prefix if necessary,
+    and by translating hierarchy delimiters."""
+    if 'NAMESPACE' in srv.capabilities: 
+        namespace_response = imap_get_namespace(srv)
+        for nsprefix, hdelim in namespace_response: 
+            if mailbox.startswith(nsprefix): 
+                mailbox = mailbox[len(nsprefix):]
+                break
+        else: 
+            # mailbox doesn't start with a namespace prefix;
+            # choose private namespace, which is the first one.
+            nsprefix, hdelim = namespace_response[0]
+    else: 
+        vprint("Server doesn't support NAMESPACE command.")
+        nsprefix = ""
+        hdelim = imap_getdelim(srv)
+    vprint("IMAP namespace prefix: '%s', hierarchy delimiter: '%s'" % \
+            (nsprefix, hdelim))
+    boxnames = [nsprefix + mailbox]
+    if os.path.sep in mailbox: 
+        mailbox = mailbox.replace(os.path.sep, hdelim)
+        boxnames.append(mailbox)   # could have a valid namespace prefix now
+        if nsprefix: 
+            boxnames.append(nsprefix + mailbox)
+    return boxnames
 
 
 ###############  misc  functions  ###############
