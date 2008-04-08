@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "15 March 2008" "SP" ""
+.TH "ARCHIVEMAIL" "1" "08 April 2008" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -213,6 +213,8 @@ Creates an archive, but the archived messages are not deleted from the
 originating mailbox, which is left unchanged.
 This is a complement to the \fB--delete\fR option, and mainly useful for
 testing purposes. 
+Note that multiple passes will create duplicates, since messages are blindly
+appended to an existing archive.
 .TP
 \fB    --all\fR
 Archive all messages, without distinction.

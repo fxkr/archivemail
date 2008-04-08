@@ -305,6 +305,8 @@ Creates an archive, but the archived messages are not deleted from the
 originating mailbox, which is left unchanged.
 This is a complement to the <option/--delete/ option, and mainly useful for
 testing purposes. 
+Note that multiple passes will create duplicates, since messages are blindly
+appended to an existing archive.
 </Para></ListItem>
 </VarListEntry>
 
