@@ -1617,7 +1617,7 @@ def imap_guess_mailboxnames(srv, mailbox):
     vprint("IMAP namespace prefix: '%s', hierarchy delimiter: '%s'" % \
             (nsprefix, hdelim))
     boxnames = [nsprefix + mailbox]
-    if os.path.sep in mailbox: 
+    if os.path.sep in mailbox and hdelim: 
         mailbox = mailbox.replace(os.path.sep, hdelim)
         boxnames.append(mailbox)   # could have a valid namespace prefix now
         if nsprefix: 
