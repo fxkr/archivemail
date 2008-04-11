@@ -1104,23 +1104,7 @@ def archive(mailbox_name):
     set_signal_handlers()
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
 
-    # allow the user to embed time formats such as '%B' in the suffix string
-    if options.date_old_max == None:
-        parsed_suffix_time = time.time() - options.days_old_max*24*60*60
-    else:
-        parsed_suffix_time = options.date_old_max
-
-    parsed_suffix = time.strftime(options.archive_suffix, 
-        time.localtime(parsed_suffix_time))
-
-    imap_scheme = urlparse.urlparse(mailbox_name)[0]
-    if imap_scheme == 'imap' or imap_scheme == 'imaps':
-        final_archive_name = mailbox_name.split('/')[-1] + parsed_suffix
-    else:
-        final_archive_name = mailbox_name + parsed_suffix
-    if options.output_dir:
-        final_archive_name = os.path.join(options.output_dir, 
-                os.path.basename(final_archive_name))
+    final_archive_name = make_archive_name(mailbox_name)
     dest_dir = os.path.dirname(final_archive_name)
     if not dest_dir:
         dest_dir = os.getcwd()
@@ -1140,7 +1124,8 @@ def archive(mailbox_name):
         if os.path.islink(mailbox_name):
             unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
                 mailbox_name)
-        if imap_scheme == 'imap' or imap_scheme == 'imaps':
+        is_imap = urlparse.urlparse(mailbox_name)[0] in ('imap', 'imaps')
+        if is_imap:
             vprint("guessing mailbox is of type: imap(s)")
             _archive_imap(mailbox_name, final_archive_name)
         elif os.path.isfile(mailbox_name):
@@ -1633,6 +1618,24 @@ def clean_up_signal(signal_number, stack_frame):
     # at this stage
     unexpected_error("received signal %s" % signal_number)
 
+
+def make_archive_name(mailbox_name):
+    """Derive archive name and (relative) path from the mailbox name."""
+    # allow the user to embed time formats such as '%B' in the suffix string
+    if options.date_old_max == None:
+        parsed_suffix_time = time.time() - options.days_old_max*24*60*60
+    else:
+        parsed_suffix_time = options.date_old_max
+    parsed_suffix = time.strftime(options.archive_suffix,
+        time.localtime(parsed_suffix_time))
+
+    if re.match(r'imaps?://', mailbox_name.lower()):
+        mailbox_name = mailbox_name.rsplit('/', 1)[-1]
+    final_archive_name = mailbox_name + parsed_suffix
+    if options.output_dir:
+        final_archive_name = os.path.join(options.output_dir,
+                os.path.basename(final_archive_name))
+    return final_archive_name
 
 def check_sane_destdir(dir):
     """Do a very primitive check if the given directory looks like a reasonable
