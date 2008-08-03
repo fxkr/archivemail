@@ -1127,24 +1127,6 @@ def archive(mailbox_name):
     check_sane_destdir(dest_dir)
 
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
-
-    # check to see if we are running as root -- if so, change our effective
-    # userid and groupid to that of the original mailbox
-
-    running_setuid = False
-    if (os.getuid() == 0) and os.path.exists(mailbox_name):
-        former_gid = os.getgid() # groupid doesn't have to be '0' for root on solaris 8?
-        mailbox_user = os.stat(mailbox_name)[stat.ST_UID]
-        mailbox_group = os.stat(mailbox_name)[stat.ST_GID]
-        if (mailbox_user, mailbox_group) != (0, former_gid): 
-            running_setuid = True
-            vprint("changing effective group id to: %d" % mailbox_group)
-            os.setegid(mailbox_group)
-            vprint("changing effective user id to: %d" % mailbox_user)
-            os.seteuid(mailbox_user)
-            user_warning("changing effective user id: this automatic feature "
-                "is deprecated and will be removed from later versions.")
-
     old_temp_dir = tempfile.tempdir
     try:
         # create a temporary directory for us to work in securely
@@ -1183,12 +1165,6 @@ def archive(mailbox_name):
     finally:
         tempfile.tempdir = old_temp_dir
         clean_up()
-
-        # if we are running as root, revert the seteuid()/setegid() above
-        if running_setuid:
-            vprint("changing effective groupid and userid back to root")
-            os.setegid(former_gid)
-            os.seteuid(0)
 
 def _archive_mbox(mailbox_name, final_archive_name):
     """Archive a 'mbox' style mailbox - used by archive_mailbox()
