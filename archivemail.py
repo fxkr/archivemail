@@ -575,11 +575,6 @@ class ArchiveMbox(Mbox):
     def __init_uncompressed(self, final_name):
         """Used internally by __init__ when archives are uncompressed"""
         assert(final_name)
-        compressed_archive = final_name + ".gz"
-        if os.path.isfile(compressed_archive):
-            unexpected_error("""There is already a file named '%s'!
-Have you been previously compressing this archive? You probably should 
-uncompress it manually, and try running me again.""" % compressed_archive)
         temp_name = tempfile.mkstemp("archive")[1]
         if os.path.isfile(final_name):
             vprint("file already exists that is named: %s" % final_name)
@@ -592,11 +587,6 @@ uncompress it manually, and try running me again.""" % compressed_archive)
         """Used internally by __init__ when archives are compressed"""
         assert(final_name)
         compressed_filename = final_name + ".gz"
-        if os.path.isfile(final_name):
-            unexpected_error("""There is already a file named '%s'!
-Have you been reading this archive? You probably should re-compress it
-manually, and try running me again.""" % final_name)
-
         temp_name = tempfile.mkstemp("archive.gz")[1]
         if os.path.isfile(compressed_filename):
             vprint("file already exists that is named: %s" %  \
@@ -1105,6 +1095,7 @@ def archive(mailbox_name):
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
 
     final_archive_name = make_archive_name(mailbox_name)
+    check_archive(final_archive_name)
     dest_dir = os.path.dirname(final_archive_name)
     if not dest_dir:
         dest_dir = os.getcwd()
@@ -1643,6 +1634,20 @@ def check_sane_destdir(dir):
     if not os.access(dir, os.W_OK):
         user_error("no write permission on output directory: '%s'" % dir)
 
+def check_archive(archive_name):
+    """Check if existing archive files are (not) compressed as expected."""
+    compressed_archive = archive_name + ".gz"
+    if options.no_compress:
+        if os.path.isfile(compressed_archive):
+            user_error("There is already a file named '%s'!\n"
+                "Have you been previously compressing this archive?\n"
+                "You probably should uncompress it manually, and try running me "
+                "again." % compressed_archive)
+    elif os.path.isfile(archive_name):
+        user_error("There is already a file named '%s'!\n"
+            "Have you been reading this archive?\n"
+            "You probably should re-compress it manually, and try running me "
+            "again." % archive_name)
 
 def nice_size_str(size):
     """Return given size in bytes as '12kB', '1.2MB'"""
