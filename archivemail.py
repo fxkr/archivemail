@@ -1121,9 +1121,6 @@ def archive(mailbox_name):
         tempfile.tempdir = new_temp_dir
         vprint("set tempfile directory to '%s'" % new_temp_dir)
 
-        if os.path.islink(mailbox_name):
-            unexpected_error("'%s' is a symbolic link -- I feel nervous!" % 
-                mailbox_name)
         is_imap = urlparse.urlparse(mailbox_name)[0] in ('imap', 'imaps')
         if is_imap:
             vprint("guessing mailbox is of type: imap(s)")
@@ -1645,15 +1642,6 @@ def check_sane_destdir(dir):
         user_error("output directory does not exist: '%s'" % dir)
     if not os.access(dir, os.W_OK):
         user_error("no write permission on output directory: '%s'" % dir)
-    if is_world_writable(dir):
-        unexpected_error(("output directory is world-writable: '%s' -- "
-            "I feel nervous!") % dir)
-
-
-def is_world_writable(path):
-    """Return true if the path is world-writable, false otherwise""" 
-    assert(path)
-    return (os.stat(path)[stat.ST_MODE] & stat.S_IWOTH)
 
 
 def nice_size_str(size):
