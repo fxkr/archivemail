@@ -1095,6 +1095,7 @@ def archive(mailbox_name):
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
 
     final_archive_name = make_archive_name(mailbox_name)
+    vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
     check_archive(final_archive_name)
     dest_dir = os.path.dirname(final_archive_name)
     if not dest_dir:
@@ -1112,7 +1113,6 @@ def archive(mailbox_name):
             if fuid != os.getuid():
                 user_error("'%s' is owned by someone else!" % mailbox_name)
 
-    vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
     old_temp_dir = tempfile.tempdir
     try:
         # create a temporary directory for us to work in securely
