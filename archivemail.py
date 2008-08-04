@@ -1100,6 +1100,17 @@ def archive(mailbox_name):
     if not dest_dir:
         dest_dir = os.getcwd()
     check_sane_destdir(dest_dir)
+    is_imap = urlparse.urlparse(mailbox_name)[0] in ('imap', 'imaps')
+    if not is_imap:
+        # Check if the mailbox exists, and refuse to mess with other people's
+        # stuff
+        try:
+            fuid = os.stat(mailbox_name).st_uid
+        except OSError, e:
+            user_error(str(e))
+        else:
+            if fuid != os.getuid():
+                user_error("'%s' is owned by someone else!" % mailbox_name)
 
     vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
     old_temp_dir = tempfile.tempdir
@@ -1112,7 +1123,6 @@ def archive(mailbox_name):
         tempfile.tempdir = new_temp_dir
         vprint("set tempfile directory to '%s'" % new_temp_dir)
 
-        is_imap = urlparse.urlparse(mailbox_name)[0] in ('imap', 'imaps')
         if is_imap:
             vprint("guessing mailbox is of type: imap(s)")
             _archive_imap(mailbox_name, final_archive_name)
@@ -1129,7 +1139,7 @@ def archive(mailbox_name):
                 vprint("guessing mailbox is of type: MH")
                 _archive_dir(mailbox_name, final_archive_name, "mh")
         else:
-            user_error("'%s': no such file or directory" % mailbox_name)
+            user_error("'%s' is not a normal file or directory" % mailbox_name)
 
         # remove our special temp directory - hopefully empty
         os.rmdir(new_temp_dir)
