@@ -324,7 +324,6 @@ class Mbox(mailbox.UnixMailbox):
     mbox_file_closed = 0   # GzipFile class has no .closed variable
     original_atime = None # last-accessed timestamp
     original_mtime = None # last-modified timestamp
-    original_mode = None # file permissions to preserve
     starting_size = None # file size of mailbox on open
 
     def __init__(self, path, mode="r+"):
@@ -340,7 +339,6 @@ class Mbox(mailbox.UnixMailbox):
         try:
             self.original_atime = os.path.getatime(path)
             self.original_mtime = os.path.getmtime(path)
-            self.original_mode = os.stat(path)[stat.ST_MODE]
             self.starting_size = os.path.getsize(path)
             self.mbox_file = open(path, mode)
         except IOError, msg:
@@ -408,15 +406,13 @@ class Mbox(mailbox.UnixMailbox):
             self.mbox_file.close()
         self.mbox_file_closed = 1 
 
-    def reset_stat(self):
-        """Set the file timestamps and mode to the original value"""
+    def reset_timestamps(self):
+        """Set the file timestamps to the original value"""
         assert(self.original_atime)
         assert(self.original_mtime)
         assert(self.mbox_file_name)
-        assert(self.original_mode) # I doubt this will be 000?
         os.utime(self.mbox_file_name, (self.original_atime,  \
             self.original_mtime)) 
-        os.chmod(self.mbox_file_name, self.original_mode)
 
     def exclusive_lock(self):
         """Set an advisory lock on the 'mbox' mailbox"""
@@ -520,10 +516,8 @@ class RetainMbox(Mbox):
         assert(self.__final_name)
         self.close()
 
-        # make sure that the retained mailbox has the same timestamps and 
+        # make sure that the retained mailbox has the same
         # permission as the original mailbox
-        atime = os.path.getatime(self.__final_name)
-        mtime = os.path.getmtime(self.__final_name)
         mode =  os.stat(self.__final_name)[stat.ST_MODE]
         os.chmod(self.mbox_file_name, mode)
 
@@ -532,9 +526,8 @@ class RetainMbox(Mbox):
             os.rename(self.mbox_file_name, self.__final_name)
         except OSError:
             # file might be on a different filesystem -- move it manually
-            shutil.copy2(self.mbox_file_name, self.__final_name)
+            shutil.copy(self.mbox_file_name, self.__final_name)
             os.remove(self.mbox_file_name)
-        os.utime(self.__final_name, (atime, mtime)) # reset to original timestamps
         _stale.retain = None
 
     def remove(self):
@@ -1201,7 +1194,6 @@ def _archive_mbox(mailbox_name, final_archive_name):
     if original.starting_size != original.get_size():
         unexpected_error("the mailbox '%s' changed size during reading!" % \
            mailbox_name)         
-    original.reset_stat()
     if not options.dry_run:
         if retain: retain.close()
         if archive: archive.close()
@@ -1212,7 +1204,6 @@ def _archive_mbox(mailbox_name, final_archive_name):
             else:
                 # nothing was retained - everything was deleted
                 original.leave_empty()
-                original.reset_stat()
         elif archive:
             archive.finalise()
             if not options.copy_old_mail:
@@ -1221,12 +1212,12 @@ def _archive_mbox(mailbox_name, final_archive_name):
                 else:
                     # nothing was retained - everything was deleted
                     original.leave_empty()
-                    original.reset_stat()
         else:
             # There was nothing to archive
             if retain:
                 # retain will be the same as original mailbox 
                 retain.remove()
+    original.reset_timestamps()
     original.procmail_unlock()
     if not options.quiet:
         stats.display()
