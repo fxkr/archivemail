@@ -535,23 +535,13 @@ class ArchiveMbox(Mbox):
         """
         assert(final_name)
         if options.no_compress:
-            self.__init_uncompressed()
+            temp_name = tempfile.mkstemp("archive")[1]
+            self.mbox_file = open(temp_name, "w")
         else:
-            self.__init_compressed()
+            temp_name = tempfile.mkstemp("archive.gz")[1]
+            self.mbox_file = gzip.GzipFile(temp_name, "w")
+        _stale.archive = temp_name
         self.__final_name = final_name
-
-    def __init_uncompressed(self):
-        """Used internally by __init__ when archives are uncompressed"""
-        temp_name = tempfile.mkstemp("archive")[1]
-        _stale.archive = temp_name
-        self.mbox_file = open(temp_name, "w")
-        self.mbox_file_name = temp_name
-
-    def __init_compressed(self):
-        """Used internally by __init__ when archives are compressed"""
-        temp_name = tempfile.mkstemp("archive.gz")[1]
-        _stale.archive = temp_name
-        self.mbox_file = gzip.GzipFile(temp_name, "w")
         self.mbox_file_name = temp_name
 
     def finalise(self):
