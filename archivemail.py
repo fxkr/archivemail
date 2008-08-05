@@ -471,15 +471,9 @@ class Mbox(mailbox.UnixMailbox):
         _stale.procmail_lock = None
 
     def leave_empty(self):
-        """Replace the 'mbox' mailbox with a zero-length file.
-        This should be the same as 'cp /dev/null mailbox'.
-        This will leave a zero-length mailbox file so that mail
-        reading programs don't get upset that the mailbox has been
-        completely deleted."""
-        assert(os.path.isfile(self.mbox_file_name))
+        """Truncate the 'mbox' mailbox to zero-length."""
         vprint("turning '%s' into a zero-length file" % self.mbox_file_name)
-        blank_file = open(self.mbox_file_name, "w")
-        blank_file.close()
+        self.mbox_file.truncate(0)
 
     def get_size(self):
         """Return the current size of the mbox file"""
@@ -493,42 +487,32 @@ class RetainMbox(Mbox):
     overwrite the original mailbox if everything is OK. 
     
     """
-    __final_name = None
 
-    def __init__(self, final_name):
+    def __init__(self, final_mbox_file):
         """Constructor - create a temporary file for the mailbox.
        
         Arguments:
-        final_name -- the name of the original mailbox that this mailbox
+        final_mbox_file -- file object of the original mailbox that this mailbox
                       will replace when we call finalise()
 
         """
-        assert(final_name)
+        assert(final_mbox_file)
         temp_name = tempfile.mkstemp("retain")[1]
-        self.mbox_file = open(temp_name, "w")
+        self.mbox_file = open(temp_name, "w+")
         self.mbox_file_name = temp_name
         _stale.retain = temp_name
         vprint("opened temporary retain file '%s'" % self.mbox_file_name)
-        self.__final_name = final_name
+        self.__final_mbox_file = final_mbox_file
 
     def finalise(self):
         """Overwrite the original mailbox with this temporary mailbox."""
-        assert(self.__final_name)
-        self.close()
-
-        # make sure that the retained mailbox has the same
-        # permission as the original mailbox
-        mode =  os.stat(self.__final_name)[stat.ST_MODE]
-        os.chmod(self.mbox_file_name, mode)
-
-        vprint("renaming '%s' to '%s'" % (self.mbox_file_name, self.__final_name))
-        try:
-            os.rename(self.mbox_file_name, self.__final_name)
-        except OSError:
-            # file might be on a different filesystem -- move it manually
-            shutil.copy(self.mbox_file_name, self.__final_name)
-            os.remove(self.mbox_file_name)
-        _stale.retain = None
+        assert(self.__final_mbox_file)
+        vprint("writing back '%s' to '%s'" % (self.mbox_file_name, self.__final_mbox_file.name))
+        self.mbox_file.seek(0)
+        self.__final_mbox_file.seek(0)
+        shutil.copyfileobj(self.mbox_file, self.__final_mbox_file)
+        self.__final_mbox_file.truncate()
+        self.remove()
 
     def remove(self):
         """Delete this temporary mailbox. Overrides Mbox.remove()"""
@@ -1185,17 +1169,14 @@ def _archive_mbox(mailbox_name, final_archive_name):
             vprint("decision: retain message")
             if not options.dry_run and not options.copy_old_mail:
                 if (not retain):
-                    retain = RetainMbox(mailbox_name)
+                    retain = RetainMbox(original.mbox_file)
                 retain.write(msg)
         msg = original.next()
     vprint("finished reading messages") 
-    original.exclusive_unlock()
-    original.close()
     if original.starting_size != original.get_size():
         unexpected_error("the mailbox '%s' changed size during reading!" % \
            mailbox_name)         
     if not options.dry_run:
-        if retain: retain.close()
         if archive: archive.close()
         if options.delete_old_mail:
             # we will never have an archive file
@@ -1217,6 +1198,8 @@ def _archive_mbox(mailbox_name, final_archive_name):
             if retain:
                 # retain will be the same as original mailbox 
                 retain.remove()
+    original.exclusive_unlock()
+    original.close()
     original.reset_timestamps()
     original.procmail_unlock()
     if not options.quiet:
