@@ -129,19 +129,6 @@ class TestMboxProcmailLock(TestCaseInTempdir):
         self.mbox.procmail_unlock()
         assert(not os.path.isfile(lock))
 
-class TestMboxRemove(TestCaseInTempdir):
-    def setUp(self):
-        super(TestMboxRemove, self).setUp()
-        self.mbox_name = make_mbox()
-        self.mbox = archivemail.Mbox(self.mbox_name)
-
-    def testMboxRemove(self):
-        """remove() should delete a mbox mailbox"""
-        assert(os.path.exists(self.mbox_name))
-        self.mbox.remove()
-        assert(not os.path.exists(self.mbox_name))
-
-
 class TestMboxExclusiveLock(TestCaseInTempdir):
     def setUp(self):
         super(TestMboxExclusiveLock, self).setUp()
@@ -213,28 +200,42 @@ class TestMboxNext(TestCaseInTempdir):
         self.assertEqual(msg, None)
 
 
-class TestMboxWrite(TestCaseInTempdir):
+############ TempMbox Class testing ##############
+
+class TestTempMboxWrite(TestCaseInTempdir):
     def setUp(self):
-        super(TestMboxWrite, self).setUp()
-        self.mbox_read = make_mbox(messages=3)
-        self.mbox_write = make_mbox(messages=0)
+        super(TestTempMboxWrite, self).setUp()
 
     def testWrite(self):
         """mbox.write() should append messages to a mbox mailbox"""
-        read = archivemail.Mbox(self.mbox_read)
-        write = archivemail.Mbox(self.mbox_write, mode="w")
+        read_file = make_mbox(messages=3)
+        mbox_read = archivemail.Mbox(read_file)
+        mbox_write = archivemail.TempMbox()
+        write_file = mbox_write.mbox_file_name
         for count in range(3):
-            msg = read.next()
-            write.write(msg)
-        read.close()
-        write.close()
-        assert(filecmp.cmp(self.mbox_read, self.mbox_write, shallow=0))
+            msg = mbox_read.next()
+            mbox_write.write(msg)
+        mbox_read.close()
+        mbox_write.close()
+        assert(filecmp.cmp(read_file, write_file, shallow=0))
 
     def testWriteNone(self):
         """calling mbox.write() with no message should raise AssertionError"""
-        read = archivemail.Mbox(self.mbox_read)
-        write = archivemail.Mbox(self.mbox_write, mode="w")
+        write = archivemail.TempMbox()
         self.assertRaises(AssertionError, write.write, None)
+
+class TestTempMboxRemove(TestCaseInTempdir):
+    def setUp(self):
+        super(TestTempMboxRemove, self).setUp()
+        self.mbox = archivemail.TempMbox()
+        self.mbox_name = self.mbox.mbox_file_name
+
+    def testMboxRemove(self):
+        """remove() should delete a mbox mailbox"""
+        assert(os.path.exists(self.mbox_name))
+        self.mbox.remove()
+        assert(not os.path.exists(self.mbox_name))
+
 
 
 ########## options class testing #################

@@ -316,91 +316,32 @@ class Options:
 
 
 class Mbox(mailbox.UnixMailbox):
-    """Class that allows read/write access to a 'mbox' mailbox. 
-    Subclasses the mailbox.UnixMailbox class.
+    """A mostly-read-only mbox with locking. Subclasses the mailbox.UnixMailbox
+    class.
     """
-    mbox_file = None   # file handle for the mbox file
-    mbox_file_name = None   # GzipFile class has no .name variable
-    mbox_file_closed = 0   # GzipFile class has no .closed variable
-    original_atime = None # last-accessed timestamp
-    original_mtime = None # last-modified timestamp
-    starting_size = None # file size of mailbox on open
 
-    def __init__(self, path, mode="r+"):
+    def __init__(self, path):
         """Constructor for opening an existing 'mbox' mailbox.
         Extends constructor for mailbox.UnixMailbox()
 
         Named Arguments:
         path -- file name of the 'mbox' file to be opened
-        mode -- mode to open the file in (default is read-write)
-
         """
         assert(path)
         try:
             self.original_atime = os.path.getatime(path)
             self.original_mtime = os.path.getmtime(path)
             self.starting_size = os.path.getsize(path)
-            self.mbox_file = open(path, mode)
+            self.mbox_file = open(path, "r+")
         except IOError, msg:
             unexpected_error(msg)
         self.mbox_file_name = path
         mailbox.UnixMailbox.__init__(self, self.mbox_file)
 
-    def write(self, msg):
-        """Write a rfc822 message object to the 'mbox' mailbox.
-        If the rfc822 has no Unix 'From_' line, then one is constructed
-        from other headers in the message.
-
-        Arguments:
-        msg -- rfc822 message object to be written
-
-        """
-        assert(msg)
-        assert(self.mbox_file)
-
-        vprint("saving message to file '%s'" % self.mbox_file_name)
-        unix_from = msg.unixfrom
-        if unix_from:
-            msg_has_mbox_format = True
-        else:
-            msg_has_mbox_format = False
-            unix_from = make_mbox_from(msg)
-        self.mbox_file.write(unix_from)
-        assert(msg.headers)
-        self.mbox_file.writelines(msg.headers)
-        self.mbox_file.write(os.linesep)
-
-        # The following while loop is about twice as fast in 
-        # practice to 'self.mbox_file.writelines(msg.fp.readlines())'
-        assert(options.read_buffer_size > 0)
-        linebuf = ""
-        while 1:
-            body = msg.fp.read(options.read_buffer_size)
-            if (not msg_has_mbox_format) and options.mangle_from:
-                # Be careful not to break pattern matching
-                splitindex = body.rfind(os.linesep)
-                nicebody = linebuf + body[:splitindex]
-                linebuf = body[splitindex:]
-                body = from_re.sub('>From ', nicebody)
-            if not body:
-                break
-            self.mbox_file.write(body)
-        if not msg_has_mbox_format:
-            self.mbox_file.write(os.linesep)
-
-    def remove(self):
-        """Close and delete the 'mbox' mailbox file"""
-        file_name = self.mbox_file_name
-        self.close()
-        vprint("removing file '%s'" % self.mbox_file_name)
-        os.remove(file_name)
-
     def close(self):
         """Close the mbox file"""
-        if not self.mbox_file_closed:
-            vprint("closing file '%s'" % self.mbox_file_name)
-            self.mbox_file.close()
-        self.mbox_file_closed = 1 
+        vprint("closing file '%s'" % self.mbox_file_name)
+        self.mbox_file.close()
 
     def reset_timestamps(self):
         """Set the file timestamps to the original value"""
@@ -476,7 +417,71 @@ class Mbox(mailbox.UnixMailbox):
         return os.path.getsize(self.mbox_file_name)
 
 
-class RetainMbox(Mbox):
+class TempMbox:
+    """An write-only temporary mbox. No locking methods."""
+
+    def __init__(self, prefix=tempfile.template):
+        """Creates a temporary mbox file."""
+        fd, filename = tempfile.mkstemp(prefix=prefix)
+        self.mbox_file_name = filename
+        self.mbox_file = os.fdopen(fd, "w")
+
+    def write(self, msg):
+        """Write a rfc822 message object to the 'mbox' mailbox.
+        If the rfc822 has no Unix 'From_' line, then one is constructed
+        from other headers in the message.
+
+        Arguments:
+        msg -- rfc822 message object to be written
+
+        """
+        assert(msg)
+        assert(self.mbox_file)
+
+        vprint("saving message to file '%s'" % self.mbox_file_name)
+        unix_from = msg.unixfrom
+        if unix_from:
+            msg_has_mbox_format = True
+        else:
+            msg_has_mbox_format = False
+            unix_from = make_mbox_from(msg)
+        self.mbox_file.write(unix_from)
+        assert(msg.headers)
+        self.mbox_file.writelines(msg.headers)
+        self.mbox_file.write(os.linesep)
+
+        # The following while loop is about twice as fast in
+        # practice to 'self.mbox_file.writelines(msg.fp.readlines())'
+        assert(options.read_buffer_size > 0)
+        linebuf = ""
+        while 1:
+            body = msg.fp.read(options.read_buffer_size)
+            if (not msg_has_mbox_format) and options.mangle_from:
+                # Be careful not to break pattern matching
+                splitindex = body.rfind(os.linesep)
+                nicebody = linebuf + body[:splitindex]
+                linebuf = body[splitindex:]
+                body = from_re.sub('>From ', nicebody)
+            if not body:
+                break
+            self.mbox_file.write(body)
+        if not msg_has_mbox_format:
+            self.mbox_file.write(os.linesep)
+
+    def close(self):
+        """Close the mbox file"""
+        vprint("closing file '%s'" % self.mbox_file_name)
+        self.mbox_file.close()
+
+    def remove(self):
+        """Close and delete the 'mbox' mailbox file"""
+        file_name = self.mbox_file_name
+        self.close()
+        vprint("removing file '%s'" % self.mbox_file_name)
+        os.remove(file_name)
+
+
+class RetainMbox(TempMbox):
     """Class for holding messages that will be retained from the original
     mailbox (ie. the messages are not considered 'old'). Extends the 'Mbox'
     class. This 'mbox' file starts off as a temporary file but will eventually
@@ -493,30 +498,29 @@ class RetainMbox(Mbox):
 
         """
         assert(final_mbox_file)
-        temp_name = tempfile.mkstemp("retain")[1]
-        self.mbox_file = open(temp_name, "w+")
-        self.mbox_file_name = temp_name
-        _stale.retain = temp_name
+        TempMbox.__init__(self, prefix="retain")
+        _stale.retain = self.mbox_file_name
         vprint("opened temporary retain file '%s'" % self.mbox_file_name)
         self.__final_mbox_file = final_mbox_file
 
     def finalise(self):
         """Overwrite the original mailbox with this temporary mailbox."""
         assert(self.__final_mbox_file)
+        self.close()
+        self.mbox_file = open(self.mbox_file_name, "r")
         vprint("writing back '%s' to '%s'" % (self.mbox_file_name, self.__final_mbox_file.name))
-        self.mbox_file.seek(0)
         self.__final_mbox_file.seek(0)
         shutil.copyfileobj(self.mbox_file, self.__final_mbox_file)
         self.__final_mbox_file.truncate()
         self.remove()
 
     def remove(self):
-        """Delete this temporary mailbox. Overrides Mbox.remove()"""
-        Mbox.remove(self)
+        """Close and delete this temporary mailbox."""
+        TempMbox.remove(self)
         _stale.retain = None
 
 
-class ArchiveMbox(Mbox):
+class ArchiveMbox(TempMbox):
     """Class for holding messages that will be archived from the original
     mailbox (ie. the messages that are considered 'old'). Extends the 'Mbox'
     class. This 'mbox' file starts off as a temporary file, and will eventually
@@ -535,29 +539,35 @@ class ArchiveMbox(Mbox):
         """
         assert(final_name)
         if options.no_compress:
-            temp_name = tempfile.mkstemp("archive")[1]
-            self.mbox_file = open(temp_name, "w")
+            TempMbox.__init__(self, prefix="archive")
         else:
-            temp_name = tempfile.mkstemp("archive.gz")[1]
-            self.mbox_file = gzip.GzipFile(temp_name, "w")
-        _stale.archive = temp_name
+            TempMbox.__init__(self, prefix="archive.gz")
+            self.mbox_file.close()
+            self.mbox_file = gzip.GzipFile(self.mbox_file_name, "w")
+        _stale.archive = self.mbox_file_name
         self.__final_name = final_name
-        self.mbox_file_name = temp_name
 
     def finalise(self):
         """Append the temporary archive to the final archive, and delete it
         afterwards."""
         assert(self.__final_name)
         self.close()
-        mbox_file = open(self.mbox_file_name, "r")
+        self.mbox_file = open(self.mbox_file_name, "r")
         final_name = self.__final_name
         if not options.no_compress:
             final_name = final_name + ".gz"
         vprint("writing back '%s' to '%s'" % (self.mbox_file_name, final_name))
         final_archive = open(final_name, "a")
-        shutil.copyfileobj(mbox_file, final_archive)
+        shutil.copyfileobj(self.mbox_file, final_archive)
         final_archive.close()
-        Mbox.remove(self)
+        self.remove()
+
+    def remove(self):
+        """Delete the 'mbox' mailbox file"""
+        # Can't call TempMbox.remove here, because it would close the mbox
+        # a second time.
+        vprint("removing file '%s'" % self.mbox_file_name)
+        os.remove(self.mbox_file_name)
         _stale.archive = None
 
 
@@ -1143,7 +1153,6 @@ def _archive_mbox(mailbox_name, final_archive_name):
         unexpected_error("the mailbox '%s' changed size during reading!" % \
            mailbox_name)         
     if not options.dry_run:
-        if archive: archive.close()
         if options.delete_old_mail:
             # we will never have an archive file
             if retain:
