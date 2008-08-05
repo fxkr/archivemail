@@ -99,22 +99,6 @@ class TestCaseInTempdir(unittest.TestCase):
 
 ############ Mbox Class testing ##############
 
-class TestMboxIsEmpty(TestCaseInTempdir):
-    def setUp(self):
-        super(TestMboxIsEmpty, self).setUp()
-        self.empty_name = make_mbox(messages=0)
-        self.not_empty_name = make_mbox(messages=1)
-
-    def testEmpty(self):
-        """is_empty() should be true for an empty mbox"""
-        mbox = archivemail.Mbox(self.empty_name)
-        assert(mbox.is_empty())
-
-    def testNotEmpty(self):
-        """is_empty() should be false for a non-empty mbox"""
-        mbox = archivemail.Mbox(self.not_empty_name)
-        assert(not mbox.is_empty())
-
 class TestMboxLeaveEmpty(TestCaseInTempdir):
     def setUp(self):
         super(TestMboxLeaveEmpty, self).setUp()

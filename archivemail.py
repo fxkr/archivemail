@@ -395,10 +395,6 @@ class Mbox(mailbox.UnixMailbox):
         vprint("removing file '%s'" % self.mbox_file_name)
         os.remove(file_name)
 
-    def is_empty(self):
-        """Return true if the 'mbox' file is empty, false otherwise"""
-        return (os.path.getsize(self.mbox_file_name) == 0)
-
     def close(self):
         """Close the mbox file"""
         if not self.mbox_file_closed:
