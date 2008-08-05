@@ -519,75 +519,55 @@ class RetainMbox(Mbox):
 class ArchiveMbox(Mbox):
     """Class for holding messages that will be archived from the original
     mailbox (ie. the messages that are considered 'old'). Extends the 'Mbox'
-    class. This 'mbox' file starts off as a temporary file, copied from any
-    pre-existing archive. It will eventually overwrite the original archive
-    mailbox if everything is OK. 
+    class. This 'mbox' file starts off as a temporary file, and will eventually
+    be appended to the original archive mailbox if everything is OK.
     
     """
     __final_name = None 
 
     def __init__(self, final_name):
-        """Constructor -- copy any pre-existing compressed archive to a
-        temporary file which we use as the new 'mbox' archive for this
-        mailbox. 
+        """Constructor -- create a temporary archive.
        
         Arguments:
-        final_name -- the final name for this archive mailbox. This function
-                      will check to see if the filename already exists, and
-                      copy it to a temporary file if it does. It will also
-                      rename itself to this name when we call finalise()
-
+        final_name -- the final name for this archive mailbox. The temporary
+                      archive will be appended to this file when we call
+                      finalise()
         """
         assert(final_name)
         if options.no_compress:
-            self.__init_uncompressed(final_name)
+            self.__init_uncompressed()
         else:
-            self.__init_compressed(final_name)
+            self.__init_compressed()
         self.__final_name = final_name
 
-    def __init_uncompressed(self, final_name):
+    def __init_uncompressed(self):
         """Used internally by __init__ when archives are uncompressed"""
-        assert(final_name)
         temp_name = tempfile.mkstemp("archive")[1]
-        if os.path.isfile(final_name):
-            vprint("file already exists that is named: %s" % final_name)
-            shutil.copy2(final_name, temp_name)
         _stale.archive = temp_name
-        self.mbox_file = open(temp_name, "a")
+        self.mbox_file = open(temp_name, "w")
         self.mbox_file_name = temp_name
 
-    def __init_compressed(self, final_name):
+    def __init_compressed(self):
         """Used internally by __init__ when archives are compressed"""
-        assert(final_name)
-        compressed_filename = final_name + ".gz"
         temp_name = tempfile.mkstemp("archive.gz")[1]
-        if os.path.isfile(compressed_filename):
-            vprint("file already exists that is named: %s" %  \
-                compressed_filename)
-            shutil.copy2(compressed_filename, temp_name)
         _stale.archive = temp_name
-        self.mbox_file = gzip.GzipFile(temp_name, "a")
+        self.mbox_file = gzip.GzipFile(temp_name, "w")
         self.mbox_file_name = temp_name
 
     def finalise(self):
-        """Close the archive and rename this archive temporary file to the
-        final archive filename, overwriting any pre-existing archive if it
-        exists.
-
-        """
+        """Append the temporary archive to the final archive, and delete it
+        afterwards."""
         assert(self.__final_name)
         self.close()
+        mbox_file = open(self.mbox_file_name, "r")
         final_name = self.__final_name
         if not options.no_compress:
             final_name = final_name + ".gz"
-        vprint("renaming '%s' to '%s'" % (self.mbox_file_name, 
-            final_name))
-        try:
-            os.rename(self.mbox_file_name, final_name)
-        except OSError:
-            # file might be on a different filesystem -- move it manually
-            shutil.copy2(self.mbox_file_name, final_name)
-            os.remove(self.mbox_file_name)
+        vprint("writing back '%s' to '%s'" % (self.mbox_file_name, final_name))
+        final_archive = open(final_name, "a")
+        shutil.copyfileobj(mbox_file, final_archive)
+        final_archive.close()
+        Mbox.remove(self)
         _stale.archive = None
 
 
