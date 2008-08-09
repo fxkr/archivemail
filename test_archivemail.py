@@ -99,21 +99,6 @@ class TestCaseInTempdir(unittest.TestCase):
 
 ############ Mbox Class testing ##############
 
-class TestMboxLeaveEmpty(TestCaseInTempdir):
-    def setUp(self):
-        super(TestMboxLeaveEmpty, self).setUp()
-        self.mbox_name = make_mbox()
-        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.mbox = archivemail.Mbox(self.mbox_name)
-
-    def testLeaveEmpty(self):
-        """leave_empty should leave a zero-length file"""
-        self.mbox.leave_empty()
-        assert(os.path.isfile(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.assertEqual(new_mode, self.mbox_mode)
-
 class TestMboxProcmailLock(TestCaseInTempdir):
     def setUp(self):
         super(TestMboxProcmailLock, self).setUp()

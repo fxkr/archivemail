@@ -407,11 +407,6 @@ class Mbox(mailbox.UnixMailbox):
         os.remove(lock_name)
         _stale.procmail_lock = None
 
-    def leave_empty(self):
-        """Truncate the 'mbox' mailbox to zero-length."""
-        vprint("turning '%s' into a zero-length file" % self.mbox_file_name)
-        self.mbox_file.truncate(0)
-
     def get_size(self):
         """Return the current size of the mbox file"""
         return os.path.getsize(self.mbox_file_name)
@@ -425,6 +420,9 @@ class TempMbox:
         fd, filename = tempfile.mkstemp(prefix=prefix)
         self.mbox_file_name = filename
         self.mbox_file = os.fdopen(fd, "w")
+        # an empty gzip file is not really empty (it contains the gzip header
+        # and trailer), so we need to track manually if this mbox is empty
+        self.empty = True
 
     def write(self, msg):
         """Write a rfc822 message object to the 'mbox' mailbox.
@@ -438,6 +436,7 @@ class TempMbox:
         assert(msg)
         assert(self.mbox_file)
 
+        self.empty = False
         vprint("saving message to file '%s'" % self.mbox_file_name)
         unix_from = msg.unixfrom
         if unix_from:
@@ -506,12 +505,19 @@ class RetainMbox(TempMbox):
     def finalise(self):
         """Overwrite the original mailbox with this temporary mailbox."""
         assert(self.__final_mbox_file)
-        self.close()
-        self.mbox_file = open(self.mbox_file_name, "r")
-        vprint("writing back '%s' to '%s'" % (self.mbox_file_name, self.__final_mbox_file.name))
-        self.__final_mbox_file.seek(0)
-        shutil.copyfileobj(self.mbox_file, self.__final_mbox_file)
-        self.__final_mbox_file.truncate()
+        new_size = self.mbox_file.tell()
+        old_size = self.__final_mbox_file.tell()
+        if new_size == old_size:
+            vprint("no pending changes to mbox '%s'" % \
+                    self.__final_mbox_file.name)
+        else:
+            self.close()
+            self.mbox_file = open(self.mbox_file_name, "r")
+            vprint("overwriting mbox '%s' with temporary mbox '%s'" % \
+                    (self.__final_mbox_file.name, self.mbox_file_name))
+            self.__final_mbox_file.seek(0)
+            shutil.copyfileobj(self.mbox_file, self.__final_mbox_file)
+            self.__final_mbox_file.truncate()
         self.remove()
 
     def remove(self):
@@ -552,14 +558,15 @@ class ArchiveMbox(TempMbox):
         afterwards."""
         assert(self.__final_name)
         self.close()
-        self.mbox_file = open(self.mbox_file_name, "r")
-        final_name = self.__final_name
-        if not options.no_compress:
-            final_name = final_name + ".gz"
-        vprint("writing back '%s' to '%s'" % (self.mbox_file_name, final_name))
-        final_archive = open(final_name, "a")
-        shutil.copyfileobj(self.mbox_file, final_archive)
-        final_archive.close()
+        if not self.empty:
+            self.mbox_file = open(self.mbox_file_name, "r")
+            final_name = self.__final_name
+            if not options.no_compress:
+                final_name = final_name + ".gz"
+            vprint("writing back '%s' to '%s'" % (self.mbox_file_name, final_name))
+            final_archive = open(final_name, "a")
+            shutil.copyfileobj(self.mbox_file, final_archive)
+            final_archive.close()
         self.remove()
 
     def remove(self):
@@ -1113,12 +1120,17 @@ def _archive_mbox(mailbox_name, final_archive_name):
     """
     assert(mailbox_name)
     assert(final_archive_name)
-
-    archive = None
-    retain = None
     stats = Stats(mailbox_name, final_archive_name)
-    original = Mbox(path=mailbox_name)
     cache = IdentityCache(mailbox_name)
+    original = Mbox(path=mailbox_name)
+    if options.dry_run or options.copy_old_mail:
+        retain = None
+    else:
+        retain = RetainMbox(original.mbox_file)
+    if options.dry_run or options.delete_old_mail:
+        archive = None
+    else:
+        archive = ArchiveMbox(final_archive_name)
 
     original.procmail_lock()
     original.exclusive_lock()
@@ -1137,42 +1149,21 @@ def _archive_mbox(mailbox_name, final_archive_name):
                 vprint("decision: delete message")
             else:
                 vprint("decision: archive message")
-                if not options.dry_run:
-                    if (not archive):
-                        archive = ArchiveMbox(final_archive_name)
+                if archive:
                     archive.write(msg)
         else:
             vprint("decision: retain message")
-            if not options.dry_run and not options.copy_old_mail:
-                if (not retain):
-                    retain = RetainMbox(original.mbox_file)
+            if retain:
                 retain.write(msg)
         msg = original.next()
     vprint("finished reading messages") 
     if original.starting_size != original.get_size():
         unexpected_error("the mailbox '%s' changed size during reading!" % \
            mailbox_name)         
-    if not options.dry_run:
-        if options.delete_old_mail:
-            # we will never have an archive file
-            if retain:
-                retain.finalise()
-            else:
-                # nothing was retained - everything was deleted
-                original.leave_empty()
-        elif archive:
-            archive.finalise()
-            if not options.copy_old_mail:
-                if retain:
-                    retain.finalise()
-                else:
-                    # nothing was retained - everything was deleted
-                    original.leave_empty()
-        else:
-            # There was nothing to archive
-            if retain:
-                # retain will be the same as original mailbox 
-                retain.remove()
+    if archive:
+        archive.finalise()
+    if retain:
+        retain.finalise()
     original.exclusive_unlock()
     original.close()
     original.reset_timestamps()
@@ -1186,8 +1177,6 @@ def _archive_dir(mailbox_name, final_archive_name, type):
     assert(mailbox_name)
     assert(final_archive_name)
     assert(type)
-    original = None
-    archive = None
     stats = Stats(mailbox_name, final_archive_name)
     delete_queue = []
 
@@ -1199,6 +1188,10 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         unexpected_error("unknown type: %s" % type)        
 
     cache = IdentityCache(mailbox_name)
+    if options.dry_run or options.delete_old_mail:
+        archive = None
+    else:
+        archive = ArchiveMbox(final_archive_name)
 
     for msg in original:
         if not msg: 
@@ -1215,9 +1208,7 @@ def _archive_dir(mailbox_name, final_archive_name, type):
                 vprint("decision: delete message")
             else:
                 vprint("decision: archive message")
-                if not options.dry_run:
-                    if not archive:
-                        archive = ArchiveMbox(final_archive_name)
+                if archive:
                     if type == "maildir":
                         add_status_headers(msg)
                     archive.write(msg)
@@ -1226,14 +1217,12 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         else:
             vprint("decision: retain message")
     vprint("finished reading messages") 
-    if not options.dry_run:
-        if archive:
-            archive.close()
-            archive.finalise()
-        for file_name in delete_queue:
-            if os.path.isfile(file_name):
-                vprint("removing original message: '%s'" % file_name)
-                os.remove(file_name)
+    if archive:
+        archive.finalise()
+    for file_name in delete_queue:
+        if os.path.isfile(file_name):
+            vprint("removing original message: '%s'" % file_name)
+            os.remove(file_name)
     if not options.quiet:
         stats.display()
 
@@ -1321,6 +1310,7 @@ def _archive_imap(mailbox_name, final_archive_name):
 
     if not options.dry_run:
         if not options.delete_old_mail:
+            archive = ArchiveMbox(final_archive_name)
             vprint("fetching messages...")
             for msn in message_list:
                 # Fetching message flags and body together always finds \Seen
@@ -1338,12 +1328,8 @@ def _archive_imap(mailbox_name, final_archive_name):
                 add_status_headers_imap(msg, msg_flags)
                 if options.warn_duplicates:
                     cache.warn_if_dupe(msg)             
-                if not archive:
-                    archive = ArchiveMbox(final_archive_name)
                 archive.write(msg)
-            if archive:
-                archive.close()
-                archive.finalise()
+            archive.finalise()
         if not options.copy_old_mail: 
             vprint("Deleting %s messages" % len(message_list))
             # do not delete more than a certain number of messages at a time,
