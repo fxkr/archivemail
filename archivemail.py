@@ -1220,9 +1220,10 @@ def _archive_dir(mailbox_name, final_archive_name, type):
     if archive:
         archive.finalise()
     for file_name in delete_queue:
-        if os.path.isfile(file_name):
-            vprint("removing original message: '%s'" % file_name)
-            os.remove(file_name)
+        vprint("removing original message: '%s'" % file_name)
+        try: os.remove(file_name)
+        except OSError, e:
+            if e.errno != errno.ENOENT: raise
     if not options.quiet:
         stats.display()
 
