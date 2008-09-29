@@ -69,6 +69,9 @@ except ImportError:
         print "Try renaming it from 'archivemail' to 'archivemail.py'."
     sys.exit(1)
 
+# precision of os.utime() when restoring mbox timestamps
+utimes_precision = 5
+
 
 class TestCaseInTempdir(unittest.TestCase):
     """Base class for testcases that need to create temporary files. 
@@ -642,8 +645,8 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
             assert(os.path.exists(self.mbox_name))
             new_atime = os.path.getatime(self.mbox_name)
             new_mtime = os.path.getmtime(self.mbox_name)
-            self.assertEqual(self.mtime, new_mtime)
-            self.assertEqual(self.atime, new_atime)
+            self.assertAlmostEqual(self.mtime, new_mtime, utimes_precision)
+            self.assertAlmostEqual(self.atime, new_atime, utimes_precision)
 
     def testMixed(self):
         """mbox timestamps should not change after semi-archival"""
@@ -663,8 +666,8 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
             assert(os.path.exists(self.mbox_name))
             new_atime = os.path.getatime(self.mbox_name)
             new_mtime = os.path.getmtime(self.mbox_name)
-            self.assertEqual(self.mtime, new_mtime)
-            self.assertEqual(self.atime, new_atime)
+            self.assertAlmostEqual(self.mtime, new_mtime, utimes_precision)
+            self.assertAlmostEqual(self.atime, new_atime, utimes_precision)
 
     def testOld(self):
         """mbox timestamps should not change after archival"""
@@ -684,8 +687,8 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
             assert(os.path.exists(self.mbox_name))
             new_atime = os.path.getatime(self.mbox_name)
             new_mtime = os.path.getmtime(self.mbox_name)
-            self.assertEqual(self.mtime, new_mtime)
-            self.assertEqual(self.atime, new_atime)
+            self.assertAlmostEqual(self.mtime, new_mtime, utimes_precision)
+            self.assertAlmostEqual(self.atime, new_atime, utimes_precision)
 
     def tearDown(self):
         archivemail.options.quiet = 0
