@@ -521,11 +521,14 @@ This is after the ^From line"""
             self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
             self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.copy_name = tempfile.mkstemp()[1]
-            archive_name = self.mbox_name + "_archive"
+            archive_name = self.mbox_name + "_archive.gz"
             shutil.copyfile(self.mbox_name, self.copy_name) 
-            shutil.copyfile(self.mbox_name, archive_name) # archive has 3 msgs
+            fp1 = open(self.mbox_name, "r")
+            fp2 = gzip.GzipFile(archive_name, "w")
+            shutil.copyfileobj(fp1, fp2) # archive has 3 msgs
+            fp2.close()
+            fp1.close()
             append_file(self.mbox_name, self.copy_name) # copy now has 6 msgs
-            self.assertEqual(os.system("gzip %s" % archive_name), 0)
             if execute == "package":
                 archivemail.archive(self.mbox_name)
             elif execute == "system":
@@ -537,7 +540,6 @@ This is after the ^From line"""
             self.assertEqual(os.path.getsize(self.mbox_name), 0)
             new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
             self.assertEqual(self.mbox_mode, new_mode)
-            archive_name = self.mbox_name + "_archive.gz"
             assertEqualContent(archive_name, self.copy_name, zipfirst=True)
 
     def testOldWeirdHeaders(self):
