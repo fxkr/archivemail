@@ -258,6 +258,94 @@ class TestOptionDefaults(unittest.TestCase):
         """we should not preserve unread messages by default"""
         self.assertEqual(archivemail.options.preserve_unread, 0)
 
+class TestOptionParser(unittest.TestCase):
+    def setUp(self):
+        self.oldopts = copy.copy(archivemail.options)
+
+    def testOptionDate(self):
+        """--date and -D options are parsed correctly"""
+        date_formats = (
+            "%Y-%m-%d",  # ISO format
+            "%d %b %Y" , # Internet format
+            "%d %B %Y" , # Internet format with full month names
+        )
+        date = time.strptime("2000-07-29", "%Y-%m-%d")
+        unixdate = time.mktime(date)
+        for df in date_formats:
+            d = time.strftime(df, date)
+            for opt in '-D', '--date=':
+                archivemail.options.date_old_max = None
+                archivemail.options.parse_args([opt+d], "")
+                self.assertEqual(unixdate, archivemail.options.date_old_max)
+
+    def testOptionPreserveUnread(self):
+        """--preserve-unread option is parsed correctly"""
+        archivemail.options.parse_args(["--preserve-unread"], "")
+        assert(archivemail.options.preserve_unread)
+        archivemail.options.preserve_unread = 0
+        archivemail.options.parse_args(["-u"], "")
+        assert(archivemail.options.preserve_unread)
+
+    def testOptionSuffix(self):
+        """--suffix and -s options are parsed correctly"""
+        for suffix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
+            archivemail.options.parse_args(["--suffix="+suffix], "")
+            assert(archivemail.options.archive_suffix == suffix)
+            archivemail.options.suffix = None
+            archivemail.options.parse_args(["-s", suffix], "")
+            assert(archivemail.options.archive_suffix == suffix)
+
+    def testOptionDryrun(self):
+        """--dry-run option is parsed correctly"""
+        archivemail.options.parse_args(["--dry-run"], "")
+        assert(archivemail.options.dry_run)
+        archivemail.options.preserve_unread = 0
+        archivemail.options.parse_args(["-n"], "")
+        assert(archivemail.options.dry_run)
+
+    def testOptionDays(self):
+        """--days and -d options are parsed correctly"""
+        archivemail.options.parse_args(["--days=11"], "")
+        self.assertEqual(archivemail.options.days_old_max, 11)
+        archivemail.options.days_old_max = None
+        archivemail.options.parse_args(["-d11"], "")
+        self.assertEqual(archivemail.options.days_old_max, 11)
+
+    def testOptionDelete(self):
+        """--delete option is parsed correctly"""
+        archivemail.options.parse_args(["--delete"], "")
+        assert(archivemail.options.delete_old_mail)
+
+    def testOptionCopy(self):
+        """--copy option is parsed correctly"""
+        archivemail.options.parse_args(["--copy"], "")
+        assert(archivemail.options.copy_old_mail)
+
+    def testOptionOutputdir(self):
+        """--output-dir and -o options are parsed correctly"""
+        for path in "/just/some/path", "relative/path":
+            archivemail.options.parse_args(["--output-dir=%s" % path], "")
+            self.assertEqual(archivemail.options.output_dir, path)
+            archivemail.options.output_dir = None
+            archivemail.options.parse_args(["-o%s" % path], "")
+            self.assertEqual(archivemail.options.output_dir, path)
+
+    def testOptionNocompress(self):
+        """--no-compress option is parsed correctly"""
+        archivemail.options.parse_args(["--no-compress"], "")
+        assert(archivemail.options.no_compress)
+
+    def testOptionSize(self):
+        """--size and -S options are parsed correctly"""
+        size = "666"
+        archivemail.options.parse_args(["--size=%s" % size ], "")
+        self.assertEqual(archivemail.options.min_size, int(size))
+        archivemail.options.parse_args(["-S%s" % size ], "")
+        self.assertEqual(archivemail.options.min_size, int(size))
+
+    def tearDown(self):
+        archivemail.options = self.oldopts
+
 ########## archivemail.is_older_than_days() unit testing #################
 
 class TestIsTooOld(unittest.TestCase):
