@@ -59,6 +59,8 @@ import tempfile
 import time
 import unittest
 import gzip
+import cStringIO
+import rfc822
 
 try:
     import archivemail
@@ -1197,7 +1199,7 @@ class TestArchiveMboxMode(TestCaseInTempdir):
 
 ########## helper routines ############
 
-def make_message(body=None, default_headers={}, hours_old=None):
+def make_message(body=None, default_headers={}, hours_old=None, wantobj=False):
     headers = copy.copy(default_headers)
     if not headers:
         headers = {}
@@ -1223,8 +1225,10 @@ def make_message(body=None, default_headers={}, hours_old=None):
         if headers[key] is not None:
             msg = msg + ("%s: %s\n" % (key, headers[key]))
     msg = msg + "\n\n" + body + "\n\n"
-    return msg
-
+    if not wantobj:
+        return msg
+    fp = cStringIO.StringIO(msg)
+    return rfc822.Message(fp)
 
 def append_file(source, dest):
     """appends the file named 'source' to the file named 'dest'"""
