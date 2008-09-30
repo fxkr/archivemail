@@ -731,10 +731,10 @@ class TestArchiveMboxAll(TestCaseInTempdir):
         archivemail.options.archive_all = 0
         super(TestArchiveMboxAll, self).tearDown()
 
-class TestArchiveMboxPreserveStatus(TestCaseInTempdir):
+class TestArchiveMboxPreserveUnread(TestCaseInTempdir):
     """make sure the 'preserve_unread' option works"""
     def setUp(self):
-        super(TestArchiveMboxPreserveStatus, self).setUp()
+        super(TestArchiveMboxPreserveUnread, self).setUp()
         archivemail.options.quiet = 1
         archivemail.options.preserve_unread = 1
 
@@ -763,7 +763,7 @@ class TestArchiveMboxPreserveStatus(TestCaseInTempdir):
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.preserve_unread = 0
-        super(TestArchiveMboxPreserveStatus, self).tearDown()
+        super(TestArchiveMboxPreserveUnread, self).tearDown()
 
 
 class TestArchiveMboxSuffix(unittest.TestCase):
