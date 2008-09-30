@@ -731,39 +731,26 @@ class TestArchiveMboxAll(TestCaseInTempdir):
         archivemail.options.archive_all = 0
         super(TestArchiveMboxAll, self).tearDown()
 
-class TestArchiveMboxPreserveUnread(TestCaseInTempdir):
+class TestArchiveMboxPreserveUnread(unittest.TestCase):
     """make sure the 'preserve_unread' option works"""
     def setUp(self):
-        super(TestArchiveMboxPreserveUnread, self).setUp()
         archivemail.options.quiet = 1
         archivemail.options.preserve_unread = 1
+        self.msg = make_message(hours_old=24*181, wantobj=True)
 
     def testOldRead(self):
-        """archiving an old read mailbox should create an archive"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
-            headers={"Status":"RO"})
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        archive_name = self.mbox_name + "_archive.gz"
-        assertEqualContent(archive_name, self.copy_name, zipfirst=True)
+        """old read messages should be archived with --preserve-unread"""
+        self.msg["Status"] = "RO"
+        assert(archivemail.should_archive(self.msg))
 
     def testOldUnread(self):
-        """archiving an unread mailbox should not create an archive"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.archive(self.mbox_name)
-        assertEqualContent(self.mbox_name, self.copy_name)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(not os.path.exists(archive_name))
+        """old unread messages should not be archived with --preserve-unread"""
+        self.msg["Status"] = "O"
+        assert(not archivemail.should_archive(self.msg))
 
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.preserve_unread = 0
-        super(TestArchiveMboxPreserveUnread, self).tearDown()
 
 
 class TestArchiveMboxSuffix(unittest.TestCase):
