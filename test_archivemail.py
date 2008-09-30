@@ -766,37 +766,28 @@ class TestArchiveMboxPreserveStatus(TestCaseInTempdir):
         super(TestArchiveMboxPreserveStatus, self).tearDown()
 
 
-class TestArchiveMboxSuffix(TestCaseInTempdir):
+class TestArchiveMboxSuffix(unittest.TestCase):
     """make sure the 'suffix' option works"""
     def setUp(self):
-        super(TestArchiveMboxSuffix, self).setUp()
+        self.old_suffix = archivemail.options.archive_suffix
         archivemail.options.quiet = 1
 
     def testSuffix(self):
         """archiving with specified --suffix arguments"""
         for suffix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
-            days_old_max = 180
-            self.mbox_name = make_mbox(messages=3,
-                hours_old=(24 * (days_old_max+1)))
-            self.copy_name = tempfile.mkstemp()[1]
-            shutil.copyfile(self.mbox_name, self.copy_name)
+            mbox_name = "foobar"
             archivemail.options.archive_suffix = suffix
-            archivemail.archive(self.mbox_name)
-            assert(os.path.exists(self.mbox_name))
-            self.assertEqual(os.path.getsize(self.mbox_name), 0)
-
+            days_old_max = 180
             parsed_suffix_time = time.time() - days_old_max*24*60*60
             parsed_suffix = time.strftime(suffix,
                 time.localtime(parsed_suffix_time))
-
-            archive_name = self.mbox_name + parsed_suffix + ".gz"
-            assertEqualContent(archive_name, self.copy_name, zipfirst=True)
-            os.remove(archive_name)
+            archive_name = mbox_name + parsed_suffix
+            self.assertEqual(archive_name,
+                    archivemail.make_archive_name(mbox_name))
 
     def tearDown(self):
         archivemail.options.quiet = 0
-        archivemail.options.archive_suffix = "_archive"
-        super(TestArchiveMboxSuffix, self).tearDown()
+        archivemail.options.archive_suffix = self.old_suffix
 
 
 class TestArchiveDryRun(TestCaseInTempdir):
