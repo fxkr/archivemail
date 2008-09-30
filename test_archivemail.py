@@ -917,53 +917,34 @@ class TestArchiveCopy(TestCaseInTempdir):
         super(TestArchiveCopy, self).tearDown()
 
 
-class TestArchiveMboxFlagged(TestCaseInTempdir):
+class TestArchiveMboxFlagged(unittest.TestCase):
     """make sure the 'include_flagged' option works"""
     def setUp(self):
-        super(TestArchiveMboxFlagged, self).setUp()
         archivemail.options.include_flagged = 0
         archivemail.options.quiet = 1
 
     def testOld(self):
         """by default, old flagged messages should not be archived"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
-            headers={"X-Status":"F"})
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.archive(self.mbox_name)
-        assertEqualContent(self.mbox_name, self.copy_name)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(not os.path.exists(archive_name))
+        msg = make_message(default_headers={"X-Status": "F"},
+                hours_old=24*181, wantobj=True)
+        assert(not archivemail.should_archive(msg))
 
     def testIncludeFlaggedNew(self):
         """new flagged messages should not be archived with include_flagged"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179), \
-            headers={"X-Status":"F"})
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.options.include_flagged = 1
-        archivemail.archive(self.mbox_name)
-        assertEqualContent(self.mbox_name, self.copy_name)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(not os.path.exists(archive_name))
+        msg = make_message(default_headers={"X-Status": "F"},
+                hours_old=24*179, wantobj=True)
+        assert(not archivemail.should_archive(msg))
 
     def testIncludeFlaggedOld(self):
         """old flagged messages should be archived with include_flagged"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181), \
-            headers={"X-Status":"F"})
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
         archivemail.options.include_flagged = 1
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        archive_name = self.mbox_name + "_archive.gz"
-        assertEqualContent(archive_name, self.copy_name, zipfirst=True)
+        msg = make_message(default_headers={"X-Status": "F"},
+                hours_old=24*181, wantobj=True)
+        assert(archivemail.should_archive(msg))
 
     def tearDown(self):
         archivemail.options.include_flagged = 0
         archivemail.options.quiet = 0
-        super(TestArchiveMboxFlagged, self).tearDown()
 
 
 class TestArchiveMboxOutputDir(TestCaseInTempdir):
