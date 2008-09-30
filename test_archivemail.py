@@ -813,41 +813,6 @@ class TestArchiveDryRun(TestCaseInTempdir):
         super(TestArchiveDryRun, self).tearDown()
 
 
-class TestArchiveDays(TestCaseInTempdir):
-    """make sure the 'days' option works"""
-    def setUp(self):
-        super(TestArchiveDays, self).setUp()
-        archivemail.options.quiet = 1
-
-    def testOld(self):
-        """specifying the 'days' option on an older mailbox"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 12))
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.options.days_old_max = 11
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        archive_name = self.mbox_name + "_archive.gz"
-        assertEqualContent(archive_name, self.copy_name, zipfirst=True)
-
-    def testNew(self):
-        """specifying the 'days' option on a newer mailbox"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 10))
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.options.days_old_max = 11
-        archivemail.archive(self.mbox_name)
-        assertEqualContent(self.mbox_name, self.copy_name)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(not os.path.exists(archive_name))
-
-    def tearDown(self):
-        archivemail.options.days_old_max = 180
-        archivemail.options.quiet = 0
-        super(TestArchiveDays, self).tearDown()
-
-
 class TestArchiveDelete(TestCaseInTempdir):
     """make sure the 'delete' option works"""
     old_mbox = None
