@@ -631,15 +631,19 @@ This is after the ^From line"""
                 'Resent-Date'  : '',
             },
         )
+        fd, self.mbox_name = tempfile.mkstemp()
+        fp = os.fdopen(fd, "w")
         for headers in weird_headers:
-            self.mbox_name = make_mbox(messages=3, headers=headers)
-            self.copy_name = tempfile.mkstemp()[1]
-            shutil.copyfile(self.mbox_name, self.copy_name)
-            archivemail.archive(self.mbox_name)
-            assert(os.path.exists(self.mbox_name))
-            self.assertEqual(os.path.getsize(self.mbox_name), 0)
-            archive_name = self.mbox_name + "_archive.gz"
-            assertEqualContent(archive_name, self.copy_name, zipfirst=True)
+            msg_text = make_message(default_headers=headers)
+            fp.write(msg_text*2)
+        fp.close()
+        self.copy_name = tempfile.mkstemp()[1]
+        shutil.copyfile(self.mbox_name, self.copy_name)
+        archivemail.archive(self.mbox_name)
+        assert(os.path.exists(self.mbox_name))
+        self.assertEqual(os.path.getsize(self.mbox_name), 0)
+        archive_name = self.mbox_name + "_archive.gz"
+        assertEqualContent(archive_name, self.copy_name, zipfirst=True)
 
     def tearDown(self):
         archivemail.options = self.oldopts
