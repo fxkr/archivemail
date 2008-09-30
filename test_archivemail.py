@@ -1042,41 +1042,28 @@ class TestArchiveMboxUncompressed(TestCaseInTempdir):
         super(TestArchiveMboxUncompressed, self).tearDown()
 
 
-class TestArchiveSize(TestCaseInTempdir):
+class TestArchiveSize(unittest.TestCase):
     """check that the 'size' argument works"""
     def setUp(self):
-        super(TestArchiveSize, self).setUp()
         archivemail.options.quiet = 1
+        msg_text = make_message(hours_old=24*181)
+        self.msg_size = len(msg_text)
+        fp = cStringIO.StringIO(msg_text)
+        self.msg = rfc822.Message(fp)
 
     def testSmaller(self):
         """giving a size argument smaller than the message"""
-        self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
-        size_arg = os.path.getsize(self.mbox_name) - 1
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.options.min_size = size_arg
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        archive_name = self.mbox_name + "_archive.gz"
-        assertEqualContent(archive_name, self.copy_name, zipfirst=True)
+        archivemail.options.min_size = self.msg_size - 1
+        assert(archivemail.should_archive(self.msg))
 
     def testBigger(self):
         """giving a size argument bigger than the message"""
-        self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
-        size_arg = os.path.getsize(self.mbox_name) + 1
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.options.min_size = size_arg
-        archivemail.archive(self.mbox_name)
-        assertEqualContent(self.mbox_name, self.copy_name)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(not os.path.exists(archive_name))
+        archivemail.options.min_size = self.msg_size + 1
+        assert(not archivemail.should_archive(self.msg))
 
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.min_size = None
-        super(TestArchiveSize, self).tearDown()
 
 
 class TestArchiveMboxMode(TestCaseInTempdir):
