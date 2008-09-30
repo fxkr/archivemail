@@ -947,30 +947,21 @@ class TestArchiveMboxFlagged(unittest.TestCase):
         archivemail.options.quiet = 0
 
 
-class TestArchiveMboxOutputDir(TestCaseInTempdir):
+class TestArchiveMboxOutputDir(unittest.TestCase):
     """make sure that the 'output-dir' option works"""
     def setUp(self):
-        super(TestArchiveMboxOutputDir, self).setUp()
         archivemail.options.quiet = 1
 
     def testOld(self):
         """archiving an old mailbox with a sepecified output dir"""
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 181))
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        self.dir_name = tempfile.mkdtemp()
-        archivemail.options.output_dir = self.dir_name
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        archive_name = self.dir_name + "/" + \
-            os.path.basename(self.mbox_name) + "_archive.gz"
-        assertEqualContent(archive_name, self.copy_name, zipfirst=True)
+        for dir in "/just/a/path", "relative/path":
+            archivemail.options.output_dir = dir
+            archive_dir = archivemail.make_archive_name("/tmp/mbox")
+            self.assertEqual(dir, os.path.dirname(archive_dir))
 
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.output_dir = None
-        super(TestArchiveMboxOutputDir, self).tearDown()
 
 
 class TestArchiveMboxUncompressed(TestCaseInTempdir):
