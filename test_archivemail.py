@@ -536,25 +536,13 @@ This is after the ^From line"""
             },
         )
         for headers in test_headers:
+            msg = make_message(default_headers=headers, wantobj=True)
             date = time.strptime("2000-07-29", "%Y-%m-%d")
             archivemail.options.date_old_max = time.mktime(date)
-            self.mbox_name = make_mbox(messages=3, headers=headers)
-            self.copy_name = tempfile.mkstemp()[1]
-            shutil.copyfile(self.mbox_name, self.copy_name)
-            archivemail.archive(self.mbox_name)
-            assert(os.path.exists(self.mbox_name))
-            self.assertEqual(os.path.getsize(self.mbox_name), 0)
-            archive_name = self.mbox_name + "_archive.gz"
-            assertEqualContent(archive_name, self.copy_name, zipfirst=True)
+            assert(archivemail.should_archive(msg))
             date = time.strptime("2000-07-27", "%Y-%m-%d")
             archivemail.options.date_old_max = time.mktime(date)
-            self.mbox_name = make_mbox(messages=3, headers=headers)
-            self.copy_name = tempfile.mkstemp()[1]
-            shutil.copyfile(self.mbox_name, self.copy_name)
-            archivemail.archive(self.mbox_name)
-            assertEqualContent(self.mbox_name, self.copy_name)
-            archive_name = self.mbox_name + "_archive.gz"
-            assert(not os.path.exists(archive_name))
+            assert(not archivemail.should_archive(msg))
 
     def testMixed(self):
         """archiving a mixed mailbox"""
