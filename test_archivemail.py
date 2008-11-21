@@ -60,7 +60,6 @@ import unittest
 import gzip
 import cStringIO
 import rfc822
-import errno
 import mailbox
 
 try:
@@ -144,14 +143,6 @@ class IndexedMailboxDir:
         """Return all relative pathnames of files in this mailbox."""
         return self.msg_id_dict.values()
 
-    def clear(self):
-        """Remove all messages in this mailbox."""
-        for relpath in self.msg_id_dict.values():
-            try: os.remove(os.path.join(self.root, relpath))
-            except OSError, e:
-                if e.errno != errno.ENOENT: raise
-        self.msg_id_dict.clear()
-
 class SimpleMaildir(IndexedMailboxDir):
     """Primitive Maildir class, just good enough for generating short-lived
     test maildirs."""
@@ -176,14 +167,6 @@ class SimpleMaildir(IndexedMailboxDir):
         f.write(msg_str)
         f.close()
         self._add_to_index(msg_str, relpath)
-
-    def remove(self):
-        """Remove all files and directories that comprise this mailbox."""
-        self.clear()
-        for d in "cur", "new", "tmp":
-            os.rmdir(os.path.join(self.root, d))
-        os.rmdir(self.root)
-        self.root = None
 
     def _mkname(self, new, flags):
         """Generate a unique filename for a new message."""
