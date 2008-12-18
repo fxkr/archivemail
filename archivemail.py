@@ -1533,9 +1533,13 @@ def imap_get_namespace(srv):
     # ['(("INBOX." ".")) NIL (("#shared." ".")("shared." "."))'] or
     # ['(("" ".")) NIL NIL'], see RFC 2342.
     # Make a reasonable guess parsing this beast. 
-    ns = re.findall(r'\("([^"]*)" (?:"(.)"|NIL)', response[0])
-    assert(ns)
-    return ns
+    try:
+        m = re.match(r'\(\("([^"]*)" (?:"(.)"|NIL)', response[0])
+        nsprefix, hdelim = m.groups()
+    except:
+        print "Cannot parse IMAP NAMESPACE response %s" % repr(response)
+        raise
+    return nsprefix, hdelim
 
 
 def imap_smart_select(srv, mailbox): 
@@ -1600,25 +1604,21 @@ def imap_guess_mailboxnames(srv, mailbox):
     of preference, compiled by prepending an IMAP namespace prefix if necessary,
     and by translating hierarchy delimiters."""
     if 'NAMESPACE' in srv.capabilities: 
-        namespace_response = imap_get_namespace(srv)
-        for nsprefix, hdelim in namespace_response: 
-            if mailbox.startswith(nsprefix): 
-                mailbox = mailbox[len(nsprefix):]
-                break
-        else: 
-            # mailbox doesn't start with a namespace prefix;
-            # choose private namespace, which is the first one.
-            nsprefix, hdelim = namespace_response[0]
+        nsprefix, hdelim = imap_get_namespace(srv)
     else: 
         vprint("Server doesn't support NAMESPACE command.")
         nsprefix = ""
         hdelim = imap_getdelim(srv)
     vprint("IMAP namespace prefix: '%s', hierarchy delimiter: '%s'" % \
             (nsprefix, hdelim))
-    boxnames = [nsprefix + mailbox]
-    if os.path.sep in mailbox and hdelim: 
+    if mailbox.startswith(nsprefix):
+        boxnames = [mailbox]
+    else:
+        boxnames = [nsprefix + mailbox]
+    if os.path.sep in mailbox and hdelim is not None:
         mailbox = mailbox.replace(os.path.sep, hdelim)
-        boxnames.append(mailbox)   # could have a valid namespace prefix now
+        if mailbox.startswith(nsprefix):
+            boxnames.append(mailbox)
         if nsprefix: 
             boxnames.append(nsprefix + mailbox)
     return boxnames
