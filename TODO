@@ -6,12 +6,6 @@ Gracefully close IMAP connection upon unexptected error (currently archivemail
 just terminates). 
 
 LOCKING & Co:
-* switch to or add fcntl() locking; when combining with flock, be careful not to
-  break on Solaris/FreeBSD, where flock() is just fcntl() so using both would
-  block. 
-* Ensure that we don't accidently lose fcntl locks when closing some file
-  descriptor; this applies even for flock, since again, it might be emulated
-  with fcntl
 * Block signals while writing changed mailbox back. Also, we probably shouldn't
   use shutil.copy2() for this; at least we have to handle symlinked targets in a
   sane way, see Debian bug #349068.  mbox_sync_mailbox() in the mutt code might

@@ -1,7 +1,7 @@
 <!DOCTYPE RefEntry PUBLIC "-//Davenport//DTD DocBook V3.0//EN" [
 
-<!ENTITY flock "<CiteRefEntry>
-<RefEntryTitle><Command/flock/</RefEntryTitle>
+<!ENTITY lockf "<CiteRefEntry>
+<RefEntryTitle><Command/lockf/</RefEntryTitle>
 <ManVolNum/2/</CiteRefEntry>">
 
 <!ENTITY gzip "<CiteRefEntry>
@@ -410,7 +410,7 @@ Display brief summary information about how to run <Command/archivemail/.
 When reading an <application/mbox/-format mailbox, <command/archivemail/ will
 create a lockfile with the extension <filename>.lock</filename> so that
 procmail will not deliver to the mailbox while it is being processed. It will
-also create an advisory lock on the mailbox using &flock;.
+also create an advisory lock on the mailbox using &lockf;.
 <command/archivemail/ will also complain and abort if a 3rd-party modifies the
 mailbox while it is being read.
 </Para>

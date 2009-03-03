@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "08 April 2008" "SP" ""
+.TH "ARCHIVEMAIL" "1" "03 March 2009" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -258,7 +258,7 @@ Display brief summary information about how to run \fBarchivemail\fR\&.
 When reading an \fBmbox\fR-format mailbox, \fBarchivemail\fR will
 create a lockfile with the extension \fI\&.lock\fR so that
 procmail will not deliver to the mailbox while it is being processed. It will
-also create an advisory lock on the mailbox using \fBflock\fR(2)\&.
+also create an advisory lock on the mailbox using \fBlockf\fR(2)\&.
 \fBarchivemail\fR will also complain and abort if a 3rd-party modifies the
 mailbox while it is being read.
 .PP

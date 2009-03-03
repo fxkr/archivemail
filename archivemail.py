@@ -351,15 +351,15 @@ class Mbox(mailbox.UnixMailbox):
         os.utime(self.mbox_file_name, (self.original_atime,  \
             self.original_mtime)) 
 
-    def exclusive_lock(self):
-        """Set an advisory lock on the 'mbox' mailbox"""
+    def posix_lock(self):
+        """Set an exclusive posix lock on the 'mbox' mailbox"""
         vprint("obtaining exclusive lock on file '%s'" % self.mbox_file_name)
-        fcntl.flock(self.mbox_file.fileno(), fcntl.LOCK_EX)
+        fcntl.lockf(self.mbox_file, fcntl.LOCK_EX|fcntl.LOCK_NB)
 
-    def exclusive_unlock(self):
-        """Unset any advisory lock on the 'mbox' mailbox"""
-        vprint("dropping exclusive lock on file '%s'" % self.mbox_file_name)
-        fcntl.flock(self.mbox_file.fileno(), fcntl.LOCK_UN)
+    def posix_unlock(self):
+        """Unset any posix lock on the 'mbox' mailbox"""
+        vprint("dropping posix lock on file '%s'" % self.mbox_file_name)
+        fcntl.lockf(self.mbox_file, fcntl.LOCK_UN)
 
     def dotlock_lock(self):
         """Create a dotlock file on the 'mbox' mailbox"""
@@ -1133,7 +1133,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
         archive = ArchiveMbox(final_archive_name)
 
     original.dotlock_lock()
-    original.exclusive_lock()
+    original.posix_lock()
     msg = original.next()
     if not msg and (original.starting_size > 0):
         user_error("'%s' is not a valid mbox-format mailbox" % mailbox_name)
@@ -1164,7 +1164,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
         archive.finalise()
     if retain:
         retain.finalise()
-    original.exclusive_unlock()
+    original.posix_unlock()
     original.close()
     original.reset_timestamps()
     original.dotlock_unlock()

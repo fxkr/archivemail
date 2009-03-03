@@ -120,20 +120,15 @@ class TestMboxDotlock(TestCaseInTempdir):
         self.mbox.dotlock_unlock()
         assert(not os.path.isfile(lock))
 
-class TestMboxExclusiveLock(TestCaseInTempdir):
+class TestMboxPosixLock(TestCaseInTempdir):
     def setUp(self):
-        super(TestMboxExclusiveLock, self).setUp()
+        super(TestMboxPosixLock, self).setUp()
         self.mbox_name = make_mbox()
         self.mbox = archivemail.Mbox(self.mbox_name)
 
-    def testExclusiveLock(self):
-        """exclusive_lock/unlock should create/delete an advisory lock"""
+    def testPosixLock(self):
+        """posix_lock/unlock should create/delete an advisory lock"""
         
-        # We're using flock(2) locks; these aren't completely portable, and on
-        # some systems (e.g. Solaris) they may be emulated with fcntl(2) locks,
-        # which have pretty different semantics.  We could test real flock
-        # locks within this process, but that doesn't work for fcntl locks.  
-        #
         # The following code snippet heavily lends from the Python 2.5 mailbox
         # unittest.
         # BEGIN robbery:
@@ -143,29 +138,29 @@ class TestMboxExclusiveLock(TestCaseInTempdir):
         pid = os.fork()
         if pid == 0:
             # In the child, lock the mailbox.
-            self.mbox.exclusive_lock()
+            self.mbox.posix_lock()
             time.sleep(2)
-            self.mbox.exclusive_unlock()
+            self.mbox.posix_unlock()
             os._exit(0)
 
         # In the parent, sleep a bit to give the child time to acquire
         # the lock.
         time.sleep(0.5)
-        # The parent's file self.mbox.mbox_file shares flock locks with the
+        # The parent's file self.mbox.mbox_file shares fcntl locks with the
         # duplicated FD in the child; reopen it so we get a different file
         # table entry.
         file = open(self.mbox_name, "r+")
         lock_nb = fcntl.LOCK_EX | fcntl.LOCK_NB
         fd = file.fileno()
         try:
-            self.assertRaises(IOError, fcntl.flock, fd, lock_nb)
+            self.assertRaises(IOError, fcntl.lockf, fd, lock_nb)
 
         finally:
             # Wait for child to exit.  Locking should now succeed.
             exited_pid, status = os.waitpid(pid, 0)
 
-        fcntl.flock(fd, lock_nb)
-        fcntl.flock(fd, fcntl.LOCK_UN)
+        fcntl.lockf(fd, lock_nb)
+        fcntl.lockf(fd, fcntl.LOCK_UN)
         # END robbery
 
 
