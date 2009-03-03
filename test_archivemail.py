@@ -702,34 +702,24 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
         super(TestArchiveMboxTimestamp, self).tearDown()
 
 
-class TestArchiveMboxAll(TestCaseInTempdir): 
+class TestArchiveMboxAll(unittest.TestCase):
     def setUp(self):
-        super(TestArchiveMboxAll, self).setUp()
         archivemail.options.quiet = 1
         archivemail.options.archive_all = 1
 
     def testNew(self):
-        """archiving --all messages in a new mailbox""" 
-        self.mbox_name = make_mbox(messages=3, hours_old=(24 * 179))
-        self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.copy_name = tempfile.mkstemp()[1]
-        shutil.copyfile(self.mbox_name, self.copy_name)
-        archivemail.archive(self.mbox_name)
-        assert(os.path.exists(self.mbox_name))
-        self.assertEqual(os.path.getsize(self.mbox_name), 0)
-        new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-        self.assertEqual(self.mbox_mode, new_mode)
-        archive_name = self.mbox_name + "_archive.gz"
-        assert(os.path.exists(archive_name))
-        self.assertEqual(os.system("gzip -d %s" % archive_name), 0)
-        archive_name = self.mbox_name + "_archive"
-        assert(os.path.exists(archive_name))
-        assert(filecmp.cmp(archive_name, self.copy_name, shallow=0))
+        """new messages should be archived with --all"""
+        self.msg = make_message(hours_old=24*179, wantobj=True)
+        assert(archivemail.should_archive(self.msg))
+
+    def testOld(self):
+        """old messages should be archived with --all"""
+        self.msg = make_message(hours_old=24*181, wantobj=True)
+        assert(archivemail.should_archive(self.msg))
 
     def tearDown(self):
         archivemail.options.quiet = 0
         archivemail.options.archive_all = 0
-        super(TestArchiveMboxAll, self).tearDown()
 
 class TestArchiveMboxPreserveUnread(unittest.TestCase):
     """make sure the 'preserve_unread' option works"""
