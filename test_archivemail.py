@@ -22,7 +22,7 @@
 Unit-test archivemail using 'PyUnit'.
 
 TODO: add tests for:
-    * procmail locks already existing
+    * dotlock locks already existing
     * archiving maildir-format mailboxes
     * archiving MH-format mailboxes
     * preservation of status information from maildir to mbox
@@ -105,19 +105,19 @@ class TestCaseInTempdir(unittest.TestCase):
 
 ############ Mbox Class testing ##############
 
-class TestMboxProcmailLock(TestCaseInTempdir):
+class TestMboxDotlock(TestCaseInTempdir):
     def setUp(self):
-        super(TestMboxProcmailLock, self).setUp()
+        super(TestMboxDotlock, self).setUp()
         self.mbox_name = make_mbox()
         self.mbox_mode = os.stat(self.mbox_name)[stat.ST_MODE]
         self.mbox = archivemail.Mbox(self.mbox_name)
 
-    def testProcmailLock(self):
-        """procmail_lock/unlock should create/delete a lockfile"""
+    def testDotlock(self):
+        """dotlock_lock/unlock should create/delete a lockfile"""
         lock = self.mbox_name + ".lock"
-        self.mbox.procmail_lock()
+        self.mbox.dotlock_lock()
         assert(os.path.isfile(lock))
-        self.mbox.procmail_unlock()
+        self.mbox.dotlock_unlock()
         assert(not os.path.isfile(lock))
 
 class TestMboxExclusiveLock(TestCaseInTempdir):

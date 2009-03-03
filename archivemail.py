@@ -136,17 +136,17 @@ class Stats:
 class StaleFiles:
     """Class to keep track of files to be deleted on abnormal exit"""
     archive            = None  # tempfile for messages to be archived
-    procmail_lock      = None  # original_mailbox.lock
+    dotlock_lock       = None  # original_mailbox.lock
     retain             = None  # tempfile for messages to be retained
     temp_dir           = None  # our tempfile directory container
 
     def clean(self):
         """Delete any temporary files or lockfiles that exist"""
-        if self.procmail_lock:
-            vprint("removing stale procmail lock '%s'" % self.procmail_lock)
+        if self.dotlock_lock:
+            vprint("removing stale dotlock file '%s'" % self.dotlock_lock)
             try: 
-                os.remove(self.procmail_lock)
-                self.procmail_lock = None
+                os.remove(self.dotlock_lock)
+                self.dotlock_lock = None
             except (IOError, OSError): pass
         if self.retain:
             vprint("removing stale retain file '%s'" % self.retain)
@@ -361,8 +361,8 @@ class Mbox(mailbox.UnixMailbox):
         vprint("dropping exclusive lock on file '%s'" % self.mbox_file_name)
         fcntl.flock(self.mbox_file.fileno(), fcntl.LOCK_UN)
 
-    def procmail_lock(self):
-        """Create a procmail lockfile on the 'mbox' mailbox"""
+    def dotlock_lock(self):
+        """Create a dotlock file on the 'mbox' mailbox"""
         import socket
         hostname = socket.gethostname()
         pid = os.getpid()
@@ -390,22 +390,22 @@ class Mbox(mailbox.UnixMailbox):
                     # Lockfile already existed, someone else has the lock.
                     if (attempt >= options.lockfile_attempts):
                         unexpected_error("Giving up waiting for "
-                            "procmail lock '%s'" % lock_name)
+                            "dotlock '%s'" % lock_name)
                     vprint("lockfile '%s' exists - sleeping..." % lock_name)
                     time.sleep(options.lockfile_sleep)
         finally:
             os.close(plfd)
             os.unlink(prelock_name)
-        _stale.procmail_lock = lock_name
+        _stale.dotlock_lock = lock_name
         vprint("acquired lockfile '%s'" % lock_name)
 
-    def procmail_unlock(self):
-        """Delete the procmail lockfile on the 'mbox' mailbox"""
+    def dotlock_unlock(self):
+        """Delete the dotlock file on the 'mbox' mailbox"""
         assert(self.mbox_file_name)
         lock_name = self.mbox_file_name + options.lockfile_extension
         vprint("removing lockfile '%s'" % lock_name)
         os.remove(lock_name)
-        _stale.procmail_lock = None
+        _stale.dotlock_lock = None
 
     def get_size(self):
         """Return the current size of the mbox file"""
@@ -1132,7 +1132,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
     else:
         archive = ArchiveMbox(final_archive_name)
 
-    original.procmail_lock()
+    original.dotlock_lock()
     original.exclusive_lock()
     msg = original.next()
     if not msg and (original.starting_size > 0):
@@ -1167,7 +1167,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
     original.exclusive_unlock()
     original.close()
     original.reset_timestamps()
-    original.procmail_unlock()
+    original.dotlock_unlock()
     if not options.quiet:
         stats.display()
 
@@ -1524,8 +1524,8 @@ def imap_guess_mailboxnames(srv, mailbox):
 
 def set_signal_handlers():
     """set signal handlers to clean up temporary files on unexpected exit"""
-    # Make sure we clean up nicely - we don't want to leave stale procmail
-    # lockfiles about if something bad happens to us. This is quite 
+    # Make sure we clean up nicely - we don't want to leave stale dotlock
+    # files about if something bad happens to us. This is quite
     # important, even though procmail will delete stale files after a while.
     signal.signal(signal.SIGHUP, clean_up_signal)   # signal 1
     # SIGINT (signal 2) is handled as a python exception
