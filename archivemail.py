@@ -80,6 +80,8 @@ class UserError(ArchivemailException):
     pass
 class UnexpectedError(ArchivemailException): 
     pass
+class LockUnavailable(ArchivemailException):
+    pass
 
 class Stats:
     """Class to collect and print statistics about mailbox archival"""
@@ -177,9 +179,9 @@ class Options:
     dry_run              = 0
     filter_append        = None
     include_flagged      = 0
-    lockfile_attempts    = 5  
+    locking_attempts     = 5
     lockfile_extension   = ".lock"
-    lockfile_sleep       = 1 
+    lock_sleep           = 1
     no_compress          = 0
     only_archive_read    = 0
     output_dir           = None
@@ -328,6 +330,7 @@ class Mbox(mailbox.UnixMailbox):
         path -- file name of the 'mbox' file to be opened
         """
         assert(path)
+        self._locked = False
         try:
             self.original_atime = os.path.getatime(path)
             self.original_mtime = os.path.getmtime(path)
@@ -351,18 +354,54 @@ class Mbox(mailbox.UnixMailbox):
         os.utime(self.mbox_file_name, (self.original_atime,  \
             self.original_mtime)) 
 
-    def posix_lock(self):
-        """Set an exclusive posix lock on the 'mbox' mailbox"""
-        vprint("obtaining exclusive lock on file '%s'" % self.mbox_file_name)
-        fcntl.lockf(self.mbox_file, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    def lock(self):
+        """Lock this mbox with both a dotlock and a posix lock."""
+        assert(not self._locked)
+        attempt = 1
+        while True:
+            try:
+                self._posix_lock()
+                self._dotlock_lock()
+                break
+            except LockUnavailable, e:
+                self._posix_unlock()
+                attempt += 1
+                if (attempt > options.locking_attempts):
+                    unexpected_error(str(e))
+                vprint("%s - sleeping..." % e)
+                time.sleep(options.lock_sleep)
+            except:
+                self._posix_unlock()
+                raise
+        self._locked = True
 
-    def posix_unlock(self):
+    def unlock(self):
+        """Unlock this mbox."""
+        assert(self._locked)
+        self._dotlock_unlock()
+        self._posix_unlock()
+        self._locked = False
+
+    def _posix_lock(self):
+        """Set an exclusive posix lock on the 'mbox' mailbox"""
+        vprint("trying to acquire posix lock on file '%s'" % self.mbox_file_name)
+        try:
+            fcntl.lockf(self.mbox_file, fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except IOError, e:
+            if e.errno in (errno.EAGAIN, errno.EACCES):
+                raise LockUnavailable("posix lock for '%s' unavailable" % \
+                    self.mbox_file_name)
+            else:
+                raise
+        vprint("acquired posix lock on file '%s'" % self.mbox_file_name)
+
+    def _posix_unlock(self):
         """Unset any posix lock on the 'mbox' mailbox"""
         vprint("dropping posix lock on file '%s'" % self.mbox_file_name)
         fcntl.lockf(self.mbox_file, fcntl.LOCK_UN)
 
-    def dotlock_lock(self):
-        """Create a dotlock file on the 'mbox' mailbox"""
+    def _dotlock_lock(self):
+        """Create a dotlock file for the 'mbox' mailbox"""
         import socket
         hostname = socket.gethostname()
         pid = os.getpid()
@@ -371,36 +410,29 @@ class Mbox(mailbox.UnixMailbox):
         plfd, prelock_name = tempfile.mkstemp(prelock_suffix, prelock_prefix,
             dir=box_dir)
         lock_name = self.mbox_file_name + options.lockfile_extension
-        attempt = 0
         try:
-            while True:
-                attempt = attempt + 1
-                try:
-                    os.link(prelock_name, lock_name)
-                    # We've got the lock.
-                    break
-                except OSError, e:
-                    if os.fstat(plfd)[stat.ST_NLINK] == 2:
-                        # The Linux man page for open(2) claims that in this
-                        # case we have actually succeeded to create the link, 
-                        # and this assumption seems to be folklore. 
-                        # So we've got the lock.
-                        break
-                    if e.errno != errno.EEXIST: raise
-                    # Lockfile already existed, someone else has the lock.
-                    if (attempt >= options.lockfile_attempts):
-                        unexpected_error("Giving up waiting for "
-                            "dotlock '%s'" % lock_name)
-                    vprint("lockfile '%s' exists - sleeping..." % lock_name)
-                    time.sleep(options.lockfile_sleep)
+            try:
+                os.link(prelock_name, lock_name)
+                # We've got the lock.
+            except OSError, e:
+                if os.fstat(plfd)[stat.ST_NLINK] == 2:
+                    # The Linux man page for open(2) claims that in this
+                    # case we have actually succeeded to create the link,
+                    # and this assumption seems to be folklore.
+                    # So we've got the lock.
+                    pass
+                elif e.errno == errno.EEXIST:
+                    raise LockUnavailable("Dotlock for '%s' unavailable" % self.mbox_file_name)
+                else:
+                    raise
         finally:
             os.close(plfd)
             os.unlink(prelock_name)
         _stale.dotlock_lock = lock_name
         vprint("acquired lockfile '%s'" % lock_name)
 
-    def dotlock_unlock(self):
-        """Delete the dotlock file on the 'mbox' mailbox"""
+    def _dotlock_unlock(self):
+        """Delete the dotlock file for the 'mbox' mailbox."""
         assert(self.mbox_file_name)
         lock_name = self.mbox_file_name + options.lockfile_extension
         vprint("removing lockfile '%s'" % lock_name)
@@ -1132,8 +1164,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
     else:
         archive = ArchiveMbox(final_archive_name)
 
-    original.dotlock_lock()
-    original.posix_lock()
+    original.lock()
     msg = original.next()
     if not msg and (original.starting_size > 0):
         user_error("'%s' is not a valid mbox-format mailbox" % mailbox_name)
@@ -1164,10 +1195,9 @@ def _archive_mbox(mailbox_name, final_archive_name):
         archive.finalise()
     if retain:
         retain.finalise()
-    original.posix_unlock()
+    original.unlock()
     original.close()
     original.reset_timestamps()
-    original.dotlock_unlock()
     if not options.quiet:
         stats.display()
 

@@ -115,9 +115,9 @@ class TestMboxDotlock(TestCaseInTempdir):
     def testDotlock(self):
         """dotlock_lock/unlock should create/delete a lockfile"""
         lock = self.mbox_name + ".lock"
-        self.mbox.dotlock_lock()
+        self.mbox._dotlock_lock()
         assert(os.path.isfile(lock))
-        self.mbox.dotlock_unlock()
+        self.mbox._dotlock_unlock()
         assert(not os.path.isfile(lock))
 
 class TestMboxPosixLock(TestCaseInTempdir):
@@ -138,9 +138,9 @@ class TestMboxPosixLock(TestCaseInTempdir):
         pid = os.fork()
         if pid == 0:
             # In the child, lock the mailbox.
-            self.mbox.posix_lock()
+            self.mbox._posix_lock()
             time.sleep(2)
-            self.mbox.posix_unlock()
+            self.mbox._posix_unlock()
             os._exit(0)
 
         # In the parent, sleep a bit to give the child time to acquire
