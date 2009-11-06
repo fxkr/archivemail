@@ -2,7 +2,6 @@
 VERSION=$(shell python setup.py --version)
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
-SVNROOT=https://archivemail.svn.sourceforge.net/svnroot/archivemail
 HTDOCS=htdocs-$(VERSION)
 
 default:
@@ -33,15 +32,7 @@ sdist: clobber doc
 #	rm archivemail
 
 tag:
-	# Overwriting tags at least doesn't work with svn << 1.4, 
-	# it silently creates a new subidr.  It *may* work with 
-	# svn 1.4, I haven't tested it. See svn bug #2188.
-	#cvs tag -F current
-	@if svn list "$(SVNROOT)/tags" | grep -qx "$(VERSION_TAG)/\?"; then \
-	    echo "Tag '$(VERSION_TAG)' already exists, aborting"; \
-	else \
-	    svn copy . "$(SVNROOT)/tags/$(VERSION_TAG)"; \
-	fi
+	git tag -a $(VERSION_TAG)
 
 upload:
 	(cd dist && lftp -c 'open upload.sf.net && cd incoming && put $(TARFILE)')
