@@ -120,6 +120,17 @@ class TestMboxDotlock(TestCaseInTempdir):
         self.mbox._dotlock_unlock()
         assert(not os.path.isfile(lock))
 
+    def testDotlockingSucceedsUponEACCES(self):
+        """A dotlock should silently be omitted upon EACCES."""
+        archivemail.options.quiet = True
+        mbox_dir = os.path.dirname(self.mbox_name)
+        os.chmod(mbox_dir, 0500)
+        try:
+            self.mbox._dotlock_lock()
+        finally:
+            os.chmod(mbox_dir, 0700)
+            archivemail.options.quiet = False
+
 class TestMboxPosixLock(TestCaseInTempdir):
     def setUp(self):
         super(TestMboxPosixLock, self).setUp()

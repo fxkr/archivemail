@@ -407,8 +407,16 @@ class Mbox(mailbox.UnixMailbox):
         pid = os.getpid()
         box_dir, prelock_prefix = os.path.split(self.mbox_file_name)
         prelock_suffix = ".%s.%s%s" % (hostname, pid, options.lockfile_extension)
-        plfd, prelock_name = tempfile.mkstemp(prelock_suffix, prelock_prefix,
-            dir=box_dir)
+        try:
+            plfd, prelock_name = tempfile.mkstemp(prelock_suffix, prelock_prefix,
+                dir=box_dir)
+        except OSError, e:
+            if e.errno == errno.EACCES:
+                if not options.quiet:
+                    user_warning("no write permissions: omitting dotlock for '%s'" % \
+                        self.mbox_file_name)
+                return
+            raise
         lock_name = self.mbox_file_name + options.lockfile_extension
         try:
             try:
