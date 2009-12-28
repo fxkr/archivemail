@@ -137,9 +137,8 @@ class Stats:
 
 class StaleFiles:
     """Class to keep track of files to be deleted on abnormal exit"""
-    archive            = None  # tempfile for messages to be archived
     dotlock_lock       = None  # original_mailbox.lock
-    retain             = None  # tempfile for messages to be retained
+    temp_mboxes        = []    # temporary retain and archive mboxes
     temp_dir           = None  # our tempfile directory container
 
     def clean(self):
@@ -150,17 +149,11 @@ class StaleFiles:
                 os.remove(self.dotlock_lock)
                 self.dotlock_lock = None
             except (IOError, OSError): pass
-        if self.retain:
-            vprint("removing stale retain file '%s'" % self.retain)
+        while self.temp_mboxes:
+            mbox = self.temp_mboxes.pop()
+            vprint("removing stale temporary mbox '%s'" % mbox)
             try: 
-                os.remove(self.retain)
-                self.retain = None
-            except (IOError, OSError): pass
-        if self.archive:
-            vprint("removing stale archive file '%s'" % self.archive)
-            try: 
-                os.remove(self.archive)
-                self.archive = None
+                os.remove(mbox)
             except (IOError, OSError): pass
         if self.temp_dir:
             vprint("removing stale tempfile directory '%s'" % self.temp_dir)
@@ -318,9 +311,8 @@ class Options:
 
 
 class Mbox(mailbox.UnixMailbox):
-    """A mostly-read-only mbox with locking. Subclasses the mailbox.UnixMailbox
-    class.
-    """
+    """A mostly-read-only mbox with locking. The mbox content can only be
+    modified by overwriting the entire underlying file."""
 
     def __init__(self, path):
         """Constructor for opening an existing 'mbox' mailbox.
@@ -450,6 +442,31 @@ class Mbox(mailbox.UnixMailbox):
         """Return the current size of the mbox file"""
         return os.path.getsize(self.mbox_file_name)
 
+    def overwrite_with(self, mbox_filename):
+        """Overwrite the mbox content with the content of the given mbox file."""
+        fin = open(mbox_filename, "r")
+        self.mbox_file.seek(0)
+        shutil.copyfileobj(fin, self.mbox_file)
+        self.mbox_file.truncate()
+
+
+class ArchiveMbox:
+    """Simple append-only access to the archive mbox. Entirely content-agnostic."""
+
+    def __init__(self, path):
+        fd = safe_open(path)
+        self.mbox_file = os.fdopen(fd, "a")
+
+    def append(self, filename):
+        """Append the content of the given file to the mbox."""
+        fin = open(filename, "r")
+        shutil.copyfileobj(fin, self.mbox_file)
+        fin.close()
+
+    def close(self):
+        """Close the mbox file."""
+        self.mbox_file.close()
+
 
 class TempMbox:
     """An write-only temporary mbox. No locking methods."""
@@ -458,6 +475,7 @@ class TempMbox:
         """Creates a temporary mbox file."""
         fd, filename = tempfile.mkstemp(prefix=prefix)
         self.mbox_file_name = filename
+        _stale.temp_mboxes.append(filename)
         self.mbox_file = os.fdopen(fd, "w")
         # an empty gzip file is not really empty (it contains the gzip header
         # and trailer), so we need to track manually if this mbox is empty
@@ -512,110 +530,22 @@ class TempMbox:
         self.mbox_file.close()
 
     def remove(self):
-        """Close and delete the 'mbox' mailbox file"""
-        file_name = self.mbox_file_name
-        self.close()
-        vprint("removing file '%s'" % self.mbox_file_name)
-        os.remove(file_name)
-
-
-class RetainMbox(TempMbox):
-    """Class for holding messages that will be retained from the original
-    mailbox (ie. the messages are not considered 'old'). Extends the 'Mbox'
-    class. This 'mbox' file starts off as a temporary file but will eventually
-    overwrite the original mailbox if everything is OK. 
-    
-    """
-
-    def __init__(self, final_mbox_file):
-        """Constructor - create a temporary file for the mailbox.
-       
-        Arguments:
-        final_mbox_file -- file object of the original mailbox that this mailbox
-                      will replace when we call finalise()
-
-        """
-        assert(final_mbox_file)
-        TempMbox.__init__(self, prefix="retain")
-        _stale.retain = self.mbox_file_name
-        vprint("opened temporary retain file '%s'" % self.mbox_file_name)
-        self.__final_mbox_file = final_mbox_file
-
-    def finalise(self):
-        """Overwrite the original mailbox with this temporary mailbox."""
-        assert(self.__final_mbox_file)
-        new_size = self.mbox_file.tell()
-        old_size = self.__final_mbox_file.tell()
-        if new_size == old_size:
-            vprint("no pending changes to mbox '%s'" % \
-                    self.__final_mbox_file.name)
-        else:
-            self.close()
-            self.mbox_file = open(self.mbox_file_name, "r")
-            vprint("overwriting mbox '%s' with temporary mbox '%s'" % \
-                    (self.__final_mbox_file.name, self.mbox_file_name))
-            self.__final_mbox_file.seek(0)
-            shutil.copyfileobj(self.mbox_file, self.__final_mbox_file)
-            self.__final_mbox_file.truncate()
-        self.remove()
-
-    def remove(self):
-        """Close and delete this temporary mailbox."""
-        TempMbox.remove(self)
-        _stale.retain = None
-
-
-class ArchiveMbox(TempMbox):
-    """Class for holding messages that will be archived from the original
-    mailbox (ie. the messages that are considered 'old'). Extends the 'Mbox'
-    class. This 'mbox' file starts off as a temporary file, and will eventually
-    be appended to the original archive mailbox if everything is OK.
-    
-    """
-    __final_name = None 
-
-    def __init__(self, final_name):
-        """Constructor -- create a temporary archive.
-       
-        Arguments:
-        final_name -- the final name for this archive mailbox. The temporary
-                      archive will be appended to this file when we call
-                      finalise()
-        """
-        assert(final_name)
-        if options.no_compress:
-            TempMbox.__init__(self, prefix="archive")
-        else:
-            TempMbox.__init__(self, prefix="archive.gz")
-            self.mbox_file.close()
-            self.mbox_file = gzip.GzipFile(self.mbox_file_name, "w")
-        _stale.archive = self.mbox_file_name
-        self.__final_name = final_name
-
-    def finalise(self):
-        """Append the temporary archive to the final archive, and delete it
-        afterwards."""
-        assert(self.__final_name)
-        self.close()
-        if not self.empty:
-            self.mbox_file = open(self.mbox_file_name, "r")
-            final_name = self.__final_name
-            if not options.no_compress:
-                final_name = final_name + ".gz"
-            vprint("writing back '%s' to '%s'" % (self.mbox_file_name, final_name))
-            fd = safe_open(final_name)
-            final_archive = os.fdopen(fd, "a")
-            shutil.copyfileobj(self.mbox_file, final_archive)
-            final_archive.close()
-        self.remove()
-
-    def remove(self):
-        """Delete the 'mbox' mailbox file"""
-        # Can't call TempMbox.remove here, because it would close the mbox
-        # a second time.
-        vprint("removing file '%s'" % self.mbox_file_name)
+        """Delete the temporary mbox file."""
         os.remove(self.mbox_file_name)
-        _stale.archive = None
+        _stale.temp_mboxes.remove(self.mbox_file_name)
+
+class CompressedTempMbox(TempMbox):
+    """A compressed version of a TempMbox."""
+
+    def __init__(self, prefix=tempfile.template):
+        TempMbox.__init__(self, prefix)
+        self.raw_file = self.mbox_file
+        self.mbox_file = gzip.GzipFile(mode="a", fileobj=self.mbox_file)
+
+    def close(self):
+        """Finish gzip file and close it."""
+        self.mbox_file.close()  # close GzipFile, writing gzip trailer
+        self.raw_file.close()
 
 
 class IdentityCache:
@@ -1166,11 +1096,8 @@ def _archive_mbox(mailbox_name, final_archive_name):
     if options.dry_run or options.copy_old_mail:
         retain = None
     else:
-        retain = RetainMbox(original.mbox_file)
-    if options.dry_run or options.delete_old_mail:
-        archive = None
-    else:
-        archive = ArchiveMbox(final_archive_name)
+        retain = TempMbox(prefix="retain")
+    archive = prepare_temp_archive()
 
     original.lock()
     msg = original.next()
@@ -1199,10 +1126,17 @@ def _archive_mbox(mailbox_name, final_archive_name):
     if original.starting_size != original.get_size():
         unexpected_error("the mailbox '%s' changed size during reading!" % \
            mailbox_name)         
-    if archive:
-        archive.finalise()
+    commit_archive(archive, final_archive_name)
     if retain:
-        retain.finalise()
+        pending_changes = original.mbox_file.tell() != retain.mbox_file.tell()
+        retain.close()
+        if pending_changes:
+            vprint("overwriting mbox '%s' with temporary mbox '%s'" % \
+                    (original.mbox_file_name, retain.mbox_file_name))
+            original.overwrite_with(retain.mbox_file_name)
+        else:
+            vprint("no changes to mbox '%s'" %  original.mbox_file_name)
+        retain.remove()
     original.unlock()
     original.close()
     original.reset_timestamps()
@@ -1224,12 +1158,8 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         original = mailbox.MHMailbox(mailbox_name)
     else:
         unexpected_error("unknown type: %s" % type)        
-
     cache = IdentityCache(mailbox_name)
-    if options.dry_run or options.delete_old_mail:
-        archive = None
-    else:
-        archive = ArchiveMbox(final_archive_name)
+    archive = prepare_temp_archive()
 
     for msg in original:
         if not msg: 
@@ -1255,8 +1185,7 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         else:
             vprint("decision: retain message")
     vprint("finished reading messages") 
-    if archive:
-        archive.finalise()
+    commit_archive(archive, final_archive_name)
     for file_name in delete_queue:
         vprint("removing original message: '%s'" % file_name)
         try: os.remove(file_name)
@@ -1349,7 +1278,7 @@ def _archive_imap(mailbox_name, final_archive_name):
 
     if not options.dry_run:
         if not options.delete_old_mail:
-            archive = ArchiveMbox(final_archive_name)
+            archive = prepare_temp_archive()
             vprint("fetching messages...")
             for msn in message_list:
                 # Fetching message flags and body together always finds \Seen
@@ -1368,7 +1297,7 @@ def _archive_imap(mailbox_name, final_archive_name):
                 if options.warn_duplicates:
                     cache.warn_if_dupe(msg)             
                 archive.write(msg)
-            archive.finalise()
+            commit_archive(archive, final_archive_name)
         if not options.copy_old_mail: 
             vprint("Deleting %s messages" % len(message_list))
             # do not delete more than a certain number of messages at a time,
@@ -1590,6 +1519,26 @@ def clean_up_signal(signal_number, stack_frame):
     # at this stage
     unexpected_error("received signal %s" % signal_number)
 
+def prepare_temp_archive():
+    """Create temporary archive mbox."""
+    if options.dry_run or options.delete_old_mail:
+        return None
+    if options.no_compress:
+        return TempMbox()
+    else:
+        return CompressedTempMbox()
+
+def commit_archive(archive, final_archive_name):
+    """Finalize temporary archive and write it to its final destination."""
+    if not options.no_compress:
+        final_archive_name = final_archive_name + '.gz'
+    if archive:
+        archive.close()
+        if not archive.empty:
+            final_archive = ArchiveMbox(final_archive_name)
+            final_archive.append(archive.mbox_file_name)
+            final_archive.close()
+        archive.remove()
 
 def make_archive_name(mailbox_name):
     """Derive archive name and (relative) path from the mailbox name."""
