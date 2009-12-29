@@ -138,17 +138,17 @@ class Stats:
 
 class StaleFiles:
     """Class to keep track of files to be deleted on abnormal exit"""
-    dotlock_lock       = None  # original_mailbox.lock
+    dotlock_files      = []    # dotlock files for source mbox and final archive
     temp_mboxes        = []    # temporary retain and archive mboxes
     temp_dir           = None  # our tempfile directory container
 
     def clean(self):
         """Delete any temporary files or lockfiles that exist"""
-        if self.dotlock_lock:
-            vprint("removing stale dotlock file '%s'" % self.dotlock_lock)
+        while self.dotlock_files:
+            dotlock = self.dotlock_files.pop()
+            vprint("removing stale dotlock file '%s'" % dotlock)
             try: 
-                os.remove(self.dotlock_lock)
-                self.dotlock_lock = None
+                os.remove(dotlock)
             except (IOError, OSError): pass
         while self.temp_mboxes:
             mbox = self.temp_mboxes.pop()
@@ -311,40 +311,13 @@ class Options:
             string)
 
 
-class Mbox(mailbox.UnixMailbox):
-    """A mostly-read-only mbox with locking. The mbox content can only be
-    modified by overwriting the entire underlying file."""
+class LockableMboxMixin:
+    """Locking methods for mbox files."""
 
-    def __init__(self, path):
-        """Constructor for opening an existing 'mbox' mailbox.
-        Extends constructor for mailbox.UnixMailbox()
-
-        Named Arguments:
-        path -- file name of the 'mbox' file to be opened
-        """
-        assert(path)
+    def __init__(self, mbox_file, mbox_file_name):
+        self.mbox_file = mbox_file
+        self.mbox_file_name = mbox_file_name
         self._locked = False
-        fd = safe_open_existing(path)
-        st = os.fstat(fd)
-        self.original_atime = st.st_atime
-        self.original_mtime = st.st_mtime
-        self.starting_size = st.st_size
-        self.mbox_file = os.fdopen(fd, "r+")
-        self.mbox_file_name = path
-        mailbox.UnixMailbox.__init__(self, self.mbox_file)
-
-    def close(self):
-        """Close the mbox file"""
-        vprint("closing file '%s'" % self.mbox_file_name)
-        self.mbox_file.close()
-
-    def reset_timestamps(self):
-        """Set the file timestamps to the original value"""
-        assert(self.original_atime)
-        assert(self.original_mtime)
-        assert(self.mbox_file_name)
-        os.utime(self.mbox_file_name, (self.original_atime,  \
-            self.original_mtime)) 
 
     def lock(self):
         """Lock this mbox with both a dotlock and a posix lock."""
@@ -427,8 +400,8 @@ class Mbox(mailbox.UnixMailbox):
         finally:
             os.close(plfd)
             os.unlink(prelock_name)
-        _stale.dotlock_lock = lock_name
         vprint("acquired lockfile '%s'" % lock_name)
+        _stale.dotlock_files.append(lock_name)
 
     def _dotlock_unlock(self):
         """Delete the dotlock file for the 'mbox' mailbox."""
@@ -436,7 +409,44 @@ class Mbox(mailbox.UnixMailbox):
         lock_name = self.mbox_file_name + options.lockfile_extension
         vprint("removing lockfile '%s'" % lock_name)
         os.remove(lock_name)
-        _stale.dotlock_lock = None
+        _stale.dotlock_files.remove(lock_name)
+
+    def close(self):
+        """Close the mbox file"""
+        vprint("closing file '%s'" % self.mbox_file_name)
+        assert(not self._locked)
+        self.mbox_file.close()
+
+
+class Mbox(mailbox.UnixMailbox, LockableMboxMixin):
+    """A mostly-read-only mbox with locking. The mbox content can only be
+    modified by overwriting the entire underlying file."""
+
+    def __init__(self, path):
+        """Constructor for opening an existing 'mbox' mailbox.
+        Extends constructor for mailbox.UnixMailbox()
+
+        Named Arguments:
+        path -- file name of the 'mbox' file to be opened
+        """
+        assert(path)
+        fd = safe_open_existing(path)
+        st = os.fstat(fd)
+        self.original_atime = st.st_atime
+        self.original_mtime = st.st_mtime
+        self.starting_size = st.st_size
+        self.mbox_file = os.fdopen(fd, "r+")
+        self.mbox_file_name = path
+        LockableMboxMixin.__init__(self, self.mbox_file, path)
+        mailbox.UnixMailbox.__init__(self, self.mbox_file)
+
+    def reset_timestamps(self):
+        """Set the file timestamps to the original values"""
+        assert(self.original_atime)
+        assert(self.original_mtime)
+        assert(self.mbox_file_name)
+        os.utime(self.mbox_file_name, (self.original_atime,  \
+            self.original_mtime))
 
     def get_size(self):
         """Return the current size of the mbox file"""
@@ -450,15 +460,17 @@ class Mbox(mailbox.UnixMailbox):
         self.mbox_file.truncate()
 
 
-class ArchiveMbox:
+class ArchiveMbox(LockableMboxMixin):
     """Simple append-only access to the archive mbox. Entirely content-agnostic."""
 
     def __init__(self, path):
         fd = safe_open(path)
         self.mbox_file = os.fdopen(fd, "a")
+        LockableMboxMixin.__init__(self, self.mbox_file, path)
 
     def append(self, filename):
         """Append the content of the given file to the mbox."""
+        assert(self._locked)
         fin = open(filename, "r")
         oldsize = os.fstat(self.mbox_file.fileno()).st_size
         try:
@@ -469,10 +481,6 @@ class ArchiveMbox:
             self.mbox_file.truncate(oldsize)
             raise
         fin.close()
-
-    def close(self):
-        """Close the mbox file."""
-        self.mbox_file.close()
 
 
 class TempMbox:
@@ -1566,8 +1574,12 @@ def commit_archive(archive, final_archive_name):
         archive.close()
         if not archive.empty:
             final_archive = ArchiveMbox(final_archive_name)
-            final_archive.append(archive.mbox_file_name)
-            final_archive.close()
+            final_archive.lock()
+            try:
+                final_archive.append(archive.mbox_file_name)
+            finally:
+                final_archive.unlock()
+                final_archive.close()
         archive.remove()
 
 def make_archive_name(mailbox_name):
