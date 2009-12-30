@@ -454,7 +454,7 @@ class Mbox(mailbox.UnixMailbox, LockableMboxMixin):
             self.original_mtime))
 
     def get_size(self):
-        """Return the current size of the mbox file"""
+        """Return the current size of the mbox file on disk"""
         return os.path.getsize(self.mbox_file_name)
 
     def overwrite_with(self, mbox_filename):
@@ -489,7 +489,7 @@ class ArchiveMbox(LockableMboxMixin):
 
 
 class TempMbox:
-    """An write-only temporary mbox. No locking methods."""
+    """A write-only temporary mbox. No locking methods."""
 
     def __init__(self, prefix=tempfile.template):
         """Creates a temporary mbox file."""
@@ -564,6 +564,7 @@ class TempMbox:
         """Delete the temporary mbox file."""
         os.remove(self.mbox_file_name)
         _stale.temp_mboxes.remove(self.mbox_file_name)
+
 
 class CompressedTempMbox(TempMbox):
     """A compressed version of a TempMbox."""
@@ -1055,7 +1056,7 @@ def archive(mailbox_name):
     """Archives a mailbox.
 
     Arguments:
-    mailbox_name -- the filename/dirname of the mailbox to be archived
+    mailbox_name -- the filename/dirname/url of the mailbox to be archived
     """
     assert(mailbox_name) 
 
