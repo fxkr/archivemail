@@ -398,11 +398,11 @@ class LockableMboxMixin:
                     raise LockUnavailable("Dotlock for '%s' unavailable" % self.mbox_file_name)
                 else:
                     raise
+            _stale.dotlock_files.append(lock_name)
         finally:
             os.close(plfd)
             os.unlink(prelock_name)
         vprint("acquired lockfile '%s'" % lock_name)
-        _stale.dotlock_files.append(lock_name)
 
     def _dotlock_unlock(self):
         """Delete the dotlock file for the 'mbox' mailbox."""
