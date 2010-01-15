@@ -67,6 +67,7 @@ import tempfile
 import time
 import urlparse
 import errno
+import socket
 
 # From_ mangling regex. 
 from_re = re.compile(r'^From ', re.MULTILINE)
@@ -393,7 +394,6 @@ class Mbox(mailbox.UnixMailbox):
 
     def _dotlock_lock(self):
         """Create a dotlock file for the 'mbox' mailbox"""
-        import socket
         hostname = socket.gethostname()
         pid = os.getpid()
         box_dir, prelock_prefix = os.path.split(self.mbox_file_name)
@@ -460,7 +460,14 @@ class ArchiveMbox:
     def append(self, filename):
         """Append the content of the given file to the mbox."""
         fin = open(filename, "r")
-        shutil.copyfileobj(fin, self.mbox_file)
+        oldsize = os.fstat(self.mbox_file.fileno()).st_size
+        try:
+            shutil.copyfileobj(fin, self.mbox_file)
+        except:
+            # We can safely abort here without data loss, because
+            # we have not yet changed the original mailbox
+            self.mbox_file.truncate(oldsize)
+            raise
         fin.close()
 
     def close(self):
@@ -528,6 +535,12 @@ class TempMbox:
         """Close the mbox file"""
         vprint("closing file '%s'" % self.mbox_file_name)
         self.mbox_file.close()
+
+    def saveas(self, filename):
+        """Rename this temporary mbox file to the given name, making it
+        permanent.  Emergency use only."""
+        os.rename(self.mbox_file_name, filename)
+        _stale.temp_mboxes.remove(retain.mbox_file_name)
 
     def remove(self):
         """Delete the temporary mbox file."""
@@ -1126,14 +1139,29 @@ def _archive_mbox(mailbox_name, final_archive_name):
     if original.starting_size != original.get_size():
         unexpected_error("the mailbox '%s' changed size during reading!" % \
            mailbox_name)         
+    # Write the new archive before modifying the mailbox, to prevent
+    # losing data if something goes wrong
     commit_archive(archive, final_archive_name)
     if retain:
         pending_changes = original.mbox_file.tell() != retain.mbox_file.tell()
         retain.close()
         if pending_changes:
-            vprint("overwriting mbox '%s' with temporary mbox '%s'" % \
-                    (original.mbox_file_name, retain.mbox_file_name))
-            original.overwrite_with(retain.mbox_file_name)
+            vprint("writing back changed mailbox '%s'..." % \
+                    original.mbox_file_name)
+            # Prepare for recovery on error.
+            # FIXME: tempfile.tempdir is our nested dir.
+            saved_name = "%s/%s.%s.%s-%s-%s" % \
+                (tempfile.tempdir, options.script_name,
+                    os.path.basename(original.mbox_file_name),
+                    socket.gethostname(), os.getuid(),
+                    os.getpid())
+            try:
+                original.overwrite_with(retain.mbox_file_name)
+            except:
+                retain.saveas(saved_name)
+                print "Error writing back changed mailbox; saved good copy to " \
+                        "%s" % saved_name
+                raise
         else:
             vprint("no changes to mbox '%s'" %  original.mbox_file_name)
         retain.remove()
@@ -1185,6 +1213,8 @@ def _archive_dir(mailbox_name, final_archive_name, type):
         else:
             vprint("decision: retain message")
     vprint("finished reading messages") 
+    # Write the new archive before modifying the mailbox, to prevent
+    # losing data if something goes wrong
     commit_archive(archive, final_archive_name)
     for file_name in delete_queue:
         vprint("removing original message: '%s'" % file_name)
