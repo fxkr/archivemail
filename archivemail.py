@@ -371,6 +371,8 @@ class LockableMboxMixin:
         pid = os.getpid()
         box_dir, prelock_prefix = os.path.split(self.mbox_file_name)
         prelock_suffix = ".%s.%s%s" % (hostname, pid, options.lockfile_extension)
+        lock_name = self.mbox_file_name + options.lockfile_extension
+        vprint("trying to create dotlock file '%s'" % lock_name)
         try:
             plfd, prelock_name = tempfile.mkstemp(prelock_suffix, prelock_prefix,
                 dir=box_dir)
@@ -381,7 +383,6 @@ class LockableMboxMixin:
                         self.mbox_file_name)
                 return
             raise
-        lock_name = self.mbox_file_name + options.lockfile_extension
         try:
             try:
                 os.link(prelock_name, lock_name)
