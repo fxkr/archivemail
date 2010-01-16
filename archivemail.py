@@ -411,6 +411,11 @@ class LockableMboxMixin:
         os.remove(lock_name)
         _stale.dotlock_files.remove(lock_name)
 
+    def commit(self):
+        """Sync the mbox file to disk."""
+        self.mbox_file.flush()
+        os.fsync(self.mbox_file.fileno())
+
     def close(self):
         """Close the mbox file"""
         vprint("closing file '%s'" % self.mbox_file_name)
@@ -539,6 +544,11 @@ class TempMbox:
         if not msg_has_mbox_format:
             self.mbox_file.write(os.linesep)
 
+    def commit(self):
+        """Sync the mbox file to disk."""
+        self.mbox_file.flush()
+        os.fsync(self.mbox_file.fileno())
+
     def close(self):
         """Close the mbox file"""
         vprint("closing file '%s'" % self.mbox_file_name)
@@ -562,10 +572,23 @@ class CompressedTempMbox(TempMbox):
         TempMbox.__init__(self, prefix)
         self.raw_file = self.mbox_file
         self.mbox_file = gzip.GzipFile(mode="a", fileobj=self.mbox_file)
+        # Workaround that GzipFile.close() isn't idempotent in Python < 2.6
+        # (python issue #2959).  There is no GzipFile.closed, so we need a
+        # replacement.
+        self.gzipfile_closed = False
+
+    def commit(self):
+        """Finish gzip file and sync it to disk."""
+        # This method is currently not used
+        self.mbox_file.close()  # close GzipFile, writing gzip trailer
+        self.gzipfile_closed = True
+        self.raw_file.flush()
+        os.fsync(self.raw_file.fileno())
 
     def close(self):
-        """Finish gzip file and close it."""
-        self.mbox_file.close()  # close GzipFile, writing gzip trailer
+        """Close the gzip file."""
+        if not self.gzipfile_closed:
+            self.mbox_file.close()
         self.raw_file.close()
 
 
@@ -1152,8 +1175,9 @@ def _archive_mbox(mailbox_name, final_archive_name):
     commit_archive(archive, final_archive_name)
     if retain:
         pending_changes = original.mbox_file.tell() != retain.mbox_file.tell()
-        retain.close()
         if pending_changes:
+            retain.commit()
+            retain.close()
             vprint("writing back changed mailbox '%s'..." % \
                     original.mbox_file_name)
             # Prepare for recovery on error.
@@ -1165,12 +1189,14 @@ def _archive_mbox(mailbox_name, final_archive_name):
                     os.getpid())
             try:
                 original.overwrite_with(retain.mbox_file_name)
+                original.commit()
             except:
                 retain.saveas(saved_name)
                 print "Error writing back changed mailbox; saved good copy to " \
                         "%s" % saved_name
                 raise
         else:
+            retain.close()
             vprint("no changes to mbox '%s'" %  original.mbox_file_name)
         retain.remove()
     original.unlock()
@@ -1577,6 +1603,7 @@ def commit_archive(archive, final_archive_name):
             final_archive.lock()
             try:
                 final_archive.append(archive.mbox_file_name)
+                final_archive.commit()
             finally:
                 final_archive.unlock()
                 final_archive.close()
