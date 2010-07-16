@@ -1035,7 +1035,6 @@ def build_imap_filter():
     """Return an imap filter string"""
 
     imap_filter = []
-    old = 0
     if options.date_old_max == None:
         time_now = time.time()
         secs_old_max = (options.days_old_max * 24 * 60 * 60)
