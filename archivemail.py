@@ -160,8 +160,13 @@ class StaleFiles:
             vprint("removing stale tempfile directory '%s'" % self.temp_dir)
             try: 
                 os.rmdir(self.temp_dir)
-                self.temp_dir = None
-            except (IOError, OSError): pass
+            except OSError, e:
+                if e.errno == errno.ENOTEMPTY: # Probably a bug
+                    user_warning("cannot remove temporary directory '%s', "
+                            "directory not empty" % self.temp_dir)
+            except IOError: pass
+            else: self.temp_dir = None
+
 
 
 class Options:
