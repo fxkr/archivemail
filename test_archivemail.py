@@ -240,7 +240,7 @@ class TestTempMboxRemove(TestCaseInTempdir):
 class TestOptionDefaults(unittest.TestCase):
     def testVerbose(self):
         """verbose should be off by default"""
-        self.assertEqual(archivemail.options.verbose, 0)
+        self.assertEqual(archivemail.options.verbose, False)
 
     def testDaysOldMax(self):
         """default archival time should be 180 days"""
@@ -248,23 +248,23 @@ class TestOptionDefaults(unittest.TestCase):
 
     def testQuiet(self):
         """quiet should be off by default"""
-        self.assertEqual(archivemail.options.quiet, 0)
+        self.assertEqual(archivemail.options.quiet, False)
 
     def testDeleteOldMail(self):
         """we should not delete old mail by default"""
-        self.assertEqual(archivemail.options.delete_old_mail, 0)
+        self.assertEqual(archivemail.options.delete_old_mail, False)
 
     def testNoCompress(self):
         """no-compression should be off by default"""
-        self.assertEqual(archivemail.options.no_compress, 0)
+        self.assertEqual(archivemail.options.no_compress, False)
 
     def testIncludeFlagged(self):
         """we should not archive flagged messages by default"""
-        self.assertEqual(archivemail.options.include_flagged, 0)
+        self.assertEqual(archivemail.options.include_flagged, False)
 
     def testPreserveUnread(self):
         """we should not preserve unread messages by default"""
-        self.assertEqual(archivemail.options.preserve_unread, 0)
+        self.assertEqual(archivemail.options.preserve_unread, False)
 
 class TestOptionParser(unittest.TestCase):
     def setUp(self):
@@ -290,7 +290,7 @@ class TestOptionParser(unittest.TestCase):
         """--preserve-unread option is parsed correctly"""
         archivemail.options.parse_args(["--preserve-unread"], "")
         assert archivemail.options.preserve_unread
-        archivemail.options.preserve_unread = 0
+        archivemail.options.preserve_unread = False
         archivemail.options.parse_args(["-u"], "")
         assert archivemail.options.preserve_unread
 
@@ -307,7 +307,7 @@ class TestOptionParser(unittest.TestCase):
         """--dry-run option is parsed correctly"""
         archivemail.options.parse_args(["--dry-run"], "")
         assert archivemail.options.dry_run
-        archivemail.options.preserve_unread = 0
+        archivemail.options.preserve_unread = False
         archivemail.options.parse_args(["-n"], "")
         assert archivemail.options.dry_run
 
@@ -403,8 +403,8 @@ class TestIsTooOld(unittest.TestCase):
 
 class TestParseIMAPUrl(unittest.TestCase): 
     def setUp(self):
-        archivemail.options.quiet = 1
-        archivemail.options.verbose = 0
+        archivemail.options.quiet = True
+        archivemail.options.verbose = False
         archivemail.options.pwfile = None
         
     urls_withoutpass = [
@@ -473,8 +473,8 @@ class TestParseIMAPUrl(unittest.TestCase):
                     archivemail.parse_imap_url, url)
 
     def tearDown(self): 
-        archivemail.options.quiet = 0
-        archivemail.options.verbose = 0
+        archivemail.options.quiet = False
+        archivemail.options.verbose = False
         archivemail.options.pwfile = None
 
 ########## acceptance testing ###########
@@ -557,7 +557,7 @@ class TestArchiveMbox(TestArchive):
 
     def setUp(self):
         self.oldopts = copy.copy(archivemail.options)
-        archivemail.options.quiet = 1
+        archivemail.options.quiet = True
         super(TestArchiveMbox, self).setUp()
  
     def testOld(self):
@@ -685,7 +685,7 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
     """original mbox timestamps should always be preserved"""
     def setUp(self):
         super(TestArchiveMboxTimestamp, self).setUp() 
-        archivemail.options.quiet = 1
+        archivemail.options.quiet = True
         self.mbox_name = make_mbox(messages=3, hours_old=(24 * 180))
         self.mtime = os.path.getmtime(self.mbox_name) - 66
         self.atime = os.path.getatime(self.mbox_name) - 88
@@ -711,7 +711,7 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
         self.assertAlmostEqual(self.atime, new_atime, utimes_precision)
 
     def tearDown(self):
-        archivemail.options.quiet = 0
+        archivemail.options.quiet = False
         archivemail.options.days_old_max = 180
         os.remove(self.mbox_name)
         super(TestArchiveMboxTimestamp, self).tearDown()
@@ -719,8 +719,8 @@ class TestArchiveMboxTimestamp(TestCaseInTempdir):
 
 class TestArchiveMboxAll(unittest.TestCase):
     def setUp(self):
-        archivemail.options.quiet = 1
-        archivemail.options.archive_all = 1
+        archivemail.options.quiet = True
+        archivemail.options.archive_all = True
 
     def testNew(self):
         """new messages should be archived with --all"""
@@ -733,14 +733,14 @@ class TestArchiveMboxAll(unittest.TestCase):
         assert archivemail.should_archive(self.msg)
 
     def tearDown(self):
-        archivemail.options.quiet = 0
-        archivemail.options.archive_all = 0
+        archivemail.options.quiet = False
+        archivemail.options.archive_all = False
 
 class TestArchiveMboxPreserveUnread(unittest.TestCase):
     """make sure the 'preserve_unread' option works"""
     def setUp(self):
-        archivemail.options.quiet = 1
-        archivemail.options.preserve_unread = 1
+        archivemail.options.quiet = True
+        archivemail.options.preserve_unread = True
         self.msg = make_message(hours_old=24*181, wantobj=True)
 
     def testOldRead(self):
@@ -754,15 +754,15 @@ class TestArchiveMboxPreserveUnread(unittest.TestCase):
         assert not archivemail.should_archive(self.msg)
 
     def tearDown(self):
-        archivemail.options.quiet = 0
-        archivemail.options.preserve_unread = 0
+        archivemail.options.quiet = False
+        archivemail.options.preserve_unread = False
 
 
 class TestArchiveMboxSuffix(unittest.TestCase):
     """make sure the 'suffix' option works"""
     def setUp(self):
         self.old_suffix = archivemail.options.archive_suffix
-        archivemail.options.quiet = 1
+        archivemail.options.quiet = True
 
     def testSuffix(self):
         """archiving with specified --suffix arguments"""
@@ -778,7 +778,7 @@ class TestArchiveMboxSuffix(unittest.TestCase):
                     archivemail.make_archive_name(mbox_name))
 
     def tearDown(self):
-        archivemail.options.quiet = 0
+        archivemail.options.quiet = False
         archivemail.options.archive_suffix = self.old_suffix
 
 
@@ -786,8 +786,8 @@ class TestArchiveDryRun(TestArchive):
     """make sure the 'dry-run' option works"""
     def setUp(self):
         super(TestArchiveDryRun, self).setUp()
-        archivemail.options.quiet = 1
-        archivemail.options.dry_run = 1
+        archivemail.options.quiet = True
+        archivemail.options.dry_run = True
 
     def testOld(self):
         """archiving an old mailbox with the 'dry-run' option"""
@@ -796,8 +796,8 @@ class TestArchiveDryRun(TestArchive):
         self.verify()
 
     def tearDown(self):
-        archivemail.options.dry_run = 0
-        archivemail.options.quiet = 0
+        archivemail.options.dry_run = False
+        archivemail.options.quiet = False
         super(TestArchiveDryRun, self).tearDown()
 
 
@@ -805,8 +805,8 @@ class TestArchiveDelete(TestArchive):
     """make sure the 'delete' option works"""
     def setUp(self):
         super(TestArchiveDelete, self).setUp()
-        archivemail.options.quiet = 1
-        archivemail.options.delete_old_mail = 1
+        archivemail.options.quiet = True
+        archivemail.options.delete_old_mail = True
 
     def testNew(self):
         """archiving a new mailbox with the 'delete' option"""
@@ -827,8 +827,8 @@ class TestArchiveDelete(TestArchive):
         self.verify()
 
     def tearDown(self):
-        archivemail.options.delete_old_mail = 0
-        archivemail.options.quiet = 0
+        archivemail.options.delete_old_mail = False
+        archivemail.options.quiet = False
         super(TestArchiveDelete, self).tearDown()
 
 
@@ -836,8 +836,8 @@ class TestArchiveCopy(TestArchive):
     """make sure the 'copy' option works"""
     def setUp(self):
         super(TestArchiveCopy, self).setUp()
-        archivemail.options.quiet = 1
-        archivemail.options.copy_old_mail = 1
+        archivemail.options.quiet = True
+        archivemail.options.copy_old_mail = True
 
     def testNew(self):
         """archiving a new mailbox with the 'copy' option"""
@@ -858,16 +858,16 @@ class TestArchiveCopy(TestArchive):
         self.verify()
 
     def tearDown(self):
-        archivemail.options.copy_old_mail = 0
-        archivemail.options.quiet = 0
+        archivemail.options.copy_old_mail = False
+        archivemail.options.quiet = False
         super(TestArchiveCopy, self).tearDown()
 
 
 class TestArchiveMboxFlagged(unittest.TestCase):
     """make sure the 'include_flagged' option works"""
     def setUp(self):
-        archivemail.options.include_flagged = 0
-        archivemail.options.quiet = 1
+        archivemail.options.include_flagged = False
+        archivemail.options.quiet = True
 
     def testOld(self):
         """by default, old flagged messages should not be archived"""
@@ -883,20 +883,20 @@ class TestArchiveMboxFlagged(unittest.TestCase):
 
     def testIncludeFlaggedOld(self):
         """old flagged messages should be archived with include_flagged"""
-        archivemail.options.include_flagged = 1
+        archivemail.options.include_flagged = True
         msg = make_message(default_headers={"X-Status": "F"},
                 hours_old=24*181, wantobj=True)
         assert archivemail.should_archive(msg)
 
     def tearDown(self):
-        archivemail.options.include_flagged = 0
-        archivemail.options.quiet = 0
+        archivemail.options.include_flagged = False
+        archivemail.options.quiet = False
 
 
 class TestArchiveMboxOutputDir(unittest.TestCase):
     """make sure that the 'output-dir' option works"""
     def setUp(self):
-        archivemail.options.quiet = 1
+        archivemail.options.quiet = True
 
     def testOld(self):
         """archiving an old mailbox with a sepecified output dir"""
@@ -906,7 +906,7 @@ class TestArchiveMboxOutputDir(unittest.TestCase):
             self.assertEqual(dir, os.path.dirname(archive_dir))
 
     def tearDown(self):
-        archivemail.options.quiet = 0
+        archivemail.options.quiet = False
         archivemail.options.output_dir = None
 
 
@@ -918,8 +918,8 @@ class TestArchiveMboxUncompressed(TestArchive):
     copy_name = None
 
     def setUp(self):
-        archivemail.options.quiet = 1
-        archivemail.options.no_compress = 1
+        archivemail.options.quiet = True
+        archivemail.options.no_compress = True
         super(TestArchiveMboxUncompressed, self).setUp()
 
     def testOld(self):
@@ -947,15 +947,15 @@ class TestArchiveMboxUncompressed(TestArchive):
         self.verify()
 
     def tearDown(self):
-        archivemail.options.quiet = 0
-        archivemail.options.no_compress = 0
+        archivemail.options.quiet = False
+        archivemail.options.no_compress = False
         super(TestArchiveMboxUncompressed, self).tearDown()
 
 
 class TestArchiveSize(unittest.TestCase):
     """check that the 'size' argument works"""
     def setUp(self):
-        archivemail.options.quiet = 1
+        archivemail.options.quiet = True
         msg_text = make_message(hours_old=24*181)
         self.msg_size = len(msg_text)
         fp = cStringIO.StringIO(msg_text)
@@ -972,7 +972,7 @@ class TestArchiveSize(unittest.TestCase):
         assert not archivemail.should_archive(self.msg)
 
     def tearDown(self):
-        archivemail.options.quiet = 0
+        archivemail.options.quiet = False
         archivemail.options.min_size = None
 
 
@@ -980,7 +980,7 @@ class TestArchiveMboxMode(TestCaseInTempdir):
     """file mode (permissions) of the original mbox should be preserved"""
     def setUp(self):
         super(TestArchiveMboxMode, self).setUp()
-        archivemail.options.quiet = 1
+        archivemail.options.quiet = True
 
     def testOld(self):
         """after archiving, the original mbox mode should be preserved"""
@@ -1010,7 +1010,7 @@ class TestArchiveMboxMode(TestCaseInTempdir):
             os.remove(self.mbox_name)
 
     def tearDown(self):
-        archivemail.options.quiet = 0
+        archivemail.options.quiet = False
         super(TestArchiveMboxMode, self).tearDown()
 
 

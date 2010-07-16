@@ -174,28 +174,28 @@ class Options:
     archive_suffix       = "_archive"
     days_old_max         = 180
     date_old_max         = None
-    delete_old_mail      = 0
-    dry_run              = 0
+    delete_old_mail      = False
+    dry_run              = False
     filter_append        = None
-    include_flagged      = 0
+    include_flagged      = False
     locking_attempts     = 5
     lockfile_extension   = ".lock"
-    lock_sleep           = 1
-    no_compress          = 0
-    only_archive_read    = 0
+    lock_sleep           = True
+    no_compress          = False
+    only_archive_read    = False
     output_dir           = None
     pwfile               = None
-    preserve_unread      = 0
-    mangle_from          = 1
-    quiet                = 0
+    preserve_unread      = False
+    mangle_from          = True
+    quiet                = False
     read_buffer_size     = 8192
     script_name          = os.path.basename(sys.argv[0])
     min_size             = None
-    verbose              = 0
-    debug_imap           = 0
-    warn_duplicates      = 0
-    copy_old_mail        = 0
-    archive_all          = 0
+    verbose              = False
+    debug_imap           = False
+    warn_duplicates      = False
+    copy_old_mail        = False
+    archive_all          = False
 
     def parse_args(self, args, usage):
         """Set our runtime options from the command-line arguments.
@@ -225,13 +225,13 @@ class Options:
             if o == '--delete':
                 if self.copy_old_mail: 
                     user_error("found conflicting options --copy and --delete")
-                self.delete_old_mail = 1
+                self.delete_old_mail = True
             if o == '--include-flagged':
-                self.include_flagged = 1
+                self.include_flagged = True
             if o == '--no-compress':
-                self.no_compress = 1
+                self.no_compress = True
             if o == '--warn-duplicate':
-                self.warn_duplicates = 1
+                self.warn_duplicates = True
             if o in ('-D', '--date'):
                 if archive_by: 
                     user_error("you cannot specify both -d and -D options")
@@ -252,27 +252,27 @@ class Options:
                 print usage
                 sys.exit(0)
             if o in ('-n', '--dry-run'):
-                self.dry_run = 1
+                self.dry_run = True
             if o in ('-q', '--quiet'):
-                self.quiet = 1
+                self.quiet = True
             if o in ('-s', '--suffix'):
                 self.archive_suffix = a
             if o in ('-S', '--size'):
                 self.min_size = string.atoi(a)
             if o in ('-u', '--preserve-unread'):
-                self.preserve_unread = 1
+                self.preserve_unread = True
             if o == '--dont-mangle':
-                self.mangle_from = 0
+                self.mangle_from = False
             if o in ('-v', '--verbose'):
-                self.verbose = 1
+                self.verbose = True
             if o == '--debug-imap': 
                 self.debug_imap = int(a)
             if o == '--copy':
                 if self.delete_old_mail: 
                     user_error("found conflicting options --copy and --delete")
-                self.copy_old_mail = 1
+                self.copy_old_mail = True
             if o == '--all': 
-                self.archive_all = 1
+                self.archive_all = True
             if o in ('-V', '--version'):
                 print __version__ + "\n\n" + __copyright__
                 sys.exit(0)
@@ -301,7 +301,7 @@ class Options:
             "%d %b %Y" , # Internet format 
             "%d %B %Y" , # Internet format with full month names
         )
-        time.accept2dyear = 0  # I'm not going to support 2-digit years
+        time.accept2dyear = False  # I'm not going to support 2-digit years
         for format in date_formats:
             try:
                 date = time.strptime(string, format)
@@ -536,7 +536,7 @@ class TempMbox:
         # practice to 'self.mbox_file.writelines(msg.fp.readlines())'
         assert options.read_buffer_size > 0
         linebuf = ""
-        while 1:
+        while True:
             body = msg.fp.read(options.read_buffer_size)
             if (not msg_has_mbox_format) and options.mangle_from:
                 # Be careful not to break pattern matching
@@ -617,7 +617,7 @@ class IdentityCache:
         if self.seen_ids.has_key(message_id):
             user_warning("duplicate message id: '%s' in mailbox '%s'" % 
                 (message_id, self.mailbox_name))
-        self.seen_ids[message_id] = 1
+        self.seen_ids[message_id] = True
 
 
 # global class instances
@@ -892,7 +892,7 @@ def is_flagged(message):
     x_status = message.get('X-Status')
     if x_status and re.search('F', x_status):
         vprint("message is important (X-Status header='%s')" % x_status)
-        return 1
+        return True
     file_name = None
     try:
         file_name = get_filename(message)
@@ -901,9 +901,9 @@ def is_flagged(message):
     # maildir mailboxes use the filename suffix to indicate flagged status
     if file_name and re.search(":2,.*F.*$", file_name):
         vprint("message is important (filename info has 'F')")
-        return 1
+        return True
     vprint("message is not flagged important")
-    return 0
+    return False
 
 
 def is_unread(message):
@@ -912,7 +912,7 @@ def is_unread(message):
     status = message.get('Status')
     if status and re.search('R', status):
         vprint("message has been read (status header='%s')" % status)
-        return 0
+        return False
     file_name = None
     try:
         file_name = get_filename(message)
@@ -921,9 +921,9 @@ def is_unread(message):
     # maildir mailboxes use the filename suffix to indicate read status
     if file_name and re.search(":2,.*S.*$", file_name):
         vprint("message has been read (filename info has 'S')")
-        return 0
+        return False
     vprint("message is unread")
-    return 1
+    return True
 
 
 def sizeof_message(message):
@@ -961,18 +961,18 @@ def is_smaller(message, size):
     if message_size < size:
         vprint("message is too small (%d bytes), minimum bytes : %d" % \
             (message_size, size))
-        return 1
+        return True
     else:
         vprint("message is not too small (%d bytes), minimum bytes: %d" % \
             (message_size, size))
-        return 0
+        return False
 
 
 def should_archive(message):
     """Return true if we should archive the message, false otherwise"""
     if options.archive_all:
-        return 1
-    old = 0
+        return True
+    old = False
     time_message = guess_delivery_time(message)
     if options.date_old_max == None:
         old = is_older_than_days(time_message, options.days_old_max)
@@ -982,14 +982,14 @@ def should_archive(message):
     # I could probably do this in one if statement, but then I wouldn't
     # understand it. 
     if not old:
-        return 0
+        return False
     if not options.include_flagged and is_flagged(message):
-        return 0
+        return False
     if options.min_size and is_smaller(message, options.min_size):
-        return 0
+        return False
     if options.preserve_unread and is_unread(message):
-        return 0
-    return 1
+        return False
+    return True
         
     
 def is_older_than_time(time_message, max_time):
@@ -1005,10 +1005,10 @@ def is_older_than_time(time_message, max_time):
     days_old = (max_time - time_message) / 24 / 60 / 60
     if time_message < max_time:
         vprint("message is %.2f days older than the specified date" % days_old)
-        return 1
+        return True
     vprint("message is %.2f days younger than the specified date" % \
         abs(days_old))
-    return 0
+    return False
 
 
 def is_older_than_days(time_message, max_days):
@@ -1023,13 +1023,13 @@ def is_older_than_days(time_message, max_days):
     time_now = time.time()
     if time_message > time_now:
         vprint("warning: message has date in the future")
-        return 0
+        return False
     secs_old_max = (max_days * 24 * 60 * 60)
     days_old = (time_now - time_message) / 24 / 60 / 60
     vprint("message is %.2f days old" % days_old)
     if ((time_message + secs_old_max) < time_now):
-        return 1
-    return 0
+        return True
+    return False
 
 def build_imap_filter():
     """Return an imap filter string"""
