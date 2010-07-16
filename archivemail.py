@@ -1208,7 +1208,7 @@ def _archive_mbox(mailbox_name, final_archive_name):
         retain.remove()
     original.unlock()
     original.close()
-    original.reset_timestamps()
+    original.reset_timestamps() # Minor race here; mutt has this too.
     if not options.quiet:
         stats.display()
 
