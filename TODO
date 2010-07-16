@@ -63,7 +63,11 @@ to copy the entire box to its destination.
 Implement a fallback if an IMAP server doesn't support SEARCH. (Ouch!)
 
 Add IMAP tests to the testsuite (upload test messages with IMAP "APPEND
-date-string"). 
+date-string").  This should be done without any real network I/O.
+
+The *.py filename extension is only needed to load archivemail as a module for
+for the test suite.  There are more elegant ways to do this without adding the
+extension.  Of course this is only cosmetic.
 
 Try to port archivemail to email.message and the new mailboxes in Python 2.5.
 Is these flexible enough for our needs?
