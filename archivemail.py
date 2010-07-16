@@ -103,8 +103,8 @@ class Stats:
                               compression extension (eg .gz)
 
         """
-        assert(mailbox_name)
-        assert(final_archive_name)
+        assert mailbox_name
+        assert final_archive_name
         self.__start_time = time.time()
         self.__mailbox_name = mailbox_name
         self.__archive_name = final_archive_name + ".gz"
@@ -326,7 +326,7 @@ class LockableMboxMixin:
 
     def lock(self):
         """Lock this mbox with both a dotlock and a posix lock."""
-        assert(not self._locked)
+        assert not self._locked
         attempt = 1
         while True:
             try:
@@ -347,7 +347,7 @@ class LockableMboxMixin:
 
     def unlock(self):
         """Unlock this mbox."""
-        assert(self._locked)
+        assert self._locked
         self._dotlock_unlock()
         self._posix_unlock()
         self._locked = False
@@ -411,7 +411,7 @@ class LockableMboxMixin:
 
     def _dotlock_unlock(self):
         """Delete the dotlock file for the 'mbox' mailbox."""
-        assert(self.mbox_file_name)
+        assert self.mbox_file_name
         lock_name = self.mbox_file_name + options.lockfile_extension
         vprint("removing lockfile '%s'" % lock_name)
         os.remove(lock_name)
@@ -425,7 +425,7 @@ class LockableMboxMixin:
     def close(self):
         """Close the mbox file"""
         vprint("closing file '%s'" % self.mbox_file_name)
-        assert(not self._locked)
+        assert not self._locked
         self.mbox_file.close()
 
 
@@ -440,7 +440,7 @@ class Mbox(mailbox.UnixMailbox, LockableMboxMixin):
         Named Arguments:
         path -- file name of the 'mbox' file to be opened
         """
-        assert(path)
+        assert path
         fd = safe_open_existing(path)
         st = os.fstat(fd)
         self.original_atime = st.st_atime
@@ -453,9 +453,9 @@ class Mbox(mailbox.UnixMailbox, LockableMboxMixin):
 
     def reset_timestamps(self):
         """Set the file timestamps to the original values"""
-        assert(self.original_atime)
-        assert(self.original_mtime)
-        assert(self.mbox_file_name)
+        assert self.original_atime
+        assert self.original_mtime
+        assert self.mbox_file_name
         os.utime(self.mbox_file_name, (self.original_atime,  \
             self.original_mtime))
 
@@ -481,7 +481,7 @@ class ArchiveMbox(LockableMboxMixin):
 
     def append(self, filename):
         """Append the content of the given file to the mbox."""
-        assert(self._locked)
+        assert self._locked
         fin = open(filename, "r")
         oldsize = os.fstat(self.mbox_file.fileno()).st_size
         try:
@@ -516,8 +516,8 @@ class TempMbox:
         msg -- rfc822 message object to be written
 
         """
-        assert(msg)
-        assert(self.mbox_file)
+        assert msg
+        assert self.mbox_file
 
         self.empty = False
         vprint("saving message to file '%s'" % self.mbox_file_name)
@@ -528,13 +528,13 @@ class TempMbox:
             msg_has_mbox_format = False
             unix_from = make_mbox_from(msg)
         self.mbox_file.write(unix_from)
-        assert(msg.headers)
+        assert msg.headers
         self.mbox_file.writelines(msg.headers)
         self.mbox_file.write(os.linesep)
 
         # The following while loop is about twice as fast in
         # practice to 'self.mbox_file.writelines(msg.fp.readlines())'
-        assert(options.read_buffer_size > 0)
+        assert options.read_buffer_size > 0
         linebuf = ""
         while 1:
             body = msg.fp.read(options.read_buffer_size)
@@ -606,14 +606,14 @@ class IdentityCache:
 
     def __init__(self, mailbox_name):
         """Constructor: takes the mailbox name as an argument"""
-        assert(mailbox_name)
+        assert mailbox_name
         self.mailbox_name = mailbox_name
 
     def warn_if_dupe(self, msg):
         """Print a warning message if the message has already appeared"""
-        assert(msg)
+        assert msg
         message_id = msg.get('Message-ID')
-        assert(message_id)
+        assert message_id
         if self.seen_ids.has_key(message_id):
             user_warning("duplicate message id: '%s' in mailbox '%s'" % 
                 (message_id, self.mailbox_name))
@@ -724,11 +724,11 @@ def make_mbox_from(message):
     message -- the rfc822 message object
 
     """
-    assert(message)
+    assert message
     address = guess_return_path(message)
     time_message = guess_delivery_time(message)
     date = time.localtime(time_message)
-    assert(date)
+    assert date
     date_string = time.asctime(date)
     mbox_from = "From %s %s\n" % (address, date_string)
     return mbox_from
@@ -736,7 +736,7 @@ def make_mbox_from(message):
 
 def guess_return_path(message):
     """Return a guess at the Return Path address of an rfc822 message"""
-    assert(message)
+    assert message
 
     for header in ('Return-path', 'From'):
         address_header = message.get(header)
@@ -747,13 +747,13 @@ def guess_return_path(message):
     # argh, we can't find any valid 'Return-path' guesses - just 
     # just use the current unix username like mutt does
     login = pwd.getpwuid(os.getuid())[0]
-    assert(login)
+    assert login
     return login
 
 
 def guess_delivery_time(message):
     """Return a guess at the delivery date of an rfc822 message""" 
-    assert(message)
+    assert message
     # try to guess the delivery date from various headers
     # get more desparate as we go through the array
     for header in 'Delivery-date', 'Received', 'Resent-Date', 'Date':
@@ -928,7 +928,7 @@ def is_unread(message):
 
 def sizeof_message(message):
     """Return size of message in bytes (octets)."""
-    assert(message)
+    assert message
     file_name = None
     message_size = None
     try:
@@ -955,8 +955,8 @@ def sizeof_message(message):
 
 def is_smaller(message, size):
     """Return true if the message is smaller than size bytes, false otherwise"""
-    assert(message)
-    assert(size > 0)
+    assert message
+    assert size > 0
     message_size = sizeof_message(message) 
     if message_size < size:
         vprint("message is too small (%d bytes), minimum bytes : %d" % \
@@ -1064,13 +1064,13 @@ def archive(mailbox_name):
     Arguments:
     mailbox_name -- the filename/dirname/url of the mailbox to be archived
     """
-    assert(mailbox_name) 
+    assert mailbox_name
 
     # strip any trailing slash (we could be archiving a maildir or MH format
     # mailbox and somebody was pressing <tab> in bash) - we don't want to use
     # the trailing slash in the archive name
     mailbox_name = mailbox_name.rstrip("/")
-    assert(mailbox_name) 
+    assert mailbox_name
 
     set_signal_handlers()
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
@@ -1099,7 +1099,7 @@ def archive(mailbox_name):
         # create a temporary directory for us to work in securely
         tempfile.tempdir = None
         new_temp_dir = tempfile.mkdtemp('archivemail')
-        assert(new_temp_dir)
+        assert new_temp_dir
         _stale.temp_dir = new_temp_dir
         tempfile.tempdir = new_temp_dir
         vprint("set tempfile directory to '%s'" % new_temp_dir)
@@ -1139,8 +1139,8 @@ def _archive_mbox(mailbox_name, final_archive_name):
                           old messages to - appending if the archive 
                           already exists
     """
-    assert(mailbox_name)
-    assert(final_archive_name)
+    assert mailbox_name
+    assert final_archive_name
     stats = Stats(mailbox_name, final_archive_name)
     cache = IdentityCache(mailbox_name)
     original = Mbox(path=mailbox_name)
@@ -1215,9 +1215,9 @@ def _archive_mbox(mailbox_name, final_archive_name):
 
 def _archive_dir(mailbox_name, final_archive_name, type):
     """Archive a 'maildir' or 'MH' style mailbox - used by archive_mailbox()"""
-    assert(mailbox_name)
-    assert(final_archive_name)
-    assert(type)
+    assert mailbox_name
+    assert final_archive_name
+    assert type
     stats = Stats(mailbox_name, final_archive_name)
     delete_queue = []
 
@@ -1267,8 +1267,8 @@ def _archive_dir(mailbox_name, final_archive_name, type):
 
 def _archive_imap(mailbox_name, final_archive_name):
     """Archive an imap mailbox - used by archive_mailbox()"""
-    assert(mailbox_name)
-    assert(final_archive_name)
+    assert mailbox_name
+    assert final_archive_name
     import imaplib
     import cStringIO
     import getpass
@@ -1456,7 +1456,7 @@ def imap_getdelim(imap_server):
 
 def imap_get_namespace(srv):
     """Return the IMAP namespace prefixes and hierarchy delimiters."""
-    assert('NAMESPACE' in srv.capabilities)
+    assert 'NAMESPACE' in srv.capabilities
     result, response = srv.namespace()
     if result != 'OK': 
         unexpected_error("Cannot retrieve IMAP namespace; server says: '%s'" 
@@ -1637,7 +1637,7 @@ def make_archive_name(mailbox_name):
 def check_sane_destdir(dir):
     """Do a very primitive check if the given directory looks like a reasonable
     destination directory and bail out if it doesn't."""
-    assert(dir)
+    assert dir
     if not os.path.isdir(dir):
         user_error("output directory does not exist: '%s'" % dir)
     if not os.access(dir, os.W_OK):
@@ -1685,7 +1685,7 @@ def get_filename(msg):
         #    (msg from mailbox.Maildir, Python >= 2.5)
         #    File object is msg.fp._file, we do want that.
         if msg.fp.__class__ == mailbox._ProxyFile: 
-            assert(hasattr(mailbox, "_PartialFile"))
+            assert hasattr(mailbox, "_PartialFile")
             return msg.fp._file.name
         raise
 
