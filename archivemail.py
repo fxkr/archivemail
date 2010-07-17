@@ -564,7 +564,7 @@ class TempMbox:
         """Rename this temporary mbox file to the given name, making it
         permanent.  Emergency use only."""
         os.rename(self.mbox_file_name, filename)
-        _stale.temp_mboxes.remove(retain.mbox_file_name)
+        _stale.temp_mboxes.remove(self.mbox_file_name)
 
     def remove(self):
         """Delete the temporary mbox file."""
