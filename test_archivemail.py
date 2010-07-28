@@ -112,7 +112,7 @@ make_msgid = MessageIdFactory()
 
 class IndexedMailboxDir:
     """An indexed mailbox directory, providing random message access by
-    message-id. Base class for a maildir and an mh subclass."""
+    message-id. Intended as a base class for a maildir and an mh subclass."""
 
     def __init__(self, mdir_name):
         assert tempfile.tempdir
@@ -219,37 +219,6 @@ class SimpleMaildir(IndexedMailboxDir):
         fp.close()
         return msg, mbox_flags
 
-
-class SimpleMHMailbox(IndexedMailboxDir):
-    """Primitive MH mailbox class, just good enough for generating short-lived
-    test mh mailboxes."""
-
-    def __init__(self, mdir_name='mh'):
-        IndexedMailboxDir.__init__(self, mdir_name)
-
-    def write(self, msg_str):
-        self.deliveries += 1
-        fname = str(self.deliveries)
-        path = os.path.join(self.root, fname)
-        assert not os.path.exists(fpath)
-        f = open(path, "w")
-        f.write(msg_str)
-        f.close()
-        self._add_to_index(msg_str, fname)
-
-    def remove(self):
-        self.clear()
-        os.rmdir(self.root)
-        self.root = None
-
-    def get_message(self, msgid):
-        """For the Message-Id msgid, return the matching message in text
-        format."""
-        fpath = self.msg_id_dict[mid] # Barfs if not found
-        fp = open(os.path.join(self.root, fpath), "r")
-        msg_str = fp.read()
-        fp.close()
-        return msg_str
 
 class TestCaseInTempdir(unittest.TestCase):
     """Base class for testcases that need to create temporary files. 
