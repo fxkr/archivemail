@@ -2,7 +2,7 @@
 ############################################################################
 # Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>,
 #           (C) 2006  Peter Poeml <poeml@suse.de>,
-#           (C) 2006-2008  Nikolaus Schulz <microschulz@web.de>
+#           (C) 2006-2010  Nikolaus Schulz <microschulz@web.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ __version__ = "archivemail v0.7.2"
 __copyright__ = """\
 Copyright (C) 2002  Paul Rodger <paul@paulrodger.com>
           (C) 2006  Peter Poeml <poeml@suse.de>,
-          (C) 2006-2008  Nikolaus Schulz <microschulz@web.de>
+          (C) 2006-2010  Nikolaus Schulz <microschulz@web.de>
 This is free software; see the source for copying conditions. There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""
 
