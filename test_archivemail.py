@@ -22,9 +22,7 @@ Unit-test archivemail using 'PyUnit'.
 
 TODO: add tests for:
     * dotlock locks already existing
-    * archiving maildir-format mailboxes
     * archiving MH-format mailboxes
-    * preservation of status information from maildir to mbox
     * a 3rd party process changing the mbox file being read
 
 """
