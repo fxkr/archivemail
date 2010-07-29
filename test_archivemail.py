@@ -976,44 +976,6 @@ class TestArchiveSize(unittest.TestCase):
         archivemail.options.min_size = None
 
 
-class TestArchiveMboxMode(TestCaseInTempdir):
-    """file mode (permissions) of the original mbox should be preserved"""
-    def setUp(self):
-        super(TestArchiveMboxMode, self).setUp()
-        archivemail.options.quiet = True
-
-    def testOld(self):
-        """after archiving, the original mbox mode should be preserved"""
-        for mode in (0666, 0664, 0660, 0640, 0600):
-            self.mbox_name = make_mbox(messages=1, hours_old=(24 * 181))
-            os.chmod(self.mbox_name, mode)
-            archivemail.archive(self.mbox_name)
-            archive_name = self.mbox_name + "_archive.gz"
-            assert os.path.exists(self.mbox_name)
-            assert os.path.exists(archive_name)
-            new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.assertEqual(mode, stat.S_IMODE(new_mode))
-            archive_mode = os.stat(archive_name)[stat.ST_MODE]
-            self.assertEqual(0600, stat.S_IMODE(archive_mode))
-
-    def testNew(self):
-        """after no archiving, the original mbox mode should be preserved"""
-        for mode in (0666, 0664, 0660, 0640, 0600):
-            self.mbox_name = make_mbox(messages=1, hours_old=(24 * 179))
-            os.chmod(self.mbox_name, mode)
-            archivemail.archive(self.mbox_name)
-            archive_name = self.mbox_name + "_archive.gz"
-            assert not os.path.exists(archive_name)
-            assert os.path.exists(self.mbox_name)
-            new_mode = os.stat(self.mbox_name)[stat.ST_MODE]
-            self.assertEqual(mode, stat.S_IMODE(new_mode))
-            os.remove(self.mbox_name)
-
-    def tearDown(self):
-        archivemail.options.quiet = False
-        super(TestArchiveMboxMode, self).tearDown()
-
-
 ########## helper routines ############
 
 def make_message(body=None, default_headers={}, hours_old=None, wantobj=False):
