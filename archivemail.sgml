@@ -398,6 +398,7 @@ When reading an <application/mbox/-format mailbox, <command/archivemail/ will
 create a lockfile with the extension <filename>.lock</filename> so that
 procmail will not deliver to the mailbox while it is being processed. It will
 also create an advisory lock on the mailbox using &lockf;.
+The archive is locked in the same way when it is updated.
 <command/archivemail/ will also complain and abort if a 3rd-party modifies the
 mailbox while it is being read.
 </Para>
