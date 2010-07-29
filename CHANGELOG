@@ -1,22 +1,46 @@
 Version 0.7.3   - UNRELEASED
 
- * Fixed date header parsing to be precise with timezone information.  Also,
-   when writing From_ line timestamps, don't use UTC but local time, without
-   timezone information.
- * To determine the delivery date of a message, archivemail now looks for the
-   timestamp of the latest 'Received' header before resorting to 'Date' or
-   'Resent-Date'.  This should give much better results when there is no
-   'Delivery-date' header.  (Thanks Andrew Ferrier & Christian Brabandt)
-   Closes: #1481316, #1764855, Debian bug #272666.
- * If present, the 'Resent-date' header now takes precedence over 'Date'. 
- * IMAP: recognize when a server advertises LOGINDISABLED.
- * New option --debug-imap; this just sets imaplib.Debug, thereby dumping
-   archivemail's chat with the server to stdout. 
- * Fixed crash with Python 2.5 when archiving an empty maildir. (Thanks
-   "Aidant") Closes: #1878940.
- * New option --all to archive all messages in a mailbox.  Closes: #1764846.
- * Fixed a crash when archiving maildirs with --days=0. (Thanks John Goerzen)
- * IMAP: automatically add NAMESPACE prefix to a mailbox path if necessary. 
+  * Fixed date header parsing to be precise with timezone information.  Also,
+    when writing From_ line timestamps, don't use UTC but local time, without
+    timezone information.
+  * To determine the delivery date of a message, archivemail now looks for the
+    timestamp of the latest 'Received' header before resorting to 'Date' or
+    'Resent-Date'.  This should give much better results when there is no
+    'Delivery-date' header.  (Thanks Andrew Ferrier & Christian Brabandt)
+    Closes: #1481316, #1764855, Debian bug #272666.
+  * If present, the 'Resent-date' header now takes precedence over 'Date'.
+  * IMAP: recognize when a server advertises LOGINDISABLED.
+  * New option --debug-imap; this just sets imaplib.Debug, thereby dumping
+    archivemail's chat with the server to stdout.
+  * Fixed crash with Python 2.5 when archiving an empty maildir. (Thanks
+    "Aidant") Closes: #1878940.
+  * New option --all to archive all messages in a mailbox.  Closes: #1764846.
+  * Fixed a crash when archiving maildirs with --days=0. (Thanks John Goerzen)
+  * IMAP: automatically add NAMESPACE prefix to a mailbox path if necessary.
+  * Removed the feature to setuid to the mailbox owners when run as root.
+    This was a bad idea; it's really hard to do safely, if at all possible.
+  * Replaced some simple minded file operation security checks with more
+    decent ones.
+  * Don't use rename() to update mbox files and the archive, but write the
+    files directly.  This is more fragile, but required for correct mbox
+    locking, and also for mboxes in mail spool directories where we don't have
+    permission to create files.
+  * Fixed the test suite to deal with nanosecond file timestamps.
+  * Cleaned up the test suite, replacing a lot of duplicated code and avoiding
+    a lot of redundand testing.  This speeds up the test suite by a factor of
+    20 or so.
+  * mbox locking: completely rewritten.  Switched from flock to fcntl locking,
+    which is NFS-safe, and we now lock with fcntl first, then with a dotlock,
+    instead of the other way around.  (This is makes archivemail compatible
+    with Debian systems. ;)
+  * We now omit the dotlock if we don't have sufficient permissions to create
+    it in the mbox directory. Closes: #855269.
+  * Refactoring of the mbox classes; much of the code got rewritten.
+  * The archive now also gets locked while archivemail updates it.
+  * Various Python language fixes (for example don't use "0" and "1" as
+    boolean constants).
+  * Added a lot of test cases for maildir archiving to the test suite.
+    Maildir testing should now be roughly on par with mbox testing.
 
 Version 0.7.2   - 9 November 2007
 
