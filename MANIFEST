@@ -9,4 +9,4 @@ archivemail.1
 archivemail.sgml
 examples/archivemail_all
 setup.py
-test_archivemail.py
+test_archivemail

@@ -12,7 +12,7 @@ clean:
 	rm -rf $(HTDOCS)
 
 test:
-	python test_archivemail.py
+	python test_archivemail
 
 clobber: clean
 	rm -rf build dist

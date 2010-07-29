@@ -110,7 +110,7 @@ run. Better to fail gracefully and keep going.
 Think about the best way to specify the names of archives created with
 possibly an --archive-name option.
 
-Add more tests (see top of test_archivemail.py)
+Add more tests (see top of test_archivemail)
 
 We need some better checking to see if we are really looking at a valid
 mbox-format mailbox.

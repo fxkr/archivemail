@@ -36,7 +36,7 @@ INSTALLATION:
 
 If you want to test archivemail:
     cp archivemail archivemail.py
-    python test_archivemail.py
+    python test_archivemail
     (NOTE: This could take over 90 seconds on slower systems)
 
 To install archivemail, run:
