@@ -35,7 +35,6 @@ Python is available from http://www.python.org/
 INSTALLATION:
 
 If you want to test archivemail:
-    cp archivemail archivemail.py
     python test_archivemail
 
 To install archivemail, run:

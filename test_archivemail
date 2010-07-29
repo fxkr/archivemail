@@ -60,15 +60,15 @@ import cStringIO
 import rfc822
 import mailbox
 
+from types import ModuleType
+archivemail = ModuleType("archivemail")
 try:
-    import archivemail
-except ImportError:
-    print "The archivemail script needs to be called 'archivemail.py'"
-    print "and should be in the current directory in order to be imported"
-    print "and tested. Sorry."
-    if os.path.isfile("archivemail"):
-        print "Try renaming it from 'archivemail' to 'archivemail.py'."
+    module_fp = open("archivemail", "r")
+except IOError:
+    print "The archivemail script should be in the current directory in order"
+    print "to be imported and tested. Sorry."
     sys.exit(1)
+exec module_fp in archivemail.__dict__
 
 # We want to iterate over messages in a compressed archive mbox and verify
 # them.  This involves seeking in the mbox.  The gzip.Gzipfile.seek() in

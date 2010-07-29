@@ -8,7 +8,7 @@ default:
 	@echo "no default target"
 
 clean:
-	rm -f *.pyc manpage.links manpage.refs manpage.log
+	rm -f manpage.links manpage.refs manpage.log
 	rm -rf $(HTDOCS)
 
 test:
@@ -20,16 +20,12 @@ clobber: clean
 
 
 sdist: clobber doc
-	cp archivemail.py archivemail
 	python setup.py sdist
-	rm archivemail
 
 # FIXME: bdist_rpm chokes on the manpage. 
 #        This is python/distutils bug #644744
 #bdist_rpm: clobber doc
-#	cp archivemail.py archivemail
 #	python setup.py bdist_rpm
-#	rm archivemail
 
 tag:
 	git tag -a $(VERSION_TAG)
