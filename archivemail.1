@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "03 March 2009" "SP" ""
+.TH "ARCHIVEMAIL" "1" "30 July 2010" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -40,13 +40,6 @@ delimiter.
 Substitute '\fBimap\fR\&' with '\fBimaps\fR\&', and 
 \fBarchivemail\fR will establish a secure SSL connection.  
 See below for more \fBIMAP\fR peculiarities. 
-.PP
-\fBarchivemail\fR has some support for being run as the root user on
-user mailboxes. When running as root, it will \fBseteuid\fR(2) to the owner of the
-mailbox it is reading, creating any archive files as that user. 
-\fBWarning:\fR
-this automatic seteuid feature is insecure and deprecated. 
-It will be removed from later versions of \fBarchivemail\fR\&.
 .SH "OPTIONS"
 .TP
 \fB    -d \fINUM\fB, --days=\fINUM\fB\fR
@@ -259,6 +252,7 @@ When reading an \fBmbox\fR-format mailbox, \fBarchivemail\fR will
 create a lockfile with the extension \fI\&.lock\fR so that
 procmail will not deliver to the mailbox while it is being processed. It will
 also create an advisory lock on the mailbox using \fBlockf\fR(2)\&.
+The archive is locked in the same way when it is updated.
 \fBarchivemail\fR will also complain and abort if a 3rd-party modifies the
 mailbox while it is being read.
 .PP
