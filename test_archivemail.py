@@ -135,10 +135,6 @@ class IndexedMailboxDir:
         assert not self.msg_id_dict.has_key(msg_id)
         self.msg_id_dict[msg_id] = fpath
 
-    def __len__(self):
-        """Return the number of messages in this folder."""
-        return len(self.msg_id_dict)
-
     def get_all_filenames(self):
         """Return all relative pathnames of files in this mailbox."""
         return self.msg_id_dict.values()
@@ -1116,6 +1112,7 @@ class TestArchiveMailboxdir(TestCaseInTempdir):
     maildir = None           # Maildir that will be processed by archivemail
     orig_maildir_obj = None  # A backup copy of the maildir, a SimpleMaildir object
     remaining_msg = set()    # Filenames of maildir messages that should be preserved
+    number_archived = 0      # Number of messages that get archived
     orig_archive = None      # An uncompressed copy of a pre-existing archive,
                              # if one exists
 
@@ -1149,7 +1146,6 @@ class TestArchiveMailboxdir(TestCaseInTempdir):
 
     def _verify_archive(self):
         """Verify the archive correctness."""
-        number_archived = len(self.orig_maildir_obj) - len(self.remaining_msg)
         # TODO: currently make_archive_name does not include the .gz suffix.
         # Is this something that should be fixed?
         archive = archivemail.make_archive_name(self.maildir)
@@ -1158,7 +1154,7 @@ class TestArchiveMailboxdir(TestCaseInTempdir):
         else:
             archive += '.gz'
             iszipped = True
-        if number_archived == 0:
+        if self.number_archived == 0:
             if self.orig_archive:
                 assertEqualContent(archive, self.orig_archive, iszipped)
             else:
@@ -1191,7 +1187,7 @@ class TestArchiveMailboxdir(TestCaseInTempdir):
             for msg in mb:
                 self.verify_maildir_has_msg(self.orig_maildir_obj, msg)
                 found += 1
-            self.assertEqual(found, number_archived)
+            self.assertEqual(found, self.number_archived)
         finally:
             if tmp_archive_name:
                 os.remove(tmp_archive_name)
@@ -1225,11 +1221,22 @@ class TestArchiveMailboxdir(TestCaseInTempdir):
 
     def make_maildir(self, mkold, mknew, body=None, headers=None, messages=1,
             make_old_archive=False):
+        mailbox_does_change = not (archivemail.options.dry_run or
+                archivemail.options.copy_old_mail)
+        archive_does_change = not (archivemail.options.dry_run or
+                archivemail.options.delete_old_mail)
         if mknew:
             self.add_messages(body, headers, 179*24, messages)
-            self.remaining_msg = set(self.orig_maildir_obj.get_all_filenames())
+            if archive_does_change and archivemail.options.archive_all:
+                self.number_archived += messages
+            if mailbox_does_change:
+                self.remaining_msg = set(self.orig_maildir_obj.get_all_filenames())
         if mkold:
             self.add_messages(body, headers, 181*24, messages)
+            if archive_does_change:
+                self.number_archived += messages
+        if not mailbox_does_change:
+            self.remaining_msg = set(self.orig_maildir_obj.get_all_filenames())
         self.maildir = copy_maildir(self.orig_maildir_obj.root)
         if make_old_archive:
             archive = archivemail.make_archive_name(self.maildir)
@@ -1284,28 +1291,190 @@ class TestMaildir(TestArchiveMailboxdir):
         super(TestMaildir, self).tearDown()
 
 
-class TestMaildirPreserveUnread(TestArchiveMailboxdir):
+class TestMaildirPreserveUnread(TestCaseInTempdir):
+    """Test if the preserve_unread option works with maildirs."""
     def setUp(self):
         super(TestMaildirPreserveUnread, self).setUp()
         archivemail.options.quiet = True
         archivemail.options.preserve_unread = True
 
     def testOldRead(self):
-        """--preserve-unread archives all old read messages in a maildir."""
-        # XXX
-        smd = self.orig_maildir_obj = SimpleMaildir("orig")
-        for count in range(3):
-            msg = make_message(hours_old=24*181)
-            smd.write(msg, new=False, flags='S')
-        self.maildir = copy_maildir(smd.root)
-        archivemail.archive(self.maildir)
-        self.verify()
+        """--preserve-unread archives old read messages in a maildir."""
+        smd = SimpleMaildir("orig")
+        msg = make_message(hours_old=24*181)
+        smd.write(msg, new=False, flags='S')
+        md = mailbox.Maildir(smd.root)
+        msg_obj = md.next()
+        assert archivemail.should_archive(msg_obj)
+
+    def testOldUnread(self):
+        """--preserve-unread preserves old unread messages in a maildir."""
+        smd = SimpleMaildir("orig")
+        msg = make_message(hours_old=24*181)
+        smd.write(msg, new=False)
+        md = mailbox.Maildir(smd.root)
+        msg_obj = md.next()
+        assert not archivemail.should_archive(msg_obj)
 
     def tearDown(self):
         archivemail.options.quiet = False
         archivemail.options.preserve_unread = False
         super(TestMaildirPreserveUnread, self).tearDown()
 
+class TestMaildirAll(TestArchiveMailboxdir):
+    def setUp(self):
+        super(TestMaildirAll, self).setUp()
+        archivemail.options.quiet = True
+        archivemail.options.archive_all = True
+
+    def testNew(self):
+        """New maildir messages should be archived with --all"""
+        self.add_messages(hours_old=24*181)
+        md = mailbox.Maildir(self.orig_maildir_obj.root)
+        msg_obj = md.next()
+        assert archivemail.should_archive(msg_obj)
+
+    def testOld(self):
+        """Old maildir messages should be archived with --all"""
+        self.add_messages(hours_old=24*179)
+        md = mailbox.Maildir(self.orig_maildir_obj.root)
+        msg_obj = md.next()
+        assert archivemail.should_archive(msg_obj)
+
+    def tearDown(self):
+        super(TestMaildirAll, self).tearDown()
+        archivemail.options.quiet = False
+        archivemail.options.archive_all = False
+
+class TestMaildirDryRun(TestArchiveMailboxdir):
+    def setUp(self):
+        super(TestMaildirDryRun, self).setUp()
+        archivemail.options.quiet = True
+        archivemail.options.dry_run = True
+
+    def testOld(self):
+        """archiving an old maildir mailbox with the 'dry-run' option"""
+        self.make_maildir(True, False)
+        archivemail.archive(self.maildir)
+        self.verify()
+
+    def tearDown(self):
+        super(TestMaildirDryRun, self).tearDown()
+        archivemail.options.quiet = False
+        archivemail.options.dry_run = False
+
+class TestMaildirDelete(TestArchiveMailboxdir):
+    def setUp(self):
+        super(TestMaildirDelete, self).setUp()
+        archivemail.options.quiet = True
+        archivemail.options.delete_old_mail = True
+
+    def testOld(self):
+        """archiving an old maildir mailbox with the 'delete' option"""
+        self.make_maildir(True, False)
+        archivemail.archive(self.maildir)
+        self.verify()
+
+    def testNew(self):
+        """archiving a new maildir mailbox with the 'delete' option"""
+        self.make_maildir(False, True)
+        archivemail.archive(self.maildir)
+        self.verify()
+
+    def tearDown(self):
+        super(TestMaildirDelete, self).tearDown()
+        archivemail.options.quiet = False
+        archivemail.options.delete_old_mail = False
+
+class TestMaildirCopy(TestArchiveMailboxdir):
+    def setUp(self):
+        super(TestMaildirCopy, self).setUp()
+        archivemail.options.quiet = True
+        archivemail.options.copy_old_mail = True
+
+    def testOld(self):
+        """archiving an old maildir mailbox with the 'copy' option"""
+        self.make_maildir(True, False)
+        archivemail.archive(self.maildir)
+        self.verify()
+
+    def testNew(self):
+        """archiving a new maildir mailbox with the 'copy' option"""
+        self.make_maildir(False, True)
+        archivemail.archive(self.maildir)
+        self.verify()
+
+    def tearDown(self):
+        super(TestMaildirCopy, self).tearDown()
+        archivemail.options.quiet = False
+        archivemail.options.copy_old_mail = False
+
+class TestArchiveMaildirFlagged(TestCaseInTempdir):
+    """make sure the 'include_flagged' option works with maildir messages"""
+    def setUp(self):
+        super(TestArchiveMaildirFlagged, self).setUp()
+        archivemail.options.include_flagged = False
+        archivemail.options.quiet = True
+
+    def testOld(self):
+        """by default, old flagged maildir messages should not be archived"""
+        smd = SimpleMaildir("orig")
+        msg = make_message(hours_old=24*181)
+        smd.write(msg, new=False, flags='F')
+        md = mailbox.Maildir(smd.root)
+        msg_obj = md.next()
+        assert not archivemail.should_archive(msg_obj)
+
+    def testIncludeFlaggedNew(self):
+        """new flagged maildir messages should not be archived with include_flagged"""
+        smd = SimpleMaildir("orig")
+        msg = make_message(hours_old=24*179)
+        smd.write(msg, new=False, flags='F')
+        md = mailbox.Maildir(smd.root)
+        msg_obj = md.next()
+        assert not archivemail.should_archive(msg_obj)
+
+    def testIncludeFlaggedOld(self):
+        """old flagged maildir messages should be archived with include_flagged"""
+        archivemail.options.include_flagged = True
+        smd = SimpleMaildir("orig")
+        msg = make_message(hours_old=24*181)
+        smd.write(msg, new=False, flags='F')
+        md = mailbox.Maildir(smd.root)
+        msg_obj = md.next()
+        assert archivemail.should_archive(msg_obj)
+
+    def tearDown(self):
+        super(TestArchiveMaildirFlagged, self).tearDown()
+        archivemail.options.include_flagged = False
+        archivemail.options.quiet = False
+
+class TestArchiveMaildirSize(TestCaseInTempdir):
+    """check that the 'size' argument works with maildir messages"""
+    def setUp(self):
+        super(TestArchiveMaildirSize, self).setUp()
+        archivemail.options.quiet = True
+        msg = make_message(hours_old=24*181)
+        self.msg_size = len(msg)
+        smd = SimpleMaildir("orig")
+        smd.write(msg, new=False)
+        md = mailbox.Maildir(smd.root)
+        self.msg_obj = md.next()
+
+    def testSmaller(self):
+        """giving a size argument smaller than the maildir message"""
+        archivemail.options.min_size = self.msg_size - 1
+        assert archivemail.should_archive(self.msg_obj)
+
+    def testBigger(self):
+        """giving a size argument bigger than the maildir message"""
+        archivemail.options.min_size = self.msg_size + 1
+        assert not archivemail.should_archive(self.msg_obj)
+
+    def tearDown(self):
+        super(TestArchiveMaildirSize, self).tearDown()
+        archivemail.options.quiet = False
+        archivemail.options.min_size = None
 
 ########## helper routines ############
 
