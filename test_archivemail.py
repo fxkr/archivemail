@@ -481,8 +481,10 @@ class TestParseIMAPUrl(unittest.TestCase):
 
 class TestArchive(TestCaseInTempdir):
     """Base class defining helper functions for doing test archiving runs."""
-    mbox = None
-    good_archive = good_mbox = None
+    mbox = None         # mbox file that will be processed by archivemail
+    good_archive = None # Uncompressed reference archive file to verify the
+                        # archive after processing
+    good_mbox = None    # Reference mbox file to verify the mbox after processing
 
     def verify(self):
         assert os.path.exists(self.mbox)
@@ -502,35 +504,36 @@ class TestArchive(TestCaseInTempdir):
         else:
             assert not os.path.exists(archive_name)
 
-    def make_old_mbox(self, body=None, headers=None, messages=1, old_archive=False):
-        """Make an old mbox, optionally an existing archive, and make a reference
-        archive like it should look like after archivemail has run."""
+    def make_old_mbox(self, body=None, headers=None, messages=1, make_old_archive=False):
+        """Prepare for a test run with an old mbox by making an old mbox,
+        optionally an existing archive, and a reference archive to verify the
+        archive after archivemail has run."""
         self.mbox = make_mbox(body, headers, 181*24, messages)
-        archive_changes = not (archivemail.options.dry_run or
+        archive_does_change = not (archivemail.options.dry_run or
                 archivemail.options.delete_old_mail)
-        mbox_no_changes = archivemail.options.dry_run or archivemail.options.copy_old_mail
-        if old_archive:
-            self.good_archive = make_old_archive(self.mbox)
-            if archive_changes:
+        mbox_does_not_change = archivemail.options.dry_run or \
+                archivemail.options.copy_old_mail
+        if make_old_archive:
+            archive = archivemail.make_archive_name(self.mbox)
+            self.good_archive = make_archive_and_plain_copy(archive)
+            if archive_does_change:
                 append_file(self.mbox, self.good_archive)
-            if mbox_no_changes:
-                self.good_mbox = tempfile.mkstemp()[1]
-                shutil.copyfile(self.mbox, self.good_mbox)
-            return
-        if archive_changes:
+        elif archive_does_change:
             self.good_archive = tempfile.mkstemp()[1]
             shutil.copyfile(self.mbox, self.good_archive)
-            if mbox_no_changes:
+        if mbox_does_not_change:
+            if archive_does_change and not make_old_archive:
                 self.good_mbox = self.good_archive
-        elif mbox_no_changes:
-            self.good_mbox = tempfile.mkstemp()[1]
-            shutil.copyfile(self.mbox, self.good_mbox)
+            else:
+                self.good_mbox = tempfile.mkstemp()[1]
+                shutil.copyfile(self.mbox, self.good_mbox)
 
-    def make_mixed_mbox(self, body=None, headers=None, messages=1, old_archive=False):
-        """Make a mixed mbox, optionally an existing archive, a reference archive
-        like it should look like after archivemail has run, and a reference mbox
-        like it should remain after archivemail has run."""
-        self.make_old_mbox(body, headers, messages=messages, old_archive=old_archive)
+    def make_mixed_mbox(self, body=None, headers=None, messages=1, make_old_archive=False):
+        """Prepare for a test run with a mixed mbox by making a mixed mbox,
+        optionally an existing archive, a reference archive to verify the
+        archive after archivemail has run, and likewise a reference mbox to
+        verify the mbox."""
+        self.make_old_mbox(body, headers, messages=messages, make_old_archive=make_old_archive)
         new_mbox_name = make_mbox(body, headers, 179*24, messages)
         append_file(new_mbox_name, self.mbox)
         if self.good_mbox is None:
@@ -542,14 +545,16 @@ class TestArchive(TestCaseInTempdir):
             else:
                 append_file(new_mbox_name, self.good_mbox)
 
-    def make_new_mbox(self, body=None, headers=None, messages=1, old_archive=False):
-        """Make a new mbox, optionally an exiting archive, and a reference mbox
-        like it should remain after archivemail has run."""
+    def make_new_mbox(self, body=None, headers=None, messages=1, make_old_archive=False):
+        """Prepare for a test run with a new mbox by making a new mbox,
+        optionally an exiting archive, and a reference mbox to verify the mbox
+        after archivemail has run."""
         self.mbox = make_mbox(body, headers, 179*24, messages)
         self.good_mbox = tempfile.mkstemp()[1]
         shutil.copyfile(self.mbox, self.good_mbox)
-        if old_archive:
-            self.good_archive = make_old_archive(self.mbox)
+        if make_old_archive:
+            archive = archivemail.make_archive_name(self.mbox)
+            self.good_archive = make_archive_and_plain_copy(archive)
 
 
 class TestArchiveMbox(TestArchive):
@@ -620,7 +625,7 @@ This is after the ^From line"""
 
     def testOldExisting(self):
         """archiving an old mailbox with an existing archive"""
-        self.make_old_mbox(messages=3, old_archive=True)
+        self.make_old_mbox(messages=3, make_old_archive=True)
         archivemail.archive(self.mbox)
         self.verify()
 
@@ -942,7 +947,7 @@ class TestArchiveMboxUncompressed(TestArchive):
 
     def testOldExists(self):
         """archiving an old mailbox uncopressed with an existing archive"""
-        self.make_old_mbox(messages=3, old_archive=True)
+        self.make_old_mbox(messages=3, make_old_archive=True)
         archivemail.archive(self.mbox)
         self.verify()
 
@@ -1031,37 +1036,36 @@ def make_mbox(body=None, headers=None, hours_old=0, messages=1):
     file.close()
     return name
 
-def make_old_archive(mailbox_name):
-    """Make an mbox archive like if archivemail has already archived the given
-    mailbox in the past. Also make an uncompressed copy of this archive and
-    return its name."""
-    old_archive_name = archivemail.make_archive_name(mailbox_name)
-    fd, archive_name = tempfile.mkstemp()
-    fp = os.fdopen(fd, "w")
+def make_archive_and_plain_copy(archive_name):
+    """Make an mbox archive of the given name like archivemail may have
+    created it.  Also make an uncompressed copy of this archive and return its
+    name."""
+    copy_fd, copy_name = tempfile.mkstemp()
+    copy_fp = os.fdopen(copy_fd, "w")
     if archivemail.options.no_compress:
-        oldfd = os.open(old_archive_name, os.O_WRONLY|os.O_EXCL|os.O_CREAT)
-        oldfp = os.fdopen(oldfd, "w")
+        fd = os.open(archive_name, os.O_WRONLY|os.O_EXCL|os.O_CREAT)
+        fp = os.fdopen(fd, "w")
     else:
-        old_archive_name += ".gz"
-        oldfd = os.open(old_archive_name, os.O_WRONLY|os.O_EXCL|os.O_CREAT)
-        oldrawfp = os.fdopen(oldfd, "w")
-        oldfp = gzip.GzipFile(fileobj=oldrawfp)
+        archive_name += ".gz"
+        fd = os.open(archive_name, os.O_WRONLY|os.O_EXCL|os.O_CREAT)
+        rawfp = os.fdopen(fd, "w")
+        fp = gzip.GzipFile(fileobj=rawfp)
     for count in range(3):
         msg = make_message(hours_old=24*360)
-        oldfp.write(msg)
         fp.write(msg)
-    oldfp.close()
+        copy_fp.write(msg)
     fp.close()
+    copy_fp.close()
     if not archivemail.options.no_compress:
-        oldrawfp.close()
-    return archive_name
+        rawfp.close()
+    return copy_name
 
-def assertEqualContent(firstfile, secondfile, zipfirst=False):
-    """Verify that the two files exist and have identical content. If zipfirst
+def assertEqualContent(firstfile, secondfile, zippedfirst=False):
+    """Verify that the two files exist and have identical content. If zippedfirst
     is True, assume that firstfile is gzip-compressed."""
     assert os.path.exists(firstfile)
     assert os.path.exists(secondfile)
-    if zipfirst:
+    if zippedfirst:
         try:
             fp1 = gzip.GzipFile(firstfile, "r")
             fp2 = open(secondfile, "r")
