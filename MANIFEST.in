@@ -1,0 +1,9 @@
+include CHANGELOG
+include COPYING
+include FAQ
+include MANIFEST
+include TODO
+include archivemail.1
+include archivemail.sgml
+graft examples
+include test_archivemail
