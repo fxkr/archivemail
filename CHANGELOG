@@ -51,6 +51,9 @@ Version 0.8.0   - UNRELEASED
     boolean constants).
   * Added a lot of test cases for maildir archiving to the test suite.
     Maildir testing should now be roughly on par with mbox testing.
+  * IMAP servers (Dovecot and UW-IMAP at least) may store mailbox meta data
+    for mboxes in a pseudo message.  Such messages are now detected and never
+    archived.  Obsoletes: patch #2210707.  (Thanks, "tlhackque")
 
 Version 0.7.2   - 9 November 2007
 

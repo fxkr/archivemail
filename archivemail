@@ -1156,6 +1156,12 @@ def _archive_mbox(mailbox_name, final_archive_name):
     msg = original.next()
     if not msg and (original.starting_size > 0):
         user_error("'%s' is not a valid mbox-format mailbox" % mailbox_name)
+    if msg and 'X-IMAP' in msg:
+        # Dovecot and UW-IMAP pseudo message for mailbox meta data
+        vprint("detected IMAP pseudo message")
+        if retain:
+            retain.write(msg)
+        msg = original.next()
     while (msg):
         msg_size = sizeof_message(msg)
         stats.another_message(msg_size)

@@ -1103,6 +1103,28 @@ class TestArchiveSize(unittest.TestCase):
         archivemail.options.min_size = None
 
 
+class TestXIMAPMessage(TestArchive):
+    """Test if IMAP pseudo messages in mboxes are properly handled."""
+    def setUp(self):
+        super(TestXIMAPMessage, self).setUp()
+        archivemail.options.quiet = True
+
+    def testXIMAPMbox(self):
+        """IMAP pseudo messages in an mbox are always preserved."""
+        self.good_mbox = make_mbox(hours_old=181*24, headers={'X-IMAP': 'dummytext'},
+                messages=1)
+        self.good_archive = make_mbox(hours_old=181*24, messages=3)
+        self.mbox = tempfile.mkstemp()[-1]
+        shutil.copyfile(self.good_mbox, self.mbox)
+        append_file(self.good_archive, self.mbox)
+        archivemail.archive(self.mbox)
+        self.verify()
+
+    def tearDown(self):
+        super(TestXIMAPMessage, self).tearDown()
+        archivemail.options.quiet = False
+
+
 ############# Test archiving maildirs ###############
 
 class TestArchiveMailboxdir(TestCaseInTempdir):
