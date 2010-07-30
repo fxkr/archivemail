@@ -248,6 +248,7 @@ class TestMboxDotlock(TestCaseInTempdir):
         os.chmod(mbox_dir, 0500)
         try:
             self.mbox._dotlock_lock()
+            self.mbox._dotlock_unlock()
         finally:
             os.chmod(mbox_dir, 0700)
             archivemail.options.quiet = False
