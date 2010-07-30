@@ -171,6 +171,7 @@ class StaleFiles:
 
 class Options:
     """Class to store runtime options, including defaults"""
+    archive_prefix       = None
     archive_suffix       = "_archive"
     days_old_max         = 180
     date_old_max         = None
@@ -209,12 +210,12 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:uv', 
+            opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:p:uv',
                              ["date=", "days=", "delete", "dry-run", "help",
                              "include-flagged", "no-compress", "output-dir=",
                              "filter-append=", "pwfile=", "dont-mangle",
                              "preserve-unread", "quiet", "size=", "suffix=",
-                             "verbose", "debug-imap=", "version", 
+                             "prefix=", "verbose", "debug-imap=", "version",
                              "warn-duplicate", "copy", "all"])
         except getopt.error, msg:
             user_error(msg)
@@ -257,6 +258,8 @@ class Options:
                 self.quiet = True
             if o in ('-s', '--suffix'):
                 self.archive_suffix = a
+            if o in ('-p', '--prefix'):
+                self.archive_prefix = a
             if o in ('-S', '--size'):
                 self.min_size = string.atoi(a)
             if o in ('-u', '--preserve-unread'):
@@ -642,6 +645,7 @@ Options are as follows:
   -o, --output-dir=DIR  directory to store archives (default: same as original)
   -P, --pwfile=FILE     file to read imap password from (default: None)
   -F, --filter-append=STRING  append arbitrary string to the IMAP filter string
+  -p, --prefix=NAME     prefix for archive filename (default: none)
   -s, --suffix=NAME     suffix for archive filename (default: '%s')
   -S, --size=NUM        only archive messages NUM bytes or larger
   -n, --dry-run         don't write to anything - just show what would be done
@@ -1626,21 +1630,25 @@ def commit_archive(archive, final_archive_name):
 
 def make_archive_name(mailbox_name):
     """Derive archive name and (relative) path from the mailbox name."""
-    # allow the user to embed time formats such as '%B' in the suffix string
+    # allow the user to embed time formats such as '%B' in the prefix or suffix string
     if options.date_old_max == None:
-        parsed_suffix_time = time.time() - options.days_old_max*24*60*60
+        tm = time.localtime(time.time() - options.days_old_max*24*60*60)
     else:
-        parsed_suffix_time = options.date_old_max
-    parsed_suffix = time.strftime(options.archive_suffix,
-        time.localtime(parsed_suffix_time))
-
+        tm = time.localtime(options.date_old_max)
+    prefix = suffix = ""
+    if options.archive_prefix:
+        prefix = time.strftime(options.archive_prefix, tm)
+    if options.archive_suffix:
+        suffix = time.strftime(options.archive_suffix, tm)
     if re.match(r'imaps?://', mailbox_name.lower()):
-        mailbox_name = mailbox_name.rsplit('/', 1)[-1]
-    final_archive_name = mailbox_name + parsed_suffix
+        archive_dir = ""
+        archive_base = mailbox_name.rsplit('/', 1)[-1]
+    else:
+        archive_dir, archive_base = os.path.split(mailbox_name)
     if options.output_dir:
-        final_archive_name = os.path.join(options.output_dir,
-                os.path.basename(final_archive_name))
-    return final_archive_name
+        archive_dir = options.output_dir
+    archive_name = os.path.join(archive_dir, prefix + archive_base + suffix)
+    return archive_name
 
 def check_sane_destdir(dir):
     """Do a very primitive check if the given directory looks like a reasonable

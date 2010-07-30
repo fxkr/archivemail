@@ -225,6 +225,16 @@ cut-off date:
 
 <VarListEntry>
 <Term>
+    <Option>-p <Replaceable/NAME/, --prefix=<Replaceable/NAME/</Option>
+</Term>
+<ListItem><Para>Prefix <Replaceable/NAME/ to the archive name.
+Like a suffix, this is run through the &python; <application/time.strftime()/
+function.  The default is not to add a prefix.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
     <Option>-S <Replaceable/NUM/, --size=<Replaceable/NUM/</Option>
 </Term>
 <ListItem><Para>Only archive messages that are <Replaceable/NUM/ bytes or

@@ -54,6 +54,11 @@ Version 0.8.0   - UNRELEASED
   * IMAP servers (Dovecot and UW-IMAP at least) may store mailbox meta data
     for mboxes in a pseudo message.  Such messages are now detected and never
     archived.  Obsoletes: patch #2210707.  (Thanks, "tlhackque")
+  * New option --prefix, or short -p, to specify an archive name prefix.  Like
+    a suffix specified with the --suffix option, the prefix is expanded with
+    strftime().  Specifying this option disables the default archive name
+    suffix.  Obsoletes: feature request #604281.  (Thanks Serafeim Zanikolas
+    for an initial patch)
 
 Version 0.7.2   - 9 November 2007
 

@@ -425,6 +425,15 @@ class TestOptionParser(unittest.TestCase):
             archivemail.options.parse_args(["-s", suffix], "")
             assert archivemail.options.archive_suffix == suffix
 
+    def testOptionPrefix(self):
+        """--prefix and -p options are parsed correctly"""
+        for prefix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
+            archivemail.options.parse_args(["--prefix="+prefix], "")
+            assert archivemail.options.archive_prefix == prefix
+            archivemail.options.prefix = None
+            archivemail.options.parse_args(["-p", prefix], "")
+            assert archivemail.options.archive_prefix == prefix
+
     def testOptionDryrun(self):
         """--dry-run option is parsed correctly"""
         archivemail.options.parse_args(["--dry-run"], "")
@@ -908,6 +917,31 @@ class TestArchiveMboxSuffix(unittest.TestCase):
         archivemail.options.quiet = False
         archivemail.options.archive_suffix = self.old_suffix
 
+class TestArchiveMboxPrefix(unittest.TestCase):
+    """make sure the 'prefix' option works"""
+    def setUp(self):
+        self.old_prefix = archivemail.options.archive_prefix
+        self.old_suffix = archivemail.options.archive_suffix
+        archivemail.options.archive_suffix = ""
+        archivemail.options.quiet = True
+
+    def testPrefix(self):
+        """archiving with specified --prefix arguments"""
+        for archive_prefix in ("_static_", "_%B_%Y", "-%Y-%m-%d", "%Y/%m/"):
+            archivemail.options.archive_prefix = archive_prefix
+            for mbox_name in "foobar", "/tmp/foobar", "schnorchz/foobar":
+                archive_dir, archive_base = os.path.split(mbox_name)
+                days = archivemail.options.days_old_max
+                tm = time.localtime(time.time() - days*24*60*60)
+                prefix = time.strftime(archive_prefix, tm)
+                archive_name = os.path.join(archive_dir, prefix + archive_base)
+                self.assertEqual(archive_name,
+                        archivemail.make_archive_name(mbox_name))
+
+    def tearDown(self):
+        archivemail.options.quiet = False
+        archivemail.options.archive_prefix = self.old_prefix
+        archivemail.options.archive_suffix = self.old_suffix
 
 class TestArchiveDryRun(TestArchive):
     """make sure the 'dry-run' option works"""
