@@ -323,6 +323,7 @@ class LockableMboxMixin:
         self.mbox_file = mbox_file
         self.mbox_file_name = mbox_file_name
         self._locked = False
+        self._use_dotlock = True
 
     def lock(self):
         """Lock this mbox with both a dotlock and a posix lock."""
@@ -386,6 +387,7 @@ class LockableMboxMixin:
                 if not options.quiet:
                     user_warning("no write permissions: omitting dotlock for '%s'" % \
                         self.mbox_file_name)
+                self._use_dotlock = False
                 return
             raise
         try:
@@ -411,7 +413,8 @@ class LockableMboxMixin:
 
     def _dotlock_unlock(self):
         """Delete the dotlock file for the 'mbox' mailbox."""
-        assert self.mbox_file_name
+        if not self._use_dotlock:
+            return
         lock_name = self.mbox_file_name + options.lockfile_extension
         vprint("removing lockfile '%s'" % lock_name)
         os.remove(lock_name)
