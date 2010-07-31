@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>29 July 2010</Date></DocInfo>
+<DocInfo><Date>31 July 2010</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -68,6 +68,16 @@ that are older that the specified number of days (180 by default) to a
 &mbox;-format mailbox in the same directory that is compressed
 with &gzip;.
 It can also just delete old email rather than archive it.
+</Para>
+
+<Para>
+By default, <command/archivemail/ derives the archive filename from the
+mailbox name by appending an <filename/_archive/ suffix to the mailbox
+name.  For example, if you run <Command/archivemail/ on a mailbox called
+<filename>exsouthrock</filename>, the archive will be created with the
+filename <filename>exsouthrock_archive.gz</filename>.
+This default behavior can be overridden with command line options, choosing
+a custom suffix, a prefix, or a completely custom name for the archive.
 </Para>
 
 <Para>
@@ -157,21 +167,32 @@ For <acronym/IMAP/ wizards.
 
 <VarListEntry>
 <Term>
+    <Option>-p <Replaceable/NAME/, --prefix=<Replaceable/NAME/</Option>
+</Term>
+<ListItem><Para>Prefix <Replaceable/NAME/ to the archive name.
+<Replaceable/NAME/ is expanded by the &python; function
+<application/time.strftime()/, which means that you can specify special
+directives in <Replaceable/NAME/ to make an archive named after the archive
+cut-off date.
+See the discussion of the <Option>--suffix</Option> option for a list of valid
+<application/strftime()/ directives.
+The default is not to add a prefix.
+</Para></ListItem>
+</VarListEntry>
+
+<VarListEntry>
+<Term>
     <Option>-s <Replaceable/NAME/, --suffix=<Replaceable/NAME/</Option>
 </Term>
 <ListItem><Para>
 Use the suffix <Replaceable/NAME/ to create the filename used for archives.  
-The default is <filename>_archive</filename>. For example, if you
-run <Command/archivemail/ on a mailbox called
-<filename>exsouthrock</filename>, the archive will be created
-with the filename <filename>exsouthrock_archive.gz</filename>.
+The default is <filename>_archive</filename>, unless a prefix is specified.
 </Para>
 
 <Para>
-<Replaceable/NAME/ is run through the &python; <application/time.strftime()/
-function, which means that you can specify any of the following special
-directives in <Replaceable/NAME/ to make archives named after the archive
-cut-off date:
+Like a prefix, the suffix <Replaceable/NAME/ is expanded by the &python;
+function <application/time.strftime()/ with the archive cut-off date.
+<application/time.strftime()/ understands the following directives:
 
 <itemizedlist mark='none'>
     <listitem><para><option>%a</option> 
@@ -225,11 +246,14 @@ cut-off date:
 
 <VarListEntry>
 <Term>
-    <Option>-p <Replaceable/NAME/, --prefix=<Replaceable/NAME/</Option>
+    <Option>-a <Replaceable/NAME/, --archive-name=<Replaceable/NAME/</Option>
 </Term>
-<ListItem><Para>Prefix <Replaceable/NAME/ to the archive name.
-Like a suffix, this is run through the &python; <application/time.strftime()/
-function.  The default is not to add a prefix.
+<ListItem><Para>Use <Replaceable/NAME/ as the archive name, ignoring the name
+of the mailbox that is archived.
+Like prefixes and suffixes, <Replaceable/NAME/ is expanded by
+<application/strftime()/ with the archive cut-off date.
+Because it hard-codes the archive name, this option cannot be used when
+archiving multiple mailboxes.
 </Para></ListItem>
 </VarListEntry>
 
@@ -414,13 +438,13 @@ mailbox while it is being read.
 </Para>
 
 <Para>
-<Command/archivemail/ will always attempt to preserve the mode,
-last-access and last-modify times of the input mailbox. However, archive
+<Command/archivemail/ will always attempt to preserve the
+last-access and last-modify times of the input mailbox.  Archive
 mailboxes are always created with a mode of <application/0600/.
 If <Command/archivemail/ finds a pre-existing archive mailbox it
 will append rather than overwrite that archive.
 <Command/archivemail/ will refuse to operate on mailboxes that are symbolic 
-links or create tempfiles or archives in world-writable directories.
+links.
 </Para>
 
 <Para>
@@ -434,6 +458,16 @@ If it cannot find any valid date in these headers, it
 will use the last-modified file timestamp on <application/MH/ and
 <application/Maildir/ format mailboxes, or the date on the 
 <application/From/ line on <application/mbox/-format mailboxes.
+</Para>
+
+<Para>
+    When archiving mailboxes with leading dots in the name,
+    <application/archivemail/ will strip the dots off the archive name, so
+    that the resulting archive file is not hidden.
+    This is not done if the <Option>--prefix</Option> or
+    <Option>--archive-name</Option> option is used.
+    Should there really be mailboxes distinguished only by leading dots in the
+    name, they will thus be archived to the same archive file by default.
 </Para>
 
 <Para>
