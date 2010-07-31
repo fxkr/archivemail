@@ -897,7 +897,6 @@ class TestArchiveMboxPreserveUnread(unittest.TestCase):
 class TestArchiveMboxSuffix(unittest.TestCase):
     """make sure the 'suffix' option works"""
     def setUp(self):
-        self.old_suffix = archivemail.options.archive_suffix
         archivemail.options.quiet = True
 
     def testSuffix(self):
@@ -915,14 +914,11 @@ class TestArchiveMboxSuffix(unittest.TestCase):
 
     def tearDown(self):
         archivemail.options.quiet = False
-        archivemail.options.archive_suffix = self.old_suffix
+        archivemail.options.archive_suffix = None
 
 class TestArchiveMboxPrefix(unittest.TestCase):
     """make sure the 'prefix' option works"""
     def setUp(self):
-        self.old_prefix = archivemail.options.archive_prefix
-        self.old_suffix = archivemail.options.archive_suffix
-        archivemail.options.archive_suffix = ""
         archivemail.options.quiet = True
 
     def testPrefix(self):
@@ -940,8 +936,37 @@ class TestArchiveMboxPrefix(unittest.TestCase):
 
     def tearDown(self):
         archivemail.options.quiet = False
-        archivemail.options.archive_prefix = self.old_prefix
-        archivemail.options.archive_suffix = self.old_suffix
+        archivemail.options.archive_prefix = None
+
+class TestArchiveAffixes(unittest.TestCase):
+    def setUp(self):
+        self.mbox = "harbsch"
+        self.archive_prefix = "wurbl+"
+        self.archive_suffix = "+schronk&borsz"
+        archivemail.options.quiet = True
+
+    def testDefaultPrefix(self):
+        """if no archive name affix is specified, the default archive suffix is appended"""
+        self.assertEqual(archivemail.make_archive_name(self.mbox),
+                self.mbox + archivemail.options.archive_default_suffix)
+
+    def testPrefixKillsDefaultSuffix(self):
+        """if an archive name prefix is specified, the default archive suffix is not appended"""
+        archivemail.options.archive_prefix = self.archive_prefix
+        self.assertEqual(archivemail.make_archive_name(self.mbox),
+                self.archive_prefix + self.mbox)
+
+    def testPrefixAndSuffix(self):
+        """specifying both an archive name prefix and suffix works"""
+        archivemail.options.archive_prefix = self.archive_prefix
+        archivemail.options.archive_suffix = self.archive_suffix
+        self.assertEqual(archivemail.make_archive_name(self.mbox),
+                self.archive_prefix + self.mbox + self.archive_suffix)
+
+    def tearDown(self):
+        archivemail.options.archive_prefix = None
+        archivemail.options.archive_suffix = None
+        archivemail.options.quiet = False
 
 class TestArchiveDryRun(TestArchive):
     """make sure the 'dry-run' option works"""

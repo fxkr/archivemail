@@ -172,7 +172,8 @@ class StaleFiles:
 class Options:
     """Class to store runtime options, including defaults"""
     archive_prefix       = None
-    archive_suffix       = "_archive"
+    archive_suffix       = None
+    archive_default_suffix = "_archive"
     days_old_max         = 180
     date_old_max         = None
     delete_old_mail      = False
@@ -1636,10 +1637,13 @@ def make_archive_name(mailbox_name):
     else:
         tm = time.localtime(options.date_old_max)
     prefix = suffix = ""
-    if options.archive_prefix:
-        prefix = time.strftime(options.archive_prefix, tm)
-    if options.archive_suffix:
-        suffix = time.strftime(options.archive_suffix, tm)
+    if options.archive_prefix is None and options.archive_suffix is None:
+        suffix = options.archive_default_suffix
+    else:
+        if options.archive_prefix:
+            prefix = time.strftime(options.archive_prefix, tm)
+        if options.archive_suffix:
+            suffix = time.strftime(options.archive_suffix, tm)
     if re.match(r'imaps?://', mailbox_name.lower()):
         archive_dir = ""
         archive_base = mailbox_name.rsplit('/', 1)[-1]
