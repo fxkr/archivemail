@@ -421,7 +421,7 @@ class TestOptionParser(unittest.TestCase):
         for suffix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
             archivemail.options.parse_args(["--suffix="+suffix], "")
             self.assertEqual(archivemail.options.archive_suffix, suffix)
-            archivemail.options.suffix = None
+            archivemail.options.archive_suffix = None
             archivemail.options.parse_args(["-s", suffix], "")
             self.assertEqual(archivemail.options.archive_suffix, suffix)
 
@@ -430,7 +430,7 @@ class TestOptionParser(unittest.TestCase):
         for prefix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
             archivemail.options.parse_args(["--prefix="+prefix], "")
             self.assertEqual(archivemail.options.archive_prefix, prefix)
-            archivemail.options.prefix = None
+            archivemail.options.archive_prefix = None
             archivemail.options.parse_args(["-p", prefix], "")
             self.assertEqual(archivemail.options.archive_prefix, prefix)
 
