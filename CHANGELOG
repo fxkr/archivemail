@@ -64,6 +64,10 @@ Version 0.8.0   - UNRELEASED
     strips the dot off the archive name.  In particular, this makes working
     with Maildir++ subfolders more convenient.  Closes: feature request
     #604281.
+  * New option --archive-name, or short -a, to hard-code an archive filename.
+    Like the --suffix and --prefix options, it is expanded with strftime().
+    This option conflicts with archiving multiple mailboxes.  Closes: feature
+    request #1306538.
 
 Version 0.7.2   - 9 November 2007
 

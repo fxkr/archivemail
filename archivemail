@@ -174,6 +174,7 @@ class Options:
     archive_prefix       = None
     archive_suffix       = None
     archive_default_suffix = "_archive"
+    archive_name         = None
     days_old_max         = 180
     date_old_max         = None
     delete_old_mail      = False
@@ -211,13 +212,14 @@ class Options:
 
         """
         try:
-            opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:p:uv',
+            opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:p:a:uv',
                              ["date=", "days=", "delete", "dry-run", "help",
                              "include-flagged", "no-compress", "output-dir=",
                              "filter-append=", "pwfile=", "dont-mangle",
                              "preserve-unread", "quiet", "size=", "suffix=",
-                             "prefix=", "verbose", "debug-imap=", "version",
-                             "warn-duplicate", "copy", "all"])
+                             "prefix=", "archive-name=", "verbose",
+                             "debug-imap=", "version", "warn-duplicate",
+                             "copy", "all"])
         except getopt.error, msg:
             user_error(msg)
 
@@ -261,6 +263,8 @@ class Options:
                 self.archive_suffix = a
             if o in ('-p', '--prefix'):
                 self.archive_prefix = a
+            if o in ('-a', '--archive-name'):
+                self.archive_name = os.path.expanduser(a)
             if o in ('-S', '--size'):
                 self.min_size = string.atoi(a)
             if o in ('-u', '--preserve-unread'):
@@ -282,7 +286,7 @@ class Options:
                 sys.exit(0)
         return args
 
-    def sanity_check(self):
+    def sanity_check(self, args):
         """Complain bitterly about our options now rather than later"""
         if self.output_dir:
             check_sane_destdir(self.output_dir)
@@ -297,6 +301,9 @@ class Options:
         if self.pwfile:
             if not os.path.isfile(self.pwfile):
                 user_error("pwfile %s does not exist" % self.pwfile)
+        if self.archive_name and len(args) > 1:
+            user_error("the --archive-name cannot be used with multiple " \
+                "mailboxes")
 
     def date_argument(self, string):
         """Converts a date argument string into seconds since the epoch"""
@@ -648,6 +655,7 @@ Options are as follows:
   -F, --filter-append=STRING  append arbitrary string to the IMAP filter string
   -p, --prefix=NAME     prefix for archive filename (default: none)
   -s, --suffix=NAME     suffix for archive filename (default: '%s')
+  -a, --archive-name=NAME   specify complete archive filename
   -S, --size=NUM        only archive messages NUM bytes or larger
   -n, --dry-run         don't write to anything - just show what would be done
   -u, --preserve-unread never archive unread messages
@@ -683,7 +691,7 @@ Website: http://archivemail.sourceforge.net/ """ %   \
         print usage
         sys.exit(1)
 
-    options.sanity_check()
+    options.sanity_check(args)
 
     for mailbox_path in args:
         archive(mailbox_path)
@@ -1631,27 +1639,32 @@ def commit_archive(archive, final_archive_name):
 
 def make_archive_name(mailbox_name):
     """Derive archive name and (relative) path from the mailbox name."""
-    # allow the user to embed time formats such as '%B' in the prefix or suffix string
+    # allow the user to embed time formats such as '%B' in the archive name
     if options.date_old_max == None:
         tm = time.localtime(time.time() - options.days_old_max*24*60*60)
     else:
         tm = time.localtime(options.date_old_max)
     prefix = suffix = ""
-    if options.archive_prefix is None and options.archive_suffix is None:
-        suffix = options.archive_default_suffix
-    else:
-        if options.archive_prefix:
-            prefix = time.strftime(options.archive_prefix, tm)
-        if options.archive_suffix:
-            suffix = time.strftime(options.archive_suffix, tm)
-    if re.match(r'imaps?://', mailbox_name.lower()):
+    if options.archive_name:
         archive_head = ""
-        archive_tail = mailbox_name.rsplit('/', 1)[-1]
+        archive_tail = time.strftime(options.archive_name, tm)
     else:
-        archive_head, archive_tail = os.path.split(mailbox_name)
-    if not prefix:
-        # Don't create hidden archives, e.g. when processing Maildir++ subfolders
-        archive_tail = archive_tail.lstrip('.')
+        if options.archive_prefix is None and options.archive_suffix is None:
+            suffix = options.archive_default_suffix
+        else:
+            if options.archive_prefix:
+                prefix = time.strftime(options.archive_prefix, tm)
+            if options.archive_suffix:
+                suffix = time.strftime(options.archive_suffix, tm)
+        if re.match(r'imaps?://', mailbox_name.lower()):
+            archive_head = ""
+            archive_tail = mailbox_name.rsplit('/', 1)[-1]
+        else:
+            archive_head, archive_tail = os.path.split(mailbox_name)
+        if not prefix:
+            # Don't create hidden archives, e.g. when processing Maildir++
+            # subfolders
+            archive_tail = archive_tail.lstrip('.')
     if options.output_dir:
         archive_head = options.output_dir
     archive_name = os.path.join(archive_head, prefix + archive_tail + suffix)

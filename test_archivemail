@@ -434,6 +434,15 @@ class TestOptionParser(unittest.TestCase):
             archivemail.options.parse_args(["-p", prefix], "")
             self.assertEqual(archivemail.options.archive_prefix, prefix)
 
+    def testOptionArchivename(self):
+        """--archive-name and -a options are parsed correctly"""
+        for name in ("custom", ".withdot", "custom_%Y", "%Y/joe"):
+            archivemail.options.parse_args(["--archive-name="+name], "")
+            self.assertEqual(archivemail.options.archive_name, name)
+            archivemail.options.archive_name = None
+            archivemail.options.parse_args(["-a", name], "")
+            self.assertEqual(archivemail.options.archive_name, name)
+
     def testOptionDryrun(self):
         """--dry-run option is parsed correctly"""
         archivemail.options.parse_args(["--dry-run"], "")
@@ -937,6 +946,25 @@ class TestArchiveMboxPrefix(unittest.TestCase):
     def tearDown(self):
         archivemail.options.quiet = False
         archivemail.options.archive_prefix = None
+
+class TestArchiveName(unittest.TestCase):
+    def setUp(self):
+        archivemail.options.quiet = True
+
+    def testArchiveName(self):
+        """test the --archive-name option"""
+        archive_names = ("custom", ".withdot", "custom_%Y", "%Y/joe")
+        mbox = "foobar"
+        for name in archive_names:
+            archivemail.options.archive_name = name
+            days = archivemail.options.days_old_max
+            tm = time.localtime(time.time() - days*24*60*60)
+            name = time.strftime(name, tm)
+            self.assertEqual(archivemail.make_archive_name(mbox), name)
+
+    def tearDown(self):
+        archivemail.options.quiet = False
+        archivemail.options.archive_name = None
 
 class TestArchiveAffixes(unittest.TestCase):
     def setUp(self):
