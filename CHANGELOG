@@ -59,6 +59,11 @@ Version 0.8.0   - UNRELEASED
     strftime().  Specifying this option disables the default archive name
     suffix.  Obsoletes: feature request #604281.  (Thanks Serafeim Zanikolas
     for an initial patch)
+  * When archiving a mailbox with a leading dot in the name and with no archive
+    name prefix specified, archivemail no longer creates hidden archives, but
+    strips the dot off the archive name.  In particular, this makes working
+    with Maildir++ subfolders more convenient.  Closes: feature request
+    #604281.
 
 Version 0.7.2   - 9 November 2007
 

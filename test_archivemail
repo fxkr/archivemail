@@ -968,6 +968,28 @@ class TestArchiveAffixes(unittest.TestCase):
         archivemail.options.archive_suffix = None
         archivemail.options.quiet = False
 
+class TestArchiveHiddenMbox(unittest.TestCase):
+    def setUp(self):
+        archivemail.options.quiet = True
+        self.mbox = ".upper.lower"
+
+    def testHiddenMbox(self):
+        """leading dots are stripped from the archive name when no prefix is added"""
+        self.assertEqual(archivemail.make_archive_name(self.mbox),
+                self.mbox.lstrip('.') +
+                archivemail.options.archive_default_suffix)
+
+    def testHiddenMboxPrefixedArchive(self):
+        """no dots are stripped from the archive name when a prefix is added"""
+        prefix = ".hidden_"
+        archivemail.options.archive_prefix = prefix
+        self.assertEqual(archivemail.make_archive_name(self.mbox),
+                prefix + self.mbox)
+
+    def tearDown(self):
+        archivemail.options.quiet = False
+        archivemail.options.archive_prefix = None
+
 class TestArchiveDryRun(TestArchive):
     """make sure the 'dry-run' option works"""
     def setUp(self):

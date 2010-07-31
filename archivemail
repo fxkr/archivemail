@@ -1649,6 +1649,9 @@ def make_archive_name(mailbox_name):
         archive_base = mailbox_name.rsplit('/', 1)[-1]
     else:
         archive_dir, archive_base = os.path.split(mailbox_name)
+    if not prefix:
+        # Don't create hidden archives, e.g. when processing Maildir++ subfolders
+        archive_base = archive_base.lstrip('.')
     if options.output_dir:
         archive_dir = options.output_dir
     archive_name = os.path.join(archive_dir, prefix + archive_base + suffix)
