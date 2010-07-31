@@ -420,19 +420,19 @@ class TestOptionParser(unittest.TestCase):
         """--suffix and -s options are parsed correctly"""
         for suffix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
             archivemail.options.parse_args(["--suffix="+suffix], "")
-            assert archivemail.options.archive_suffix == suffix
+            self.assertEqual(archivemail.options.archive_suffix, suffix)
             archivemail.options.suffix = None
             archivemail.options.parse_args(["-s", suffix], "")
-            assert archivemail.options.archive_suffix == suffix
+            self.assertEqual(archivemail.options.archive_suffix, suffix)
 
     def testOptionPrefix(self):
         """--prefix and -p options are parsed correctly"""
         for prefix in ("_static_", "_%B_%Y", "-%Y-%m-%d"):
             archivemail.options.parse_args(["--prefix="+prefix], "")
-            assert archivemail.options.archive_prefix == prefix
+            self.assertEqual(archivemail.options.archive_prefix, prefix)
             archivemail.options.prefix = None
             archivemail.options.parse_args(["-p", prefix], "")
-            assert archivemail.options.archive_prefix == prefix
+            self.assertEqual(archivemail.options.archive_prefix, prefix)
 
     def testOptionDryrun(self):
         """--dry-run option is parsed correctly"""
