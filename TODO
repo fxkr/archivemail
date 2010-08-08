@@ -6,10 +6,7 @@ Gracefully close IMAP connection upon unexptected error (currently archivemail
 just terminates). 
 
 LOCKING & Co:
-* Block signals while writing changed mailbox back. Also, we probably shouldn't
-  use shutil.copy2() for this; at least we have to handle symlinked targets in a
-  sane way, see Debian bug #349068.  mbox_sync_mailbox() in the mutt code might
-  be an example how to write back a changed mailbox. 
+* Block signals while writing changed mailbox back.
 * Double-check the entire locking code. 
 
 Seems like existing archives are not read or validated in any way.  New archive
@@ -45,10 +42,6 @@ are mapped like this:
 Implement --include-draft.  But before, think about it again.  (This is feature
 request #1569305.)
 
-Create temporary archive mbox in /tmp only if we don't have write permissions in
-the mbox directory.  Currently, if /tmp resides on another filesystem, we have
-to copy the entire box to its destination. 
-
 Implement a fallback if an IMAP server doesn't support SEARCH. (Ouch!)
 
 Add IMAP tests to the testsuite (upload test messages with IMAP "APPEND
@@ -77,15 +70,6 @@ Perhaps add some more nice stuff like printing of subject, sender...
 See tracker #868714 "added stats option to archivemail", which has a point.
 Message-Ids are useful for diagnosis, but not very nice to read for humans. 
 
-Regarding the --archive-name option:
-* Do we want this?  Probably, it adds flexibility.
-* I think we should expand date format strings like we do with --suffix
-* Hmm, --output-dir overrides os.dirname(archive_name)... 
-  If no output_dir is given, use $PWD like we do for IMAP, or require -o?
-* Provide short option -a?  Not sure. 
-* The patch in #905657 is not bad.  The Debian package also has a custom
-  --archive-name option, but with a worse implementation.
-
 Be a nicer citizen with respect to mailbox locking. 
 
 Perhaps prune/shorten IMAP mailbox URLs in messages?
@@ -102,9 +86,6 @@ Check all items below, which are from the original author. :-)
 
 When you get a file-not-found in the 6th mailbox of 10, it aborts the whole
 run. Better to fail gracefully and keep going.
-
-Think about the best way to specify the names of archives created with
-possibly an --archive-name option.
 
 Add more tests (see top of test_archivemail)
 
