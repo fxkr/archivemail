@@ -3,6 +3,7 @@ include COPYING
 include FAQ
 include MANIFEST
 include TODO
+include NEWS
 include archivemail.1
 include archivemail.sgml
 graft examples
