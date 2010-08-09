@@ -1090,13 +1090,7 @@ def archive(mailbox_name):
     set_signal_handlers()
     os.umask(077) # saves setting permissions on mailboxes/tempfiles
 
-    final_archive_name = make_archive_name(mailbox_name)
-    vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
-    check_archive(final_archive_name)
-    dest_dir = os.path.dirname(final_archive_name)
-    if not dest_dir:
-        dest_dir = os.getcwd()
-    check_sane_destdir(dest_dir)
+    vprint("processing '%s'" % mailbox_name)
     is_imap = urlparse.urlparse(mailbox_name)[0] in ('imap', 'imaps')
     if not is_imap:
         # Check if the mailbox exists, and refuse to mess with other people's
@@ -1121,19 +1115,19 @@ def archive(mailbox_name):
 
         if is_imap:
             vprint("guessing mailbox is of type: imap(s)")
-            _archive_imap(mailbox_name, final_archive_name)
+            _archive_imap(mailbox_name)
         elif os.path.isfile(mailbox_name):
             vprint("guessing mailbox is of type: mbox")
-            _archive_mbox(mailbox_name, final_archive_name)
+            _archive_mbox(mailbox_name)
         elif os.path.isdir(mailbox_name):
             cur_path = os.path.join(mailbox_name, "cur")
             new_path = os.path.join(mailbox_name, "new")
             if os.path.isdir(cur_path) and os.path.isdir(new_path):
                 vprint("guessing mailbox is of type: maildir")
-                _archive_dir(mailbox_name, final_archive_name, "maildir")
+                _archive_dir(mailbox_name, "maildir")
             else:
                 vprint("guessing mailbox is of type: MH")
-                _archive_dir(mailbox_name, final_archive_name, "mh")
+                _archive_dir(mailbox_name, "mh")
         else:
             user_error("'%s' is not a normal file or directory" % mailbox_name)
 
@@ -1145,17 +1139,12 @@ def archive(mailbox_name):
         tempfile.tempdir = old_temp_dir
         clean_up()
 
-def _archive_mbox(mailbox_name, final_archive_name):
-    """Archive a 'mbox' style mailbox - used by archive_mailbox()
-
-    Arguments:
-    mailbox_name -- the filename/dirname of the mailbox to be archived
-    final_archive_name -- the filename of the 'mbox' mailbox to archive
-                          old messages to - appending if the archive 
-                          already exists
-    """
+def _archive_mbox(mailbox_name):
+    """Archive a 'mbox' style mailbox - used by archive_mailbox()"""
     assert mailbox_name
-    assert final_archive_name
+    final_archive_name = make_archive_name(mailbox_name)
+    vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
+    check_archive(final_archive_name)
     stats = Stats(mailbox_name, final_archive_name)
     cache = IdentityCache(mailbox_name)
     original = Mbox(path=mailbox_name)
@@ -1234,11 +1223,13 @@ def _archive_mbox(mailbox_name, final_archive_name):
         stats.display()
 
 
-def _archive_dir(mailbox_name, final_archive_name, type):
+def _archive_dir(mailbox_name, type):
     """Archive a 'maildir' or 'MH' style mailbox - used by archive_mailbox()"""
     assert mailbox_name
-    assert final_archive_name
     assert type
+    final_archive_name = make_archive_name(mailbox_name)
+    vprint("archiving '%s' to '%s' ..." % (mailbox_name, final_archive_name))
+    check_archive(final_archive_name)
     stats = Stats(mailbox_name, final_archive_name)
     delete_queue = []
 
@@ -1286,10 +1277,9 @@ def _archive_dir(mailbox_name, final_archive_name, type):
     if not options.quiet:
         stats.display()
 
-def _archive_imap(mailbox_name, final_archive_name):
+def _archive_imap(mailbox_name):
     """Archive an imap mailbox - used by archive_mailbox()"""
     assert mailbox_name
-    assert final_archive_name
     import imaplib
     import cStringIO
     import getpass
@@ -1297,10 +1287,8 @@ def _archive_imap(mailbox_name, final_archive_name):
     vprint("Setting imaplib.Debug = %d" % options.debug_imap)
     imaplib.Debug = options.debug_imap
     archive = None
-    stats = Stats(mailbox_name, final_archive_name)
-    cache = IdentityCache(mailbox_name)
     imap_str = mailbox_name[mailbox_name.find('://') + 3:]
-    imap_username, imap_password, imap_server, imap_folder = \
+    imap_username, imap_password, imap_server, imap_folder_pattern = \
         parse_imap_url(imap_str)
     if not imap_password: 
         if options.pwfile:
@@ -1327,86 +1315,97 @@ def _archive_imap(mailbox_name, final_archive_name):
         user_error("imap server %s has login disabled (hint: "
                              "try ssl/imaps)" % imap_server)
 
-    imap_smart_select(imap_srv, imap_folder)
-    total_msg_count = int(imap_srv.response("EXISTS")[1][0])
-    vprint("folder has %d message(s)" % total_msg_count)
+    mailboxes = imap_find_mailboxes(imap_srv, imap_folder_pattern)
+    for imap_folder in mailboxes:
+        final_archive_name = make_archive_name(imap_folder)
+        vprint("archiving mailbox '%s' on IMAP server '%s' to '%s' ..." %
+                (imap_folder, imap_server, final_archive_name))
+        check_archive(final_archive_name)
+        cur_mailbox = mailbox_name[:-len(imap_folder_pattern)] + imap_folder
+        stats = Stats(cur_mailbox, final_archive_name)
+        cache = IdentityCache(cur_mailbox)
 
-    # IIUIC the message sequence numbers are stable for the whole session, since
-    # we just send SEARCH, FETCH and STORE commands, which should prevent the
-    # server from sending untagged EXPUNGE responses -- see RFC 3501 (IMAP4rev1)
-    # 7.4.1 and RFC 2180 (Multi-Accessed Mailbox Practice).
-    # Worst thing should be that we bail out FETCHing a message that has been
-    # deleted.
+        imap_smart_select(imap_srv, imap_folder)
+        total_msg_count = int(imap_srv.response("EXISTS")[1][0])
+        vprint("folder has %d message(s)" % total_msg_count)
 
-    if options.archive_all:
-        message_list = [str(n) for n in range(1, total_msg_count+1)]
-    else:
-        imap_filter = build_imap_filter()
-        vprint("imap filter: '%s'" % imap_filter)
-        vprint("searching messages matching criteria")
-        result, response = imap_srv.search(None, imap_filter)
-        if result != 'OK': unexpected_error("imap search failed; server says '%s'" %
-            response[0])
-        # response is a list with a single item, listing message sequence numbers
-        # like ['1 2 3 1016'] 
-        message_list = response[0].split()
-        vprint("%d messages are matching filter" % len(message_list))
+        # IIUIC the message sequence numbers are stable for the whole session, since
+        # we just send SEARCH, FETCH and STORE commands, which should prevent the
+        # server from sending untagged EXPUNGE responses -- see RFC 3501 (IMAP4rev1)
+        # 7.4.1 and RFC 2180 (Multi-Accessed Mailbox Practice).
+        # Worst thing should be that we bail out FETCHing a message that has been
+        # deleted.
 
-    # First, gather data for the statistics.
-    if total_msg_count > 0:
-        vprint("fetching size of messages...")
-        result, response = imap_srv.fetch('1:*', '(RFC822.SIZE)')
-        if result != 'OK': unexpected_error("Failed to fetch message sizes; "
-            "server says '%s'" % response[0])
-        # response is a list with entries like '1016 (RFC822.SIZE 3118)',
-        # where the first number is the message sequence number, the second is
-        # the size.
-        for x in response:
-            m = imapsize_re.match(x)
-            msn, msg_size = m.group('msn'), int(m.group('size'))
-            stats.another_message(msg_size)
-            if msn in message_list:
-                stats.another_archived(msg_size)
+        if options.archive_all:
+            message_list = [str(n) for n in range(1, total_msg_count+1)]
+        else:
+            imap_filter = build_imap_filter()
+            vprint("imap filter: '%s'" % imap_filter)
+            vprint("searching messages matching criteria")
+            result, response = imap_srv.search(None, imap_filter)
+            if result != 'OK': unexpected_error("imap search failed; server says '%s'" %
+                response[0])
+            # response is a list with a single item, listing message sequence numbers
+            # like ['1 2 3 1016']
+            message_list = response[0].split()
+            vprint("%d messages are matching filter" % len(message_list))
 
-    if not options.dry_run:
-        if not options.delete_old_mail:
-            archive = prepare_temp_archive()
-            vprint("fetching messages...")
-            for msn in message_list:
-                # Fetching message flags and body together always finds \Seen
-                # set.  To check \Seen, we must fetch the flags first. 
-                result, response = imap_srv.fetch(msn, '(FLAGS)')
-                if result != 'OK': unexpected_error("Failed to fetch message "
-                        "flags; server says '%s'" % response[0])
-                msg_flags = imaplib.ParseFlags(response[0])
-                result, response = imap_srv.fetch(msn, '(RFC822)')
-                if result != 'OK': unexpected_error("Failed to fetch message; "
-                    "server says '%s'" % response[0])
-                msg_str = response[0][1].replace("\r\n", os.linesep)
-                msg = rfc822.Message(cStringIO.StringIO(msg_str))
-                vprint("processing message '%s'" % msg.get('Message-ID'))
-                add_status_headers_imap(msg, msg_flags)
-                if options.warn_duplicates:
-                    cache.warn_if_dupe(msg)             
-                archive.write(msg)
-            commit_archive(archive, final_archive_name)
-        if not options.copy_old_mail: 
-            vprint("Deleting %s messages" % len(message_list))
-            # do not delete more than a certain number of messages at a time,
-            # because the command length is limited. This avoids that servers
-            # terminate the connection with EOF or TCP RST.
-            max_delete = 100
-            for i in range(0, len(message_list), max_delete):
-                result, response = imap_srv.store( \
-                    string.join(message_list[i:i+max_delete], ','),
-                    '+FLAGS.SILENT', '\\Deleted')
-                if result != 'OK': unexpected_error("Error while deleting "
-                    "messages; server says '%s'" % response[0])
-    vprint("Closing mailbox and terminating connection.")
-    imap_srv.close()
+        # First, gather data for the statistics.
+        if total_msg_count > 0:
+            vprint("fetching size of messages...")
+            result, response = imap_srv.fetch('1:*', '(RFC822.SIZE)')
+            if result != 'OK': unexpected_error("Failed to fetch message sizes; "
+                "server says '%s'" % response[0])
+            # response is a list with entries like '1016 (RFC822.SIZE 3118)',
+            # where the first number is the message sequence number, the second is
+            # the size.
+            for x in response:
+                m = imapsize_re.match(x)
+                msn, msg_size = m.group('msn'), int(m.group('size'))
+                stats.another_message(msg_size)
+                if msn in message_list:
+                    stats.another_archived(msg_size)
+
+        if not options.dry_run:
+            if not options.delete_old_mail:
+                archive = prepare_temp_archive()
+                vprint("fetching messages...")
+                for msn in message_list:
+                    # Fetching message flags and body together always finds \Seen
+                    # set.  To check \Seen, we must fetch the flags first.
+                    result, response = imap_srv.fetch(msn, '(FLAGS)')
+                    if result != 'OK': unexpected_error("Failed to fetch message "
+                            "flags; server says '%s'" % response[0])
+                    msg_flags = imaplib.ParseFlags(response[0])
+                    result, response = imap_srv.fetch(msn, '(RFC822)')
+                    if result != 'OK': unexpected_error("Failed to fetch message; "
+                        "server says '%s'" % response[0])
+                    msg_str = response[0][1].replace("\r\n", os.linesep)
+                    msg = rfc822.Message(cStringIO.StringIO(msg_str))
+                    vprint("processing message '%s'" % msg.get('Message-ID'))
+                    add_status_headers_imap(msg, msg_flags)
+                    if options.warn_duplicates:
+                        cache.warn_if_dupe(msg)
+                    archive.write(msg)
+                commit_archive(archive, final_archive_name)
+            if not options.copy_old_mail:
+                vprint("Deleting %s messages" % len(message_list))
+                # do not delete more than a certain number of messages at a time,
+                # because the command length is limited. This avoids that servers
+                # terminate the connection with EOF or TCP RST.
+                max_delete = 100
+                for i in range(0, len(message_list), max_delete):
+                    result, response = imap_srv.store( \
+                        string.join(message_list[i:i+max_delete], ','),
+                        '+FLAGS.SILENT', '\\Deleted')
+                    if result != 'OK': unexpected_error("Error while deleting "
+                        "messages; server says '%s'" % response[0])
+        vprint("Closing mailbox.")
+        imap_srv.close()
+        if not options.quiet:
+            stats.display()
+    vprint("Terminating connection.")
     imap_srv.logout()
-    if not options.quiet:
-        stats.display()
     
 
 ###############  IMAP  functions  ###############
@@ -1497,9 +1496,7 @@ def imap_get_namespace(srv):
 
 
 def imap_smart_select(srv, mailbox): 
-    """Select the given mailbox on the IMAP server, correcting an invalid
-    mailbox path if possible."""
-    mailbox = imap_find_mailbox(srv, mailbox)
+    """Select the given mailbox on the IMAP server."""
     roflag = options.dry_run or options.copy_old_mail
     # Work around python bug #1277098 (still pending in python << 2.5)
     if not roflag: 
@@ -1528,11 +1525,14 @@ def imap_smart_select(srv, mailbox):
                     "upon SELECT")
 
 
-def imap_find_mailbox(srv, mailbox):
-    """Find the given mailbox on the IMAP server, correcting an invalid
-    mailbox path if possible.  Return the found mailbox name.""" 
+def imap_find_mailboxes(srv, mailbox):
+    """Find matching mailboxes on the IMAP server, correcting an invalid
+    mailbox path if possible."""
     for curbox in imap_guess_mailboxnames(srv, mailbox): 
-        vprint("Looking for mailbox '%s'..." % curbox)
+        if '%' in curbox or '*' in curbox:
+            vprint("Looking for mailboxes matching '%s'..." % curbox)
+        else:
+            vprint("Looking for mailbox '%s'..." % curbox)
         result, response = srv.list(pattern=curbox)
         if result != 'OK': 
             unexpected_error("LIST command failed; " \
@@ -1544,13 +1544,18 @@ def imap_find_mailbox(srv, mailbox):
             break
     else: 
         user_error("Cannot find mailbox '%s' on server." % mailbox)
-    vprint("Found mailbox '%s'" % curbox)
-    # Catch \NoSelect here to avoid misleading errors later. 
-    m = re.match(r'\((?P<attrs>[^\)]*)\)', response[0])
-    if '\\noselect' in m.group('attrs').lower().split(): 
-        user_error("Server indicates that mailbox '%s' is not selectable" \
-            % curbox)
-    return curbox
+    mailboxes = []
+    for mailbox_data in response:
+        m = re.match(r'\((.*?)\) "." "(.*?)"', mailbox_data)
+        attrs, name = m.groups()
+        if '\\noselect' in attrs.lower().split():
+            vprint("skipping not selectable mailbox '%s'" % name)
+            continue
+        vprint("Found mailbox '%s'" % name)
+        mailboxes.append(name)
+    if not mailboxes:
+        user_error("No matching folder is selectable")
+    return mailboxes
 
 
 def imap_guess_mailboxnames(srv, mailbox): 
@@ -1656,11 +1661,7 @@ def make_archive_name(mailbox_name):
                 prefix = time.strftime(options.archive_prefix, tm)
             if options.archive_suffix:
                 suffix = time.strftime(options.archive_suffix, tm)
-        if re.match(r'imaps?://', mailbox_name.lower()):
-            archive_head = ""
-            archive_tail = mailbox_name.rsplit('/', 1)[-1]
-        else:
-            archive_head, archive_tail = os.path.split(mailbox_name)
+        archive_head, archive_tail = os.path.split(mailbox_name)
         if not prefix:
             # Don't create hidden archives, e.g. when processing Maildir++
             # subfolders
@@ -1680,7 +1681,8 @@ def check_sane_destdir(dir):
         user_error("no write permission on output directory: '%s'" % dir)
 
 def check_archive(archive_name):
-    """Check if existing archive files are (not) compressed as expected."""
+    """Check if existing archive files are (not) compressed as expected and
+    check if we can work with the destination directory."""
     compressed_archive = archive_name + ".gz"
     if options.no_compress:
         if os.path.isfile(compressed_archive):
@@ -1693,6 +1695,10 @@ def check_archive(archive_name):
             "Have you been reading this archive?\n"
             "You probably should re-compress it manually, and try running me "
             "again." % archive_name)
+    dest_dir = os.path.dirname(archive_name)
+    if not dest_dir:
+        dest_dir = os.getcwd()
+    check_sane_destdir(dest_dir)
 
 def nice_size_str(size):
     """Return given size in bytes as '12kB', '1.2MB'"""
