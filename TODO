@@ -50,8 +50,6 @@ date-string").  This should be done without any real network I/O.
 Try to port archivemail to email.message and the new mailboxes in Python 2.5.
 Is these flexible enough for our needs?
 
-Add recursive archiving of mail subfolders? 
-
 Line out what we want with respect to multiple selection criteria. 
 Some make sense, but this easily gets too complex, and if only it's a hassle
 with adding all the options.  Hm.  

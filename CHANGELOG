@@ -68,6 +68,9 @@ Version 0.8.0   - UNRELEASED
     Like the --suffix and --prefix options, it is expanded with strftime().
     This option conflicts with archiving multiple mailboxes.  Closes: feature
     request #1306538.
+  * archivemail now expands wildcards in IMAP mailbox names.  For example, the
+    url imaps://user@server/foo/* will expand to all subfolders of foo.
+    Closes: feature request #1978540. Obsoletes: patch #1918937.
 
 Version 0.7.2   - 9 November 2007
 

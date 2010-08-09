@@ -35,7 +35,7 @@
 
 <RefEntry>
 
-<DocInfo><Date>31 July 2010</Date></DocInfo>
+<DocInfo><Date>9 August 2010</Date></DocInfo>
 
 <RefMeta>
 <RefEntryTitle>archivemail</RefEntryTitle>
@@ -97,6 +97,11 @@ mailboxes, but always writes <application/mbox/-format archives.
 To archive an <application/IMAP/-format mailbox, use the format
 <replaceable>imap://username:password@server/mailbox
 </replaceable> to specify the mailbox. 
+<application/archivemail/ will expand wildcards in <application/IMAP/ mailbox
+names according to <acronym>RFC</acronym> 3501, which says: <quote>
+The character "*" is a wildcard, and matches zero or more characters at this
+position.  The character "%" is similar to "*", but it does not match a
+hierarchy delimiter.</quote>
 You can omit the password from the <acronym/URL/; use the
 <option>--pwfile</option> option to make <command/archivemail/ read the 
 password from a file, or alternatively just enter it upon request. 
@@ -625,6 +630,18 @@ that are older than 90 days to compressed mailboxes in the
 <Para>
     Note the protected quotes. 
 </Para>
+</InformalExample>
+
+<InformalExample>
+<Para>
+    To archive all mails older than 180 days in subfolders of "foo" on the
+    given <application/IMAP/ server to corresponding archives in the current
+    working directory, reading the password from the file
+    <filename>~/imap-pass.txt</filename>:
+</Para>
+<screen>
+    <prompt>bash$ </prompt><userinput>archivemail --pwfile=~/imap-pass.txt imaps://user@example.org/foo/*</userinput>
+</screen>
 </InformalExample>
 </RefSect1>
 
