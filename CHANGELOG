@@ -1,4 +1,4 @@
-Version 0.8.0   - UNRELEASED
+Version 0.8.0   - 9 August 2010
 
   * Fixed date header parsing to be precise with timezone information.  Also,
     when writing From_ line timestamps, don't use UTC but local time, without
