@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "ARCHIVEMAIL" "1" "31 July 2010" "SP" ""
+.TH "ARCHIVEMAIL" "1" "09 August 2010" "SP" ""
 
 .SH NAME
 archivemail \- archive and compress your old email
@@ -39,6 +39,10 @@ to only archive messages larger than a specified size.
 .PP
 To archive an \fBIMAP\fR-format mailbox, use the format
 \fIimap://username:password@server/mailbox\fR to specify the mailbox. 
+\fBarchivemail\fR will expand wildcards in \fBIMAP\fR mailbox
+names according to RFC 3501, which says: ``The character "*" is a wildcard, and matches zero or more characters at this
+position.  The character "%" is similar to "*", but it does not match a
+hierarchy delimiter.''
 You can omit the password from the URL; use the
 \fB--pwfile\fR option to make \fBarchivemail\fR read the 
 password from a file, or alternatively just enter it upon request. 
@@ -426,6 +430,16 @@ bash$ \fBarchivemail -o $HOME/Mail/Archive imaps://user:'"'$PASSWORD'"'@example.
 .fi
 .PP
 Note the protected quotes. 
+.PP
+.PP
+To archive all mails older than 180 days in subfolders of "foo" on the
+given \fBIMAP\fR server to corresponding archives in the current
+working directory, reading the password from the file
+\fI~/imap-pass.txt\fR:
+
+.nf
+    bash$ \fBarchivemail --pwfile=~/imap-pass.txt imaps://user@example.org/foo/*\fR
+.fi
 .SH "TIPS"
 .PP
 Probably the best way to run \fBarchivemail\fR is from your \fBcrontab\fR(5)
