@@ -617,6 +617,26 @@ class TestParseIMAPUrl(unittest.TestCase):
         archivemail.options.verbose = False
         archivemail.options.pwfile = None
 
+########## quoting and un-quoting of IMAP strings ##########
+
+class TestIMAPQuoting(unittest.TestCase):
+    stringlist = (
+            ('{braces} and space', '"{braces} and space"'),
+            ('\\backslash', '"\\\\backslash"'),
+            ('with "quotes" inbetween', '"with \\"quotes\\" inbetween"'),
+            ('ending with "quotes"', '"ending with \\"quotes\\""'),
+            ('\\"backslash before quote', '"\\\\\\"backslash before quote"')
+    )
+
+    def testQuote(self):
+        for unquoted, quoted in self.stringlist:
+            self.assertEqual(archivemail.imap_quote(unquoted), quoted)
+
+    def testUnquote(self):
+        for unquoted, quoted in self.stringlist:
+            self.assertEqual(unquoted, archivemail.imap_unquote(quoted))
+
+
 ########## acceptance testing ###########
 
 class TestArchive(TestCaseInTempdir):

@@ -1410,6 +1410,21 @@ def _archive_imap(mailbox_name):
 
 ###############  IMAP  functions  ###############
 
+def imap_quote(astring):
+    """Quote an IMAP `astring' string (see RFC 3501, section "Formal Syntax")."""
+    if astring.startswith('"') and astring.endswith('"'):
+        quoted = astring
+    else:
+        quoted = '"' + astring.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    return quoted
+
+def imap_unquote(quoted):
+    """Un-quote a `quoted' IMAP string (see RFC 3501, section "Formal Syntax")."""
+    if not (quoted.startswith('"') and quoted.endswith('"')):
+        unquoted = quoted
+    else:
+        unquoted = re.sub(r'\\(\\|")', r'\1', quoted[1:-1])
+    return unquoted
 
 def parse_imap_url(url): 
     """Parse IMAP URL and return username, password (if appliciable), servername
@@ -1462,7 +1477,7 @@ def imap_getdelim(imap_server):
         "server says '%s'" % response[0])
 
     # Response should be a list of strings like 
-    # '(\\Noselect \\HasChildren) "." "boxname"'
+    # '(\\Noselect \\HasChildren) "." boxname'
     # We parse only the first list item and just grab the delimiter. 
     m = re.match(r'\([^\)]*\) (?P<delim>"."|NIL)', response[0])
     if not m: 
@@ -1505,7 +1520,7 @@ def imap_smart_select(srv, mailbox):
         vprint("examining imap folder '%s' read-only" % mailbox)
     else:
         vprint("selecting imap folder '%s'" % mailbox)
-    result, response = srv.select(mailbox, roflag)
+    result, response = srv.select(imap_quote(mailbox), roflag)
     if result != 'OK':
         unexpected_error("selecting '%s' failed; server says: '%s'." \
                 % (mailbox, response[0]))
@@ -1533,12 +1548,12 @@ def imap_find_mailboxes(srv, mailbox):
             vprint("Looking for mailboxes matching '%s'..." % curbox)
         else:
             vprint("Looking for mailbox '%s'..." % curbox)
-        result, response = srv.list(pattern=curbox)
+        result, response = srv.list(pattern=imap_quote(curbox))
         if result != 'OK': 
             unexpected_error("LIST command failed; " \
                 "server says: '%s'" % response[0])
         # Say we queried for the mailbox "foo". 
-        # Upon success, response is e.g. ['(\\HasChildren) "." "foo"'].
+        # Upon success, response is e.g. ['(\\HasChildren) "." foo'].
         # Upon failure, response is [None].  Funky imaplib!
         if response[0] != None: 
             break
@@ -1546,8 +1561,22 @@ def imap_find_mailboxes(srv, mailbox):
         user_error("Cannot find mailbox '%s' on server." % mailbox)
     mailboxes = []
     for mailbox_data in response:
-        m = re.match(r'\((.*?)\) "." "(.*?)"', mailbox_data)
-        attrs, name = m.groups()
+        if not mailbox_data:    # imaplib sometimes returns an empty string
+            continue
+        try:
+            m = re.match(r'\((.*?)\) (?:"."|NIL) (.+)', mailbox_data)
+        except TypeError:
+            # May be a literal.  For literals, imaplib returns a tuple like
+            # ('(\\HasNoChildren) "." {12}', 'with "quote"').
+            m = re.match(r'\((.*?)\) (?:"."|NIL) \{\d+\}$', mailbox_data[0])
+            if m is None:
+                unexpected_error("cannot parse LIST reply %s" %
+                        (mailbox_data,))
+            attrs = m.group(1)
+            name = mailbox_data[1]
+        else:
+            attrs, name = m.groups()
+            name = imap_unquote(name)
         if '\\noselect' in attrs.lower().split():
             vprint("skipping not selectable mailbox '%s'" % name)
             continue
