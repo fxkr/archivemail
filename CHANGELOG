@@ -1,3 +1,8 @@
+version 0.8.2   - 16 October 2010
+
+  * IMAP: don't prepend NAMESPACE prefix to INBOX and its children.
+    Closes: #3083236.
+
 version 0.8.1   - 30 September 2010
 
   * IMAP: fixed handling of LIST replies by the server where the mailbox name
