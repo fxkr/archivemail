@@ -1599,16 +1599,24 @@ def imap_guess_mailboxnames(srv, mailbox):
         hdelim = imap_getdelim(srv)
     vprint("IMAP namespace prefix: '%s', hierarchy delimiter: '%s'" % \
             (nsprefix, hdelim))
-    if mailbox.startswith(nsprefix):
+    if mailbox.upper() == "INBOX" or \
+       (hdelim is not None and mailbox.upper().startswith("INBOX" + hdelim)):
+        # INBOX is not a real mailbox name, so namespace prefixes do not apply
+        # to INBOX and its children
+        boxnames = [mailbox]
+    elif mailbox.startswith(nsprefix):
         boxnames = [mailbox]
     else:
         boxnames = [nsprefix + mailbox]
     if os.path.sep in mailbox and hdelim is not None:
         mailbox = mailbox.replace(os.path.sep, hdelim)
-        if mailbox.startswith(nsprefix):
+        if mailbox.upper().startswith("INBOX" + hdelim):
             boxnames.append(mailbox)
-        if nsprefix: 
-            boxnames.append(nsprefix + mailbox)
+        else:
+            if mailbox.startswith(nsprefix):
+                boxnames.append(mailbox)
+            if nsprefix:
+                boxnames.append(nsprefix + mailbox)
     return boxnames
 
 
