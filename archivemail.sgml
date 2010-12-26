@@ -88,7 +88,7 @@ mailboxes, but always writes <application/mbox/-format archives.
 
 <Para>
     Messages that are flagged important are not archived or deleted unless
-    explicitely requested with the <Option>--include-flagged</Option> option.
+    explicitly requested with the <Option>--include-flagged</Option> option.
     Also, <command/archivemail/ can be configured not to archive unread mail, or
     to only archive messages larger than a specified size. 
 </Para>
