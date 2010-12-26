@@ -1351,7 +1351,7 @@ def _archive_imap(mailbox_name):
             vprint("%d messages are matching filter" % len(message_list))
 
         # First, gather data for the statistics.
-        if total_msg_count > 0:
+        if total_msg_count > 0 and not options.quiet:
             vprint("fetching size of messages...")
             result, response = imap_srv.fetch('1:*', '(RFC822.SIZE)')
             if result != 'OK': unexpected_error("Failed to fetch message sizes; "
