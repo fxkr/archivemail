@@ -4,6 +4,9 @@ VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 HTDOCS=htdocs-$(VERSION)
 
+# Path to XSLT stylesheet.  Adapt to your needs.
+XSLT_MAN=/usr/share/xml/docbook/stylesheet/nwalsh/manpages/docbook.xsl
+
 default:
 	@echo "no default target"
 
@@ -42,13 +45,12 @@ $(HTDOCS).tgz: index.html archivemail.html RELNOTES style.css manpage.css
 	cd $(HTDOCS) && mv archivemail.html manpage.html
 	tar czf $(HTDOCS).tgz $(HTDOCS)
 
-archivemail.1: archivemail.sgml
-	docbook2man archivemail.sgml
-	chmod 644 archivemail.1
+archivemail.1: archivemail.xml
+	xsltproc $(XSLT_MAN) archivemail.xml
 
-archivemail.html: archivemail.sgml db2html.dsl
-	docbook2html --dsl db2html.dsl -u archivemail.sgml
-	chmod 644 archivemail.html
+archivemail.html: archivemail.xml db2html.xsl
+	xsltproc --output archivemail.html \
+	    db2html.xsl archivemail.xml
 	tidy -modify -indent -f /dev/null archivemail.html || true
 
 .PHONY: clean test clobber sdist tag upload doc htdocs 

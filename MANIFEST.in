@@ -5,6 +5,6 @@ include MANIFEST
 include TODO
 include NEWS
 include archivemail.1
-include archivemail.sgml
+include archivemail.xml
 graft examples
 include test_archivemail
