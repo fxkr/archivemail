@@ -42,7 +42,8 @@
 <refmeta>
 <refentrytitle>archivemail</refentrytitle>
 <manvolnum>1</manvolnum>
-<refmiscinfo>SP</refmiscinfo>
+<refmiscinfo class="manual">archivemail user manual</refmiscinfo>
+<refmiscinfo class="source">archivemail 0.8.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
