@@ -1348,9 +1348,13 @@ def _archive_imap(mailbox_name):
             result, response = imap_srv.search(None, imap_filter)
             if result != 'OK': unexpected_error("imap search failed; server says '%s'" %
                 response[0])
-            # response is a list with a single item, listing message sequence numbers
-            # like ['1 2 3 1016']
-            message_list = response[0].split()
+            if response[0] is not None:
+                # response is a list with a single item, listing message
+                # sequence numbers like ['1 2 3 1016']
+                message_list = response[0].split()
+            else:
+                # Broken server has sent no untagged response; assume empty result set.
+                message_list = []
             vprint("%d messages are matching filter" % len(message_list))
 
         # First, gather data for the statistics.
