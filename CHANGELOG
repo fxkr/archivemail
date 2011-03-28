@@ -1,3 +1,9 @@
+version 0.?.?   - UNRELEASED
+
+  * Fixed manpage installation path to be FHS compliant
+  * Speed up IMAP archiving with the --quiet option
+  * Ported the manpage from SGML to XML
+
 version 0.8.2   - 16 October 2010
 
   * IMAP: don't prepend NAMESPACE prefix to INBOX and its children.
