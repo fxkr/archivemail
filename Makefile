@@ -1,4 +1,3 @@
-
 VERSION=$(shell python setup.py --version)
 VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
@@ -8,7 +7,6 @@ default:
 	@echo "no default target"
 
 clean:
-	rm -f manpage.links manpage.refs manpage.log
 	rm -rf $(HTDOCS)
 
 test:
@@ -22,16 +20,8 @@ clobber: clean
 sdist: clobber doc
 	python setup.py sdist
 
-# FIXME: bdist_rpm chokes on the manpage. 
-#        This is python/distutils bug #644744
-#bdist_rpm: clobber doc
-#	python setup.py bdist_rpm
-
 tag:
 	git tag -a $(VERSION_TAG)
-
-upload:
-	(cd dist && lftp -c 'open upload.sf.net && cd incoming && put $(TARFILE)')
 
 doc: archivemail.1 archivemail.html
 
@@ -50,4 +40,4 @@ archivemail.html: archivemail.xml db2html.xsl
 	    db2html.xsl archivemail.xml
 	tidy -modify -indent -f /dev/null archivemail.html || true
 
-.PHONY: clean test clobber sdist tag upload doc htdocs 
+.PHONY: default clean test clobber sdist tag doc htdocs
