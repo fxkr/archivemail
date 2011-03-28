@@ -1,6 +1,4 @@
 body { 
-    font-family: "Times New Roman", serif; 
-    font-size: 12pt; 
     padding: 2%; 
     line-height: 130%; 
     margin: 0; 
@@ -25,9 +23,6 @@ h2 {
     margin: 1em 0 0.8em 0; 
     padding: 0; 
     font-size: 150%;
-}
-pre, tt, kbd, code, pre samp {
-   font-family: "Courier 10 Pitch", Courier, "Courier New", monospace;
 }
 img {border: none;}
 a {
