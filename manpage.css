@@ -9,3 +9,7 @@ h2 {
 div.informalexample .screen {
     margin-left: 2ex; 
 }
+
+a#strftime + dl dt { float: left; margin: 0.3ex 0; width: 1.5em; }
+a#strftime + dl dd { float: left; margin: 0.3ex 0; margin-left: 1.2em; width: 90%; }
+dt { clear: left; }

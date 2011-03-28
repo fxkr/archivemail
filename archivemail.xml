@@ -2,37 +2,29 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
 "file:///usr/share/xml/docbook/schema/dtd/4.2/docbookx.dtd" [
 
-<!ENTITY lockf "<citerefentry>
-<refentrytitle><command>lockf</command></refentrytitle>
-<manvolnum>2</manvolnum></citerefentry>">
+<!ENTITY lockf '<citerefentry>
+<refentrytitle><emphasis role="bold">lockf</emphasis></refentrytitle>
+<manvolnum>2</manvolnum></citerefentry>'>
 
-<!ENTITY gzip "<citerefentry>
-<refentrytitle><command>gzip</command></refentrytitle>
-<manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY gzip '<citerefentry>
+<refentrytitle><emphasis role="bold">gzip</emphasis></refentrytitle>
+<manvolnum>1</manvolnum></citerefentry>'>
 
-<!ENTITY mutt "<citerefentry>
-<refentrytitle><command>mutt</command></refentrytitle>
-<manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY procmail '<citerefentry>
+<refentrytitle><emphasis role="bold">procmail</emphasis></refentrytitle>
+<manvolnum>1</manvolnum></citerefentry>'>
 
-<!ENTITY procmail "<citerefentry>
-<refentrytitle><command>procmail</command></refentrytitle>
-<manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY python '<citerefentry>
+<refentrytitle><emphasis role="bold">python</emphasis></refentrytitle>
+<manvolnum>1</manvolnum></citerefentry>'>
 
-<!ENTITY python "<citerefentry>
-<refentrytitle><command>python</command></refentrytitle>
-<manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY crontab '<citerefentry>
+<refentrytitle><emphasis role="bold">crontab</emphasis></refentrytitle>
+<manvolnum>5</manvolnum></citerefentry>'>
 
-<!ENTITY seteuid "<citerefentry>
-<refentrytitle><command>seteuid</command></refentrytitle>
-<manvolnum>2</manvolnum></citerefentry>">
-
-<!ENTITY crontab "<citerefentry>
-<refentrytitle><command>crontab</command></refentrytitle>
-<manvolnum>5</manvolnum></citerefentry>">
-
-<!ENTITY mbox "<citerefentry>
-<refentrytitle><command>mbox</command></refentrytitle>
-<manvolnum>5</manvolnum></citerefentry>">
+<!ENTITY mbox '<citerefentry>
+<refentrytitle><emphasis role="bold"><acronym>mbox</acronym></emphasis></refentrytitle>
+<manvolnum>5</manvolnum></citerefentry>'>
 ]>
 
 <refentry>
@@ -65,9 +57,10 @@
 <title>Description</title>
 
 <para>
-archivemail is a tool for archiving and compressing old email in mailboxes.
+<command>archivemail</command> is a tool for archiving and compressing old
+email in mailboxes.
 By default it will read the mailbox <replaceable>MAILBOX</replaceable>, moving messages
-that are older that the specified number of days (180 by default) to a
+that are older than the specified number of days (180 by default) to a
 &mbox;-format mailbox in the same directory that is compressed
 with &gzip;.
 It can also just delete old email rather than archive it.
@@ -84,9 +77,9 @@ a custom suffix, a prefix, or a completely custom name for the archive.
 </para>
 
 <para>
-<command>archivemail</command> supports reading  <application>IMAP</application>,
-<application>Maildir</application>, <application>MH</application> and <application>mbox</application>-format
-mailboxes, but always writes <application>mbox</application>-format archives.
+<command>archivemail</command> supports reading  <acronym>IMAP</acronym>,
+<acronym>Maildir</acronym>, <acronym>MH</acronym> and <acronym>mbox</acronym>-format
+mailboxes, but always writes <acronym>mbox</acronym>-format archives.
 </para>
 
 <para>
@@ -97,12 +90,12 @@ mailboxes, but always writes <application>mbox</application>-format archives.
 </para>
 
 <para>
-To archive an <application>IMAP</application>-format mailbox, use the format
+To archive an <acronym>IMAP</acronym>-format mailbox, use the format
 <replaceable>imap://username:password@server/mailbox
 </replaceable> to specify the mailbox.
-<application>archivemail</application> will expand wildcards in <application>IMAP</application> mailbox
-names according to <acronym>RFC</acronym> 3501, which says: <quote>
-The character "*" is a wildcard, and matches zero or more characters at this
+<command>archivemail</command> will expand wildcards in <acronym>IMAP</acronym> mailbox
+names according to <citation><acronym>RFC</acronym> 3501</citation>, which says:
+<quote>The character "*" is a wildcard, and matches zero or more characters at this
 position.  The character "%" is similar to "*", but it does not match a
 hierarchy delimiter.</quote>
 You can omit the password from the <acronym>URL</acronym>; use the
@@ -111,9 +104,10 @@ password from a file, or alternatively just enter it upon request.
 If the <option>--pwfile</option> option is set, <command>archivemail</command> does not
 look for a password in the <acronym>URL</acronym>, and the colon is not considered a
 delimiter.
-Substitute '<userinput>imap</userinput>' with '<userinput>imaps</userinput>', and
-<command>archivemail</command> will establish a secure <acronym>SSL</acronym> connection.
-See below for more <application>IMAP</application> peculiarities.
+Substitute <replaceable>imap</replaceable> with
+<replaceable>imaps</replaceable>, and <command>archivemail</command> will
+establish a secure <acronym>SSL</acronym> connection.
+See below for more <acronym>IMAP</acronym> peculiarities.
 </para>
 </refsect1>
 
@@ -123,9 +117,8 @@ See below for more <application>IMAP</application> peculiarities.
 <variablelist>
 
 <varlistentry>
-<term>
-    <option>-d <replaceable>NUM</replaceable>, --days=<replaceable>NUM</replaceable></option>
-</term>
+<term><option>-d <replaceable>NUM</replaceable></option></term>
+<term><option>--days=<replaceable>NUM</replaceable></option></term>
 <listitem><para>Archive messages older than <replaceable>NUM</replaceable> days.
 The default is 180. This option is incompatible with the
 <option>--date</option> option below.
@@ -133,21 +126,20 @@ The default is 180. This option is incompatible with the
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-D <replaceable>DATE</replaceable>, --date=<replaceable>DATE</replaceable></option>
-</term>
+<term><option>-D <replaceable>DATE</replaceable></option></term>
+<term><option>--date=<replaceable>DATE</replaceable></option></term>
 <listitem><para>Archive messages older than <replaceable>DATE</replaceable>.
-<replaceable>DATE</replaceable> can be a date string in ISO format (eg '2002-04-23'),
-Internet format (eg '23 Apr 2002') or Internet format with full month names
-(eg '23 April 2002'). Two-digit years are not supported.
+<replaceable>DATE</replaceable> can be a date string in ISO format (eg
+<quote>2002-04-23</quote>), Internet format (<abbrev>eg</abbrev> <quote>23 Apr
+2002</quote>) or Internet format with full month names (<abbrev>eg</abbrev>
+<quote>23 April 2002</quote>). Two-digit years are not supported.
 This option is incompatible with the <option>--days</option> option above.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-o <replaceable>PATH</replaceable>, --output-dir=<replaceable>PATH</replaceable></option>
-</term>
+<term><option>-o <replaceable>PATH</replaceable></option></term>
+<term><option>--output-dir=<replaceable>PATH</replaceable></option></term>
 <listitem><para>Use the directory name <replaceable>PATH</replaceable> to store the
 mailbox archives. The default is the same directory as the mailbox to be
 read.
@@ -155,44 +147,41 @@ read.
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-P <replaceable>FILE</replaceable>, --pwfile=<replaceable>FILE</replaceable></option>
-</term>
-<listitem><para>Read <acronym>IMAP</acronym> password from file <replaceable>FILE</replaceable>
-instead of from the command line.  Note that this will probably not work if you
-are archiving folders from more than one IMAP account.
+<term><option>-P <replaceable>FILE</replaceable></option></term>
+<term><option>--pwfile=<replaceable>FILE</replaceable></option></term>
+<listitem><para>Read <acronym>IMAP</acronym> password from file
+<replaceable>FILE</replaceable> instead of from the command line.  Note
+that this will probably not work if you are archiving folders from
+more than one IMAP account.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-F <replaceable>STRING</replaceable>,
-    --filter-append=<replaceable>STRING</replaceable></option>
-</term>
-<listitem><para>Append <replaceable>STRING</replaceable> to the <acronym>IMAP</acronym> filter string.
+<term><option>-F <replaceable>STRING</replaceable></option></term>
+<term><option>--filter-append=<replaceable>STRING</replaceable></option></term>
+<listitem><para>Append <replaceable>STRING</replaceable> to the
+<acronym>IMAP</acronym> filter string.
 For <acronym>IMAP</acronym> wizards.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-p <replaceable>NAME</replaceable>, --prefix=<replaceable>NAME</replaceable></option>
-</term>
+<term><option>-p <replaceable>NAME</replaceable></option></term>
+<term><option>--prefix=<replaceable>NAME</replaceable></option></term>
 <listitem><para>Prefix <replaceable>NAME</replaceable> to the archive name.
 <replaceable>NAME</replaceable> is expanded by the &python; function
-<application>time.strftime()</application>, which means that you can specify special
+<function>time.strftime()</function>, which means that you can specify special
 directives in <replaceable>NAME</replaceable> to make an archive named after the archive
 cut-off date.
 See the discussion of the <option>--suffix</option> option for a list of valid
-<application>strftime()</application> directives.
+<function>strftime()</function> directives.
 The default is not to add a prefix.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-s <replaceable>NAME</replaceable>, --suffix=<replaceable>NAME</replaceable></option>
-</term>
+<term><option>-s <replaceable>NAME</replaceable></option></term>
+<term><option>--suffix=<replaceable>NAME</replaceable></option></term>
 <listitem><para>
 Use the suffix <replaceable>NAME</replaceable> to create the filename used for archives.
 The default is <filename>_archive</filename>, unless a prefix is specified.
@@ -200,85 +189,82 @@ The default is <filename>_archive</filename>, unless a prefix is specified.
 
 <para>
 Like a prefix, the suffix <replaceable>NAME</replaceable> is expanded by the &python;
-function <application>time.strftime()</application> with the archive cut-off date.
-<application>time.strftime()</application> understands the following directives:
+function <function>time.strftime()</function> with the archive cut-off date.
+<function>time.strftime()</function> understands the following directives:
 
-<itemizedlist mark='none'>
-    <listitem><para><option>%a</option>
-    Locale's abbreviated weekday name.</para></listitem>
-    <listitem><para><option>%A</option>
-    Locale's full weekday name.</para></listitem>
-    <listitem><para><option>%b</option>
-    Locale's abbreviated month name.</para></listitem>
-    <listitem><para><option>%B</option>
-    Locale's full month name.</para></listitem>
-    <listitem><para><option>%c</option>
-    Locale's appropriate date and time representation.</para></listitem>
-    <listitem><para><option>%d</option>
-    Day of the month as a decimal number [01,31].</para></listitem>
-    <listitem><para><option>%H</option>
-    Hour (24-hour clock) as a decimal number [00,23].</para></listitem>
-    <listitem><para><option>%I</option>
-    Hour (12-hour clock) as a decimal number [01,12].</para></listitem>
-    <listitem><para><option>%j</option>
-    Day of the year as a decimal number [001,366].</para></listitem>
-    <listitem><para><option>%m</option>
-    Month as a decimal number [01,12].</para></listitem>
-    <listitem><para><option>%M</option>
-    Minute as a decimal number [00,59].</para></listitem>
-    <listitem><para><option>%p</option>
-    Locale's equivalent of either AM or PM.</para></listitem>
-    <listitem><para><option>%S</option>
-    Second as a decimal number [00,61]. (1)</para></listitem>
-    <listitem><para><option>%U</option>
-    Week number of the year (Sunday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Sunday are considered to be in week 0.</para></listitem>
-    <listitem><para><option>%w</option>
-    Weekday as a decimal number [0(Sunday),6].</para></listitem>
-    <listitem><para><option>%W</option>
-    Week number of the year (Monday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Sunday are considered to be in week 0.</para></listitem>
-    <listitem><para><option>%x</option>
-    Locale's appropriate date representation.</para></listitem>
-    <listitem><para><option>%X</option>
-    Locale's appropriate time representation.</para></listitem>
-    <listitem><para><option>%y</option>
-    Year without century as a decimal number [00,99].</para></listitem>
-    <listitem><para><option>%Y</option>
-    Year with century as a decimal number.</para></listitem>
-    <listitem><para><option>%Z</option>
-    Time zone name (or by no characters if no time zone exists).</para></listitem>
-    <listitem><para><option>%%</option>
-    A literal "%" character.</para></listitem>
-</itemizedlist>
+<variablelist id="strftime">
+    <varlistentry><term><code>%a</code></term>
+    <listitem><simpara>Locale's abbreviated weekday name.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%A</code></term>
+        <listitem><simpara>Locale's full weekday name.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%b</code></term>
+        <listitem><simpara>Locale's abbreviated month name.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%B</code></term>
+        <listitem><simpara>Locale's full month name.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%c</code></term>
+        <listitem><simpara>Locale's appropriate date and time representation.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%d</code></term>
+        <listitem><simpara>Day of the month as a decimal number [01,31].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%H</code></term>
+        <listitem><simpara>Hour (24-hour clock) as a decimal number [00,23].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%I</code></term>
+        <listitem><simpara>Hour (12-hour clock) as a decimal number [01,12].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%j</code></term>
+        <listitem><simpara>Day of the year as a decimal number [001,366].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%m</code></term>
+        <listitem><simpara>Month as a decimal number [01,12].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%M</code></term>
+        <listitem><simpara>Minute as a decimal number [00,59].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%p</code></term>
+        <listitem><simpara>Locale's equivalent of either AM or PM.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%S</code></term>
+        <listitem><simpara>Second as a decimal number [00,61]. (1)</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%U</code></term>
+        <listitem><simpara>Week number of the year (Sunday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Sunday are considered to be in week 0.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%w</code></term>
+        <listitem><simpara>Weekday as a decimal number [0(Sunday),6].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%W</code></term>
+        <listitem><simpara>Week number of the year (Monday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Sunday are considered to be in week 0.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%x</code></term>
+        <listitem><simpara>Locale's appropriate date representation.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%X</code></term>
+        <listitem><simpara>Locale's appropriate time representation.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%y</code></term>
+        <listitem><simpara>Year without century as a decimal number [00,99].</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%Y</code></term>
+        <listitem><simpara>Year with century as a decimal number.</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%Z</code></term>
+        <listitem><simpara>Time zone name (or by no characters if no time zone exists).</simpara></listitem></varlistentry>
+    <varlistentry><term><code>%%</code></term>
+        <listitem><simpara>A literal <quote>%</quote> character.</simpara></listitem></varlistentry>
+</variablelist>
 
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-a <replaceable>NAME</replaceable>, --archive-name=<replaceable>NAME</replaceable></option>
-</term>
+<term><option>-a <replaceable>NAME</replaceable></option></term>
+<term><option>--archive-name=<replaceable>NAME</replaceable></option></term>
 <listitem><para>Use <replaceable>NAME</replaceable> as the archive name, ignoring the name
 of the mailbox that is archived.
 Like prefixes and suffixes, <replaceable>NAME</replaceable> is expanded by
-<application>strftime()</application> with the archive cut-off date.
+<function>time.strftime()</function> with the archive cut-off date.
 Because it hard-codes the archive name, this option cannot be used when
 archiving multiple mailboxes.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-S <replaceable>NUM</replaceable>, --size=<replaceable>NUM</replaceable></option>
-</term>
+<term><option>-S <replaceable>NUM</replaceable></option></term>
+<term><option>--size=<replaceable>NUM</replaceable></option></term>
 <listitem><para>Only archive messages that are <replaceable>NUM</replaceable> bytes or
 greater.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-n, --dry-run</option>
-</term>
+<term><option>-n</option></term>
+<term><option>--dry-run</option></term>
 <listitem><para>
 Don't write to any files -- just show what would have been done. This is
 useful for testing to see how many messages would have been archived.
@@ -286,18 +272,19 @@ useful for testing to see how many messages would have been archived.
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-u, --preserve-unread</option>
-</term>
+<term><option>-u</option></term>
+<term><option>--preserve-unread</option></term>
 <listitem><para>
 Do not archive any messages that have not yet been read. <command>archivemail</command>
-determines if a message in a <application>mbox</application>-format or
-<application>MH</application>-format mailbox has been read by looking at the
-<application>Status</application> header (if it exists). If the status
-header is equal to 'RO' or 'OR' then <application>archivemail</application> assumes the
-message has been read. <command>archivemail</command> determines if a
-<application>maildir</application> message has
-been read by looking at the filename. If the filename contains an 'S' after
+determines if a message in a <acronym>mbox</acronym>-format or
+<acronym>MH</acronym>-format mailbox has been read by looking at the
+<literal>Status</literal> header (if it exists). If the status
+header is equal to <quote><literal>RO</literal></quote> or
+<quote><literal>OR</literal></quote> then <command>archivemail</command>
+assumes the message has been read.
+<command>archivemail</command> determines if a <acronym>maildir</acronym>
+message has been read by looking at the filename.
+If the filename contains an <quote><literal>S</literal></quote> after
 <filename>:2,</filename> then it assumes the message has been read.
 </para></listitem>
 </varlistentry>
@@ -307,11 +294,13 @@ been read by looking at the filename. If the filename contains an 'S' after
     <option>--dont-mangle</option>
 </term>
 <listitem><para>
-Do not mangle lines in message bodies beginning with "From ".  When archiving
-a message from a mailbox not in <application>mbox</application> format, by default
-<command>archivemail</command> mangles such lines by prepending a '>' to them, since mail
-user agents might otherwise interpret these lines as message separators.
-Messages from <application>mbox</application> folders are never mangled.  See &mbox; for more
+Do not mangle lines in message bodies beginning with
+<quote><literal>From&nbsp;</literal></quote>.
+When archiving a message from a mailbox not in <acronym>mbox</acronym>
+format, by default <command>archivemail</command> mangles such lines by
+prepending a <quote><literal>&gt;</literal></quote> to them, since mail user
+agents might otherwise interpret these lines as message separators.
+Messages from <acronym>mbox</acronym> folders are never mangled.  See &mbox; for more
 information.
 </para></listitem>
 </varlistentry>
@@ -374,14 +363,13 @@ Do not compress any archives.
     <option>--warn-duplicate</option>
 </term>
 <listitem><para>
-Warn about duplicate <application>Message-ID</application>s that appear in the input
+Warn about duplicate <literal>Message-ID</literal>s that appear in the input
 mailbox.</para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-v, --verbose</option>
-</term>
+<term><option>-v</option></term>
+<term><option>--verbose</option></term>
 <listitem><para>
 Reports lots of extra debugging information about what is going on.
 </para></listitem>
@@ -402,9 +390,8 @@ literally to <literal>imaplib.Debug</literal>.)
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-q, --quiet</option>
-</term>
+<term><option>-q</option></term>
+<term><option>--quiet</option></term>
 <listitem><para>
 Turns on quiet mode. Do not print any statistics about how many messages were
 archived. This should be used if you are running <command>archivemail</command> from
@@ -413,18 +400,16 @@ cron.
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-V, --version</option>
-</term>
+<term><option>-V</option></term>
+<term><option>--version</option></term>
 <listitem><para>
 Display the version of <command>archivemail</command> and exit.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term>
-    <option>-h, --help</option>
-</term>
+<term><option>-h</option></term>
+<term><option>--help</option></term>
 <listitem><para>
 Display brief summary information about how to run <command>archivemail</command>.
 </para></listitem>
@@ -437,9 +422,9 @@ Display brief summary information about how to run <command>archivemail</command
 <title>Notes</title>
 <para>
 <command>archivemail</command> requires &python; version 2.3 or later.
-When reading an <application>mbox</application>-format mailbox, <command>archivemail</command> will
-create a lockfile with the extension <filename>.lock</filename> so that
-procmail will not deliver to the mailbox while it is being processed. It will
+When reading an <acronym>mbox</acronym>-format mailbox, <command>archivemail</command> will
+create a lockfile with the extension <filename class="extension">.lock</filename> so that
+&procmail; will not deliver to the mailbox while it is being processed. It will
 also create an advisory lock on the mailbox using &lockf;.
 The archive is locked in the same way when it is updated.
 <command>archivemail</command> will also complain and abort if a 3rd-party modifies the
@@ -449,7 +434,7 @@ mailbox while it is being read.
 <para>
 <command>archivemail</command> will always attempt to preserve the
 last-access and last-modify times of the input mailbox.  Archive
-mailboxes are always created with a mode of <application>0600</application>.
+mailboxes are always created with a mode of <literal>0600</literal>.
 If <command>archivemail</command> finds a pre-existing archive mailbox it
 will append rather than overwrite that archive.
 <command>archivemail</command> will refuse to operate on mailboxes that are symbolic
@@ -459,19 +444,19 @@ links.
 <para>
 <command>archivemail</command> attempts to find the delivery date of a message by
 looking for valid dates in the following headers, in order of precedence:
-<application>Delivery-date</application>,
-<application>Received</application>,
-<application>Resent-Date</application> and
-<application>Date</application>.
+<literal>Delivery-date</literal>,
+<literal>Received</literal>,
+<literal>Resent-Date</literal> and
+<literal>Date</literal>.
 If it cannot find any valid date in these headers, it
-will use the last-modified file timestamp on <application>MH</application> and
-<application>Maildir</application> format mailboxes, or the date on the
-<application>From</application> line on <application>mbox</application>-format mailboxes.
+will use the last-modified file timestamp on <acronym>MH</acronym> and
+<acronym>Maildir</acronym> format mailboxes, or the date on the
+<literal>From_</literal> line on <acronym>mbox</acronym>-format mailboxes.
 </para>
 
 <para>
     When archiving mailboxes with leading dots in the name,
-    <application>archivemail</application> will strip the dots off the archive name, so
+    <command>archivemail</command> will strip the dots off the archive name, so
     that the resulting archive file is not hidden.
     This is not done if the <option>--prefix</option> or
     <option>--archive-name</option> option is used.
@@ -481,39 +466,37 @@ will use the last-modified file timestamp on <application>MH</application> and
 
 <para>
     A conversion from other formats to &mbox; will silently overwrite existing
-    <application>Status</application> and <application>X-Status</application> message headers.
+    <literal>Status</literal> and <literal>X-Status</literal> message headers.
 </para>
 
 <refsect2>
 <title><acronym>IMAP</acronym></title>
 <para>
-When <command>archivemail</command> processes an <application>IMAP</application> folder, all messages
+When <command>archivemail</command> processes an <acronym>IMAP</acronym> folder, all messages
 in that folder will have their <literal>\Recent</literal> flag unset, and they will
-probably not show up as 'new' in your user agent later on.
-There is no way around this, it's just how <application>IMAP</application> works.
+probably not show up as <quote>new</quote> in your user agent later on.
+There is no way around this, it's just how <acronym>IMAP</acronym> works.
 This does not apply, however, if you run <command>archivemail</command> with the options
 <option>--dry-run</option> or <option>--copy</option>.
 </para>
 <para>
 <command>archivemail</command> relies on server-side searches to determine the messages
 that should be archived.
-When matching message dates, <application>IMAP</application> servers refer to server internal
+When matching message dates, <acronym>IMAP</acronym> servers refer to server internal
 message dates, and these may differ from both delivery time of a message and
-its <application>Date</application> header.
+its <literal>Date</literal> header.
 Also, there exist broken servers which do not implement server side searches.
 </para>
-<refsect3><title><acronym>IMAP</acronym> <acronym>URLS</acronym></title>
+<refsect3><title><acronym>IMAP</acronym> <acronym>URL</acronym>s</title>
 <para>
-<command>archivemail</command>'s <application>IMAP</application> <acronym>URL</acronym> parser was written
-with the <acronym>RFC</acronym> 2882 (<citetitle>Internet Message
-Format</citetitle>) rules for the <token>local-part</token> of email addresses
-in mind.
+<command>archivemail</command>'s <acronym>IMAP</acronym> <acronym>URL</acronym> parser was written
+with the <acronym>RFC</acronym> 2882 (<citetitle>Internet Message Format</citetitle>) rules for
+the <token>local-part</token> of email addresses in mind.
 So, rather than enforcing an <acronym>URL</acronym>-style encoding of non-<acronym>ascii</acronym>
 and reserved characters, it allows to double-quote the username and password.
-If your username or password contains the delimiter characters '@' or ':', just
-quote it like this:
-<replaceable>imap://"username@bogus.com":"password"@imap.bogus.com/mailbox
-</replaceable>.
+If your username or password contains the delimiter characters
+<quote>@</quote> or <quote>:</quote>, just quote it like this:
+<replaceable>imap://"username@bogus.com":"password"@imap.bogus.com/mailbox</replaceable>.
 You can use a backslash to escape double-quotes that are part of a quoted
 username or password.
 Note that quoting only a substring will not work, and be aware that your shell
@@ -563,14 +546,14 @@ To archive all messages in the mailbox <filename>cm-melb</filename> that
 are older than the first of January 2002 to a compressed mailbox called
 <filename>cm-melb_archive.gz</filename> in the current directory:
 <screen>
-<prompt>bash$ </prompt><userinput>archivemail --date'1 Jan 2002' cm-melb</userinput>
+<prompt>bash$ </prompt><userinput>archivemail --date='1 Jan 2002' cm-melb</userinput>
 </screen>
 </para>
 </informalexample>
 
 <informalexample>
 <para>
-Exactly the same as the above example, using an ISO date format instead:
+Exactly the same as the above example, using an <acronym>ISO</acronym> date format instead:
 <screen>
 <prompt>bash$ </prompt><userinput>archivemail --date=2002-01-01 cm-melb</userinput>
 </screen>
@@ -622,8 +605,8 @@ that are older than 90 days to compressed mailboxes in the
 
 <informalexample>
 <para>
-    To archive all mails older than 180 days from the given <application>IMAP</application>
-    INBOX to a compressed mailbox INBOX_archive.gz in the
+    To archive all mails older than 180 days from the given <acronym>IMAP</acronym>
+    <literal>INBOX</literal> to a compressed mailbox <filename>INBOX_archive.gz</filename> in the
     <filename>$HOME/Mail/Archive</filename> directory, quoting the password and
     reading it from the environment variable <envar>PASSWORD</envar>:
 </para>
@@ -638,10 +621,10 @@ that are older than 90 days to compressed mailboxes in the
 
 <informalexample>
 <para>
-    To archive all mails older than 180 days in subfolders of "foo" on the
-    given <application>IMAP</application> server to corresponding archives in the current
-    working directory, reading the password from the file
-    <filename>~/imap-pass.txt</filename>:
+    To archive all mails older than 180 days in subfolders of <filename
+    class="directory">foo</filename> on the given <acronym>IMAP</acronym>
+    server to corresponding archives in the current working directory, reading
+    the password from the file <filename>~/imap-pass.txt</filename>:
 </para>
 <screen>
 <prompt>bash$ </prompt><userinput>archivemail --pwfile=~/imap-pass.txt imaps://user@example.org/foo/*</userinput>
@@ -668,28 +651,28 @@ Don't forget to try the <option>--dry-run</option> and perhaps the
 <refsect1>
 <title>Bugs</title>
 <simpara>
-If an <application>IMAP</application> mailbox path contains slashes, the archive filename
+If an <acronym>IMAP</acronym> mailbox path contains slashes, the archive filename
 will be derived from the basename of the mailbox.
 If the server's folder separator differs from the Unix slash and is used in the
-<application>IMAP</application> <acronym>URL</acronym>, however, the whole path will be considered
+<acronym>IMAP</acronym> <acronym>URL</acronym>, however, the whole path will be considered
 the basename of the mailbox.
-E.g. the two <acronym>URL</acronym>s
+<abbrev>E.g.</abbrev> the two <acronym>URL</acronym>s
 <userinput>imap://user@example.com/folder/subfolder</userinput> and
 <userinput>imap://user@example.com/folder.subfolder</userinput> will be
 archived in <filename>subfolder_archive.gz</filename> and
 <filename>folder.subfolder_archive.gz</filename>, respectively, although they
-might refer to the same <application>IMAP</application> mailbox.
+might refer to the same <acronym>IMAP</acronym> mailbox.
 </simpara>
 <simpara>
-<command>archivemail</command> does not support reading <application>MMDF</application> or
-<application>Babyl</application>-format mailboxes. In fact, it will probably think it is
-reading an <application>mbox</application>-format mailbox and cause all sorts of problems.
+<command>archivemail</command> does not support reading <acronym>MMDF</acronym> or
+<acronym>Babyl</acronym>-format mailboxes. In fact, it will probably think it is
+reading an <acronym>mbox</acronym>-format mailbox and cause all sorts of problems.
 </simpara>
 
 <simpara>
 <command>archivemail</command> is still too slow, but if you are running from &crontab;
-you won't care. Archiving <application>maildir</application>-format mailboxes should be
-a lot quicker than <application>mbox</application>-format mailboxes since it is less
+you won't care. Archiving <acronym>maildir</acronym>-format mailboxes should be
+a lot quicker than <acronym>mbox</acronym>-format mailboxes since it is less
 painful for the original mailbox to be reconstructed after selective message
 removal.
 </simpara>
@@ -697,13 +680,16 @@ removal.
 
 <refsect1>
 <title>See Also</title>
-<simplelist>
-<member> &python;, &gzip;, &mutt;, &procmail;</member>
+<simplelist type="inline">
+    <member>&mbox;</member>
+    <member>&crontab;</member>
+    <member>&python;</member>
+    <member>&procmail;</member>
 </simplelist>
 </refsect1>
 
 <refsect1>
-<title>Url</title>
+<title><acronym>Url</acronym></title>
 <simpara>The <command>archivemail</command> home page is currently hosted at
 <ulink type="http" url="http://archivemail.sourceforge.net">sourceforge</ulink>
 </simpara>

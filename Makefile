@@ -4,9 +4,6 @@ VERSION_TAG=v$(subst .,_,$(VERSION))
 TARFILE=archivemail-$(VERSION).tar.gz
 HTDOCS=htdocs-$(VERSION)
 
-# Path to XSLT stylesheet.  Adapt to your needs.
-XSLT_MAN=/usr/share/xml/docbook/stylesheet/nwalsh/manpages/docbook.xsl
-
 default:
 	@echo "no default target"
 
@@ -45,8 +42,8 @@ $(HTDOCS).tgz: index.html archivemail.html RELNOTES style.css manpage.css
 	cd $(HTDOCS) && mv archivemail.html manpage.html
 	tar czf $(HTDOCS).tgz $(HTDOCS)
 
-archivemail.1: archivemail.xml
-	xsltproc $(XSLT_MAN) archivemail.xml
+archivemail.1: archivemail.xml db2man.xsl
+	xsltproc db2man.xsl archivemail.xml
 
 archivemail.html: archivemail.xml db2html.xsl
 	xsltproc --output archivemail.html \
