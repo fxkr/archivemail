@@ -85,14 +85,16 @@ class FixedGzipFile(gzip.GzipFile):
     """GzipFile with seek method accepting whence parameter."""
     def seek(self, offset, whence=0):
         try:
-            gzip.GzipFile.seek(self, offset, whence)
+            # Try calling gzip.GzipFile.seek with the whence parameter.
+            # For Python >= 2.7, it returns the new offset; pass that on.
+            return gzip.GzipFile.seek(self, offset, whence)
         except TypeError:
             if whence:
                 if whence == 1:
                     offset = self.offset + offset
                 else:
                     raise ValueError('Seek from end not supported')
-            gzip.GzipFile.seek(self, offset)
+            return gzip.GzipFile.seek(self, offset)
 
 # precision of os.utime() when restoring mbox timestamps
 utimes_precision = 5
