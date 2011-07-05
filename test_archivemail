@@ -639,6 +639,27 @@ class TestIMAPQuoting(unittest.TestCase):
             self.assertEqual(unquoted, archivemail.imap_unquote(quoted))
 
 
+########## Modified UTF-7 support functions ##########
+
+class TestModUTF7(unittest.TestCase):
+    goodpairs = (
+            (u"A\N{NOT IDENTICAL TO}A.", "A&ImI-A."),
+            (u"Hi Mom -\N{WHITE SMILING FACE}-!", "Hi Mom -&Jjo--!"),
+            (u"~peter/mail/\u53f0\u5317/\u65e5\u672c\u8a9e",
+                "~peter/mail/&U,BTFw-/&ZeVnLIqe-")
+    )
+
+    def testEncode(self):
+        """Ensure that encoding text in modified UTF-7 works properly."""
+        for text, code in self.goodpairs:
+            self.assertEqual(archivemail.mod_utf7_encode(text), code)
+
+    def testDecode(self):
+        """Ensure that decoding modified UTF-7 to text works properly."""
+        for text, code in self.goodpairs:
+            self.assertEqual(archivemail.mod_utf7_decode(code), text)
+
+
 ########## acceptance testing ###########
 
 class TestArchive(TestCaseInTempdir):

@@ -68,10 +68,13 @@ import time
 import urlparse
 import errno
 import socket
+import locale
 
 # From_ mangling regex. 
 from_re = re.compile(r'^From ', re.MULTILINE)
 imapsize_re = re.compile(r'^(?P<msn>[0-9]+) \(RFC822\.SIZE (?P<size>[0-9]+)\)')
+
+userencoding = locale.getpreferredencoding()
 
 ############## class definitions ###############
 
@@ -1410,6 +1413,107 @@ def _archive_imap(mailbox_name):
 
 ###############  IMAP  functions  ###############
 
+
+# First, some IMAP modified UTF-7 support functions.
+
+# The modified BASE64 alphabet. 64 characters, each one encodes 6 Bit.
+mb64alpha = string.ascii_uppercase + string.ascii_lowercase + string.digits + '+,'
+
+def isprint_ascii(char):
+    """Test for an ASCII printable character."""
+    return 0x20 <= ord(char) and ord(char) <= 0x7e
+
+def mod_utf7_encode(ustr):
+    """Encode unicode string object in modified UTF-7."""
+
+    def mb64_encode(tomb64):
+        """Encode unicode string object as a modified UTF-7 shifted sequence
+        in modified BASE64."""
+        u16be = tomb64.encode('utf_16_be')
+        mb64 = ""
+        # Process 24-bit blocks, encoding them in 6-bit steps.
+        for block in [u16be[i:i+3] for i in range(0, len(u16be), 3)]:
+            idx = 0
+            shift = 2
+            for octet in block:
+                mb64 += mb64alpha[idx | (ord(octet) >> shift)]
+                idx = (ord(octet) << (6-shift)) & 0x3f
+                shift += 2
+            mb64 += mb64alpha[idx]
+        return mb64
+
+    mu7 = ""
+    tomb64 = u""
+    for c in ustr:
+        if not isprint_ascii(c):
+            tomb64 += c
+            continue
+        if tomb64:
+            mu7 += '&' + mb64_encode(tomb64) + '-'
+            tomb64 = u""
+        if c == '&':
+            mu7 += '&-'
+        else:
+            mu7 += str(c)
+    if tomb64:
+        mu7 += '&' + mb64_encode(tomb64) + '-'
+    return mu7
+
+def mod_utf7_decode(mu7):
+    """Decode a modified UTF-7 encoded string to an unicode string object."""
+
+    def mb64_decode(mb64):
+        """Decode a modified UTF-7 shifted sequence from modified BASE64 to an
+        unicode string object."""
+        if not mb64:
+            # A null shift '&-' decodes to '&'.
+            return u"&"
+        u16be = ""
+        # Process blocks of 4 BASE64 characters, decoding each char to 6 bits.
+        for block in [mb64[i:i+4] for i in range(0, len(mb64), 4)]:
+            carrybits = mb64alpha.index(block[0]) << 2
+            shift = 4
+            for char in block[1:]:
+                bits = mb64alpha.index(char)
+                u16be += chr(carrybits | (bits >> shift))
+                carrybits = (bits << (8-shift)) & 0xff
+                shift -= 2
+        if carrybits:
+            raise ValueError("Ill-formed modified UTF-7 string: "
+                             "trailing bits in shifted sequence")
+        return u16be.decode('utf_16_be')
+
+    ustr = u""
+    mb64 = ""
+    inmb64 = False
+    for octet in mu7:
+        if not isprint_ascii(octet):
+            raise ValueError("Ill-formed modified UTF-7 string: "
+                             "contains non-printable ASCII" % ord(octet))
+        if not inmb64:
+            if octet == '&':
+                inmb64 = True
+            else:
+                ustr += octet
+            continue
+
+        if octet in mb64alpha:
+            mb64 += octet
+            continue
+
+        if octet == '-':
+            inmb64 = False
+            ustr += mb64_decode(mb64)
+            mb64 = ""
+        else:
+            break   # This triggers the exception below.
+
+    if inmb64:
+        raise ValueError("Ill-formed modified UTF-7 string: "
+                         "unterminated BASE64 sequence")
+    return ustr
+
+
 def imap_quote(astring):
     """Quote an IMAP `astring' string (see RFC 3501, section "Formal Syntax")."""
     if astring.startswith('"') and astring.endswith('"'):
@@ -1520,7 +1624,8 @@ def imap_smart_select(srv, mailbox):
         vprint("examining imap folder '%s' read-only" % mailbox)
     else:
         vprint("selecting imap folder '%s'" % mailbox)
-    result, response = srv.select(imap_quote(mailbox), roflag)
+    imap_mailbox = mod_utf7_encode(mailbox.decode(userencoding))
+    result, response = srv.select(imap_quote(imap_mailbox), roflag)
     if result != 'OK':
         unexpected_error("selecting '%s' failed; server says: '%s'." \
                 % (mailbox, response[0]))
@@ -1548,6 +1653,7 @@ def imap_find_mailboxes(srv, mailbox):
             vprint("Looking for mailboxes matching '%s'..." % curbox)
         else:
             vprint("Looking for mailbox '%s'..." % curbox)
+        curbox = mod_utf7_encode(curbox.decode(userencoding))
         result, response = srv.list(pattern=imap_quote(curbox))
         if result != 'OK': 
             unexpected_error("LIST command failed; " \
@@ -1577,6 +1683,13 @@ def imap_find_mailboxes(srv, mailbox):
         else:
             attrs, name = m.groups()
             name = imap_unquote(name)
+        try:
+            name = mod_utf7_decode(name)
+        except ValueError:
+            vprint("Mailbox name '%s' returned by server doesn't look like "
+                   "modified UTF-7" % name)
+            name = name.decode('utf-8')
+        name = name.encode(userencoding)
         if '\\noselect' in attrs.lower().split():
             vprint("skipping not selectable mailbox '%s'" % name)
             continue
