@@ -6,6 +6,7 @@ version 0.?.?   - UNRELEASED
   * Fix test suite failures with Python 2.7 by letting the test suite method
     FixedGzipFile.seek() return the new absolute file position.
     Closes: #3314293.
+  * IMAP: support international mailbox names containing non-ASCII characters.
 
 version 0.8.2   - 16 October 2010
 

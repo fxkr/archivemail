@@ -503,6 +503,15 @@ Note that quoting only a substring will not work, and be aware that your shell
 will probably remove unprotected quotes or backslashes.
 </para>
 <para>
+Similarly, there is no need to percent-encode non-<acronym>ascii</acronym>
+characters in <acronym>IMAP</acronym> mailbox names.
+As long as your locale is configured properly, <command>archivemail</command>
+should handle these without problems.
+Note, however, that due to limitations of the <acronym>IMAP</acronym>
+protocol, non-<acronym>ascii</acronym> characters do not mix well with
+wildcards in mailbox names.
+</para>
+<para>
 <command>archivemail</command> tries to be smart when handling mailbox paths.
 In particular, it will automatically add an <acronym>IMAP</acronym> <literal>NAMESPACE</literal>
 prefix to the mailbox path if necessary; and if you are archiving a subfolder,
