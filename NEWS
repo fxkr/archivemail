@@ -1,3 +1,8 @@
+Notable changes in archivemail 0.9.0:
+  
+  * IMAP: support for international mailbox names containing non-ASCII
+    characters.
+
 Notable changes in archivemail 0.8.0:
 
   * Removed the feature to setuid to the mailbox owners when run as root.
