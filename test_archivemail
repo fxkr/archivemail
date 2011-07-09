@@ -550,40 +550,34 @@ class TestParseIMAPUrl(unittest.TestCase):
         archivemail.options.pwfile = None
         
     urls_withoutpass = [
-            ('imaps://user@example.org@imap.example.org/upperbox/lowerbox',
-                ('user', None, 'example.org@imap.example.org',
+            ('imap://user@example.org@imap.example.org/upperbox/lowerbox',
+                ('user', None, 'example.org@imap.example.org', 143,
                 'upperbox/lowerbox')), 
-            ('imaps://"user@example.org"@imap.example.org/upperbox/lowerbox',
-                ('user@example.org', None, 'imap.example.org',
+            ('imap://"user@example.org"@imap.example.org/upperbox/lowerbox',
+                ('user@example.org', None, 'imap.example.org', 143,
                 'upperbox/lowerbox')), 
-            ('imaps://user@example.org"@imap.example.org/upperbox/lowerbox',
-                ('user', None, 'example.org"@imap.example.org',
+            ('imap://user@example.org"@imap.example.org/upperbox/lowerbox',
+                ('user', None, 'example.org"@imap.example.org', 143,
                 'upperbox/lowerbox')), 
             ('imaps://"user@example.org@imap.example.org/upperbox/lowerbox',
-                ('"user', None, 'example.org@imap.example.org',
+                ('"user', None, 'example.org@imap.example.org', 993,
                 'upperbox/lowerbox')), 
             ('imaps://"us\\"er@example.org"@imap.example.org/upperbox/lowerbox',
-                ('us"er@example.org', None, 'imap.example.org',
+                ('us"er@example.org', None, 'imap.example.org', 993,
                 'upperbox/lowerbox')), 
             ('imaps://user\\@example.org@imap.example.org/upperbox/lowerbox',
-                ('user\\', None, 'example.org@imap.example.org',
+                ('user\\', None, 'example.org@imap.example.org', 993,
                 'upperbox/lowerbox'))
     ]
     urls_withpass = [
-            ('imaps://user@example.org:passwd@imap.example.org/upperbox/lowerbox',
-                ('user@example.org', 'passwd', 'imap.example.org',
-                'upperbox/lowerbox'), 
-                ('user', None, 'example.org:passwd@imap.example.org',
+            ('imap://user@example.org:passwd@imap.example.org/upperbox/lowerbox',
+                ('user@example.org', 'passwd', 'imap.example.org', 143,
                 'upperbox/lowerbox')), 
             ('imaps://"user@example.org:passwd@imap.example.org/upperbox/lowerbox',
-                ('"user@example.org', "passwd", 'imap.example.org',
-                'upperbox/lowerbox'), 
-                ('"user', None, 'example.org:passwd@imap.example.org',
+                ('"user@example.org', "passwd", 'imap.example.org', 993,
                 'upperbox/lowerbox')), 
             ('imaps://u\\ser\\@example.org:"p@sswd"@imap.example.org/upperbox/lowerbox', 
-                ('u\\ser\\@example.org', 'p@sswd', 'imap.example.org',
-                'upperbox/lowerbox'),
-                ('u\\ser\\', None, 'example.org:"p@sswd"@imap.example.org',
+                ('u\\ser\\@example.org', 'p@sswd', 'imap.example.org', 993,
                 'upperbox/lowerbox'))
     ]
     # These are invalid when the password's not stripped. 
@@ -597,7 +591,7 @@ class TestParseIMAPUrl(unittest.TestCase):
         the URL, if present."""
         archivemail.options.pwfile = None
         for mbstr in self.urls_withpass + self.urls_withoutpass:
-            url = mbstr[0][mbstr[0].find('://')+3:]
+            url = mbstr[0]
             result = archivemail.parse_imap_url(url)
             self.assertEqual(result, mbstr[1])
 
@@ -605,12 +599,8 @@ class TestParseIMAPUrl(unittest.TestCase):
         """Parse test urls with --pwfile set.  In this case the ':' character
         loses its meaning as a delimiter."""
         archivemail.options.pwfile = "whocares.txt"
-        for mbstr in self.urls_withpass: 
-            url = mbstr[0][mbstr[0].find('://')+3:]
-            result = archivemail.parse_imap_url(url)
-            self.assertEqual(result, mbstr[2])
         for mbstr in self.urls_onlywithpass: 
-            url = mbstr[0][mbstr[0].find('://')+3:]
+            url = mbstr[0]
             self.assertRaises(archivemail.UnexpectedError,
                     archivemail.parse_imap_url, url)
 
