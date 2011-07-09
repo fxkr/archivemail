@@ -6,5 +6,6 @@ include TODO
 include NEWS
 include archivemail.1
 include archivemail.xml
+include db2man.xsl
 graft examples
 include test_archivemail
