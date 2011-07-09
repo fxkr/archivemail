@@ -614,6 +614,19 @@ class TestParseIMAPUrl(unittest.TestCase):
             self.assertRaises(archivemail.UnexpectedError,
                     archivemail.parse_imap_url, url)
 
+    def testUrlsDefaultPorts(self):
+        """If an IMAP URL does not specify a server port, the standard ports
+        are used."""
+        archivemail.options.pwfile = "doesnotexist.txt"
+        self.assertEqual(143, archivemail.parse_imap_url("imap://user@host/box")[3])
+        self.assertEqual(993, archivemail.parse_imap_url("imaps://user@host/box")[3])
+
+    def testUrlsWithPassAndPortnumber(self):
+        """IMAP URLs with an embedded password and a server port number are
+        correctly parsed."""
+        self.assertEqual(1234, archivemail.parse_imap_url("imap://user:pass@host:1234/box")[3])
+        self.assertEqual(1234, archivemail.parse_imap_url("imap://user:pass@host:1234/box")[3])
+
     def tearDown(self): 
         archivemail.options.quiet = False
         archivemail.options.verbose = False
