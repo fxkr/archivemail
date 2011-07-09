@@ -570,7 +570,7 @@ Also, there exist broken servers which do not implement server side searches.
 (<citetitle>Internet Message Format</citetitle>) rules for the
 <token>local-part</token> of email addresses in mind.
 So, rather than enforcing an <acronym>URL</acronym>-style encoding of
-non-<acronym>ascii</acronym> and reserved characters, it allows to
+non-<acronym>ascii</acronym> and reserved characters, it allows you to
 double-quote the username and password.
 If your username or password contains the delimiter characters
 <quote>@</quote> or <quote>:</quote>, just quote it like this:
