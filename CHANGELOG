@@ -7,6 +7,7 @@ version 0.?.?   - UNRELEASED
     FixedGzipFile.seek() return the new absolute file position.
     Closes: #3314293.
   * IMAP: support international mailbox names containing non-ASCII characters.
+  * IMAP: support servers listening on non-standard ports.  Closes: #3168416.
 
 version 0.8.2   - 16 October 2010
 

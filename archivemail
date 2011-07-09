@@ -1290,9 +1290,9 @@ def _archive_imap(mailbox_name):
     vprint("Setting imaplib.Debug = %d" % options.debug_imap)
     imaplib.Debug = options.debug_imap
     archive = None
-    imap_str = mailbox_name[mailbox_name.find('://') + 3:]
-    imap_username, imap_password, imap_server, imap_folder_pattern = \
-        parse_imap_url(imap_str)
+    imap_username, imap_password, \
+            imap_server, imap_server_port, \
+            imap_folder_pattern = parse_imap_url(mailbox_name)
     if not imap_password: 
         if options.pwfile:
             imap_password = open(options.pwfile).read().rstrip()
@@ -1303,11 +1303,13 @@ def _archive_imap(mailbox_name):
 
     is_ssl = mailbox_name[:5].lower() == 'imaps'
     if is_ssl: 
-        vprint("establishing secure connection to server %s" % imap_server)
-        imap_srv = imaplib.IMAP4_SSL(imap_server)
+        vprint("establishing secure connection to server %s, port %s" %
+                (imap_server, imap_server_port))
+        imap_srv = imaplib.IMAP4_SSL(imap_server, imap_server_port)
     else:
-        vprint("establishing connection to server %s" % imap_server)
-        imap_srv = imaplib.IMAP4(imap_server)
+        vprint("establishing connection to server %s, port %s" %
+            (imap_server, imap_server_port))
+        imap_srv = imaplib.IMAP4(imap_server, imap_server_port)
     if "AUTH=CRAM-MD5" in imap_srv.capabilities: 
         vprint("authenticating (cram-md5) to server as %s" % imap_username)
         result, response = imap_srv.login_cram_md5(imap_username, imap_password)
@@ -1551,6 +1553,7 @@ def parse_imap_url(url):
             a, b = string.split(delim, 1)
         return a, b
 
+    scheme, url = url.split('://')
     password = None
     try: 
         if options.pwfile: 
@@ -1566,7 +1569,16 @@ def parse_imap_url(url):
         server, folder = url.split('/', 1)
     except ValueError:
         unexpected_error("Invalid IMAP connection string")
-    return username, password, server, folder
+    try:
+        server, port = server.split(':')
+    except ValueError:
+        if scheme.lower() == 'imap':
+            port = 143
+        else:
+            port = 993
+    else:
+        port = int(port)
+    return username, password, server, port, folder
 
 
 def imap_getdelim(imap_server): 
