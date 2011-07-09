@@ -3,9 +3,7 @@ version 0.?.?   - UNRELEASED
   * Fixed manpage installation path to be FHS compliant
   * Speed up IMAP archiving with the --quiet option
   * Ported the manpage from SGML to XML
-  * Fix test suite failures with Python 2.7 by letting the test suite method
-    FixedGzipFile.seek() return the new absolute file position.
-    Closes: #3314293.
+  * Fix test suite failures with Python 2.7.  Closes: #3314293.
   * IMAP: support international mailbox names containing non-ASCII characters.
   * IMAP: handle broken servers sending no untagged SEARCH response.
     Closes: #879716, #3213272.
