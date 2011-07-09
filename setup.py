@@ -20,7 +20,7 @@ check_python_version()
 from distutils.core import setup
 
 setup(name="archivemail",
-      version="0.8.2",
+      version="0.9.0",
       description="archive and compress old email",
       license="GNU GPL",
       url="http://archivemail.sourceforge.net/",
