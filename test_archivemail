@@ -30,12 +30,12 @@ TODO: add tests for:
 import sys
 
 def check_python_version(): 
-    """Abort if we are running on python < v2.3"""
-    too_old_error = "This test script requires python version 2.3 or later. " + \
+    """Abort if we are running on python < v2.4"""
+    too_old_error = "This test script requires python version 2.4 or later. " + \
       "Your version of python is:\n%s" % sys.version
     try: 
         version = sys.version_info  # we might not even have this function! :)
-        if (version[0] < 2) or (version[0] == 2 and version[1] < 3):
+        if (version[0] < 2) or (version[0] == 2 and version[1] < 4):
             print too_old_error
             sys.exit(1)
     except AttributeError:
