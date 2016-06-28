@@ -514,8 +514,8 @@ class TestIsTooOld(unittest.TestCase):
                 max_days=14)
 
     def testJustOld(self):
-        """with max_days=1, should be true for these dates >= 1 day"""
-        for minutes in range(0, 61):
+        """with max_days=1, should be true for these dates > 1 day"""
+        for minutes in range(0, 60):
             time_msg = time.time() - (25 * 60 * 60) + (minutes * 60)
             assert archivemail.is_older_than_days(time_message=time_msg,
                 max_days=1)
