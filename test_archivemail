@@ -508,6 +508,12 @@ class TestOptionParser(unittest.TestCase):
         archivemail.options.parse_args(["-S%s" % size ], "")
         self.assertEqual(archivemail.options.min_size, int(size))
 
+    def testOptionMaxSize(self):
+        """--size-max option is parsed correctly"""
+        size = "666"
+        archivemail.options.parse_args(["--size-max=%s" % size ], "")
+        self.assertEqual(archivemail.options.max_size, int(size))
+
     def tearDown(self):
         archivemail.options = self.oldopts
 
@@ -1356,19 +1362,30 @@ class TestArchiveSize(unittest.TestCase):
         fp = cStringIO.StringIO(msg_text)
         self.msg = rfc822.Message(fp)
 
-    def testSmaller(self):
-        """giving a size argument smaller than the message"""
+    def testNotTooSmall(self):
+        """giving a min size argument smaller than the message"""
         archivemail.options.min_size = self.msg_size - 1
         assert archivemail.should_archive(self.msg)
 
-    def testBigger(self):
-        """giving a size argument bigger than the message"""
+    def testTooSmall(self):
+        """giving a min size argument bigger than the message"""
         archivemail.options.min_size = self.msg_size + 1
         assert not archivemail.should_archive(self.msg)
+
+    def testTooLarge(self):
+        """giving a max size argument smaller than the message"""
+        archivemail.options.max_size = self.msg_size - 1
+        assert not archivemail.should_archive(self.msg)
+
+    def testNotTooLarge(self):
+        """giving a max size argument bigger than the message"""
+        archivemail.options.max_size = self.msg_size
+        assert archivemail.should_archive(self.msg)
 
     def tearDown(self):
         archivemail.options.quiet = False
         archivemail.options.min_size = None
+        archivemail.options.max_size = None
 
 
 class TestXIMAPMessage(TestArchive):
