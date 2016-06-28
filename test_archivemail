@@ -410,6 +410,21 @@ class TestOptionParser(unittest.TestCase):
                 archivemail.options.parse_args([opt+d], "")
                 self.assertEqual(unixdate, archivemail.options.date_old_max)
 
+    def testOptionDateSince(self):
+        """--date-since is parsed correctly"""
+        date_formats = (
+            "%Y-%m-%d",  # ISO format
+            "%d %b %Y" , # Internet format
+            "%d %B %Y" , # Internet format with full month names
+        )
+        date = time.strptime("2000-07-29", "%Y-%m-%d")
+        unixdate = time.mktime(date)
+        for df in date_formats:
+            d = time.strftime(df, date)
+            archivemail.options.date_old_max = None
+            archivemail.options.parse_args(["--date-since="+d], "")
+            self.assertEqual(unixdate, archivemail.options.date_old_min)
+
     def testOptionPreserveUnread(self):
         """--preserve-unread option is parsed correctly"""
         archivemail.options.parse_args(["--preserve-unread"], "")
@@ -794,6 +809,104 @@ This is after the ^From line"""
             archivemail.options.date_old_max = time.mktime(date)
             assert archivemail.should_archive(msg)
             date = time.strptime("2000-07-27", "%Y-%m-%d")
+            archivemail.options.date_old_max = time.mktime(date)
+            assert not archivemail.should_archive(msg)
+
+    def testDateSinceSystem(self):
+        """test that the --date-since option works"""
+        test_headers = (
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 1990',
+                'Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
+                'Date' : None,
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 1990',
+                'Date' : None,
+                'Delivery-date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Delivery-date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 1990',
+                'Date' : None,
+                'Resent-Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Resent-Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+        )
+        for headers in test_headers:
+            msg = make_message(default_headers=headers, wantobj=True)
+            date = time.strptime("2000-07-29", "%Y-%m-%d")
+            archivemail.options.date_old_min = time.mktime(date)
+            assert not archivemail.should_archive(msg)
+            date = time.strptime("2000-07-27", "%Y-%m-%d")
+            archivemail.options.date_old_min = time.mktime(date)
+            assert archivemail.should_archive(msg)
+
+    def testDateAndDateSinceSystem(self):
+        """test that the --date-since option works in combination with --date"""
+        test_headers = (
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2000',
+                'Date' : None,
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Delivery-date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+            {
+                'From_' : 'sender@dummy.domain Fri Jul 28 16:11:36 2030',
+                'Date' : None,
+                'Resent-Date' : 'Fri, 28 Jul 2000 16:11:36 +1000',
+            },
+        )
+        for headers in test_headers:
+            msg = make_message(default_headers=headers, wantobj=True)
+
+            # Message older than interval
+            date = time.strptime("2000-07-27", "%Y-%m-%d")
+            archivemail.options.date_old_min = time.mktime(date)
+            date = time.strptime("2000-07-28", "%Y-%m-%d")
+            archivemail.options.date_old_max = time.mktime(date)
+            assert not archivemail.should_archive(msg)
+
+            # Message within interval
+            date = time.strptime("2000-07-28", "%Y-%m-%d")
+            archivemail.options.date_old_min = time.mktime(date)
+            date = time.strptime("2000-07-29", "%Y-%m-%d")
+            archivemail.options.date_old_max = time.mktime(date)
+            assert archivemail.should_archive(msg)
+
+            # Message newer than interval
+            date = time.strptime("2000-07-29", "%Y-%m-%d")
+            archivemail.options.date_old_min = time.mktime(date)
+            date = time.strptime("2000-07-30", "%Y-%m-%d")
+            archivemail.options.date_old_max = time.mktime(date)
+            assert not archivemail.should_archive(msg)
+
+            # Nothing should match impossible interval
+            date = time.strptime("2000-07-30", "%Y-%m-%d")
+            archivemail.options.date_old_min = time.mktime(date)
+            date = time.strptime("2000-07-25", "%Y-%m-%d")
             archivemail.options.date_old_max = time.mktime(date)
             assert not archivemail.should_archive(msg)
 

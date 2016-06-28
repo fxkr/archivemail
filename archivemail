@@ -178,6 +178,7 @@ class Options:
     archive_suffix       = None
     archive_default_suffix = "_archive"
     archive_name         = None
+    date_old_min         = None
     days_old_max         = 180
     date_old_max         = None
     delete_old_mail      = False
@@ -216,13 +217,13 @@ class Options:
         """
         try:
             opts, args = getopt.getopt(args, '?D:S:Vd:hno:F:P:qs:p:a:uv',
-                             ["date=", "days=", "delete", "dry-run", "help",
-                             "include-flagged", "no-compress", "output-dir=",
-                             "filter-append=", "pwfile=", "dont-mangle",
-                             "preserve-unread", "quiet", "size=", "suffix=",
-                             "prefix=", "archive-name=", "verbose",
-                             "debug-imap=", "version", "warn-duplicate",
-                             "copy", "all"])
+                             ["date-since=", "date=", "days=", "delete",
+                             "dry-run", "help", "include-flagged",
+                             "no-compress", "output-dir=", "filter-append=",
+                             "pwfile=", "dont-mangle", "preserve-unread",
+                             "quiet", "size=", "suffix=", "prefix=",
+                             "archive-name=", "verbose", "debug-imap=",
+                             "version", "warn-duplicate", "copy", "all"])
         except getopt.error, msg:
             user_error(msg)
 
@@ -239,6 +240,8 @@ class Options:
                 self.no_compress = True
             if o == '--warn-duplicate':
                 self.warn_duplicates = True
+            if o == '--date-since':
+                self.date_old_min = self.date_argument(a)
             if o in ('-D', '--date'):
                 if archive_by: 
                     user_error("you cannot specify both -d and -D options")
@@ -653,6 +656,7 @@ mailbox compressed with gzip.
 Options are as follows:
   -d, --days=NUM        archive messages older than NUM days (default: %d)
   -D, --date=DATE       archive messages older than DATE
+      --date-since=DATE archive only messages at least as new as DATE
   -o, --output-dir=DIR  directory to store archives (default: same as original)
   -P, --pwfile=FILE     file to read imap password from (default: None)
   -F, --filter-append=STRING  append arbitrary string to the IMAP filter string
@@ -997,9 +1001,15 @@ def should_archive(message):
         old = is_older_than_days(time_message, options.days_old_max)
     else:
         old = is_older_than_time(time_message, options.date_old_max)
+    if options.date_old_min is None:
+        new_enough = True
+    else:
+        new_enough = not is_older_than_time(time_message, options.date_old_min)
 
     # I could probably do this in one if statement, but then I wouldn't
-    # understand it. 
+    # understand it.
+    if not new_enough:
+        return False
     if not old:
         return False
     if not options.include_flagged and is_flagged(message):
@@ -1062,6 +1072,11 @@ def build_imap_filter():
         time_old = time.gmtime(options.date_old_max)
     time_str = time.strftime('%d-%b-%Y', time_old)
     imap_filter.append("BEFORE %s" % time_str)
+
+    if options.date_old_min is not None:
+        time_old_min = time.gmtime(options.date_old_min)
+        time_str = time.strftime('%d-%b-%Y', time_old_min)
+        imap_filter.append("AFTER %s" % time_str)
 
     if not options.include_flagged:
         imap_filter.append("UNFLAGGED")
