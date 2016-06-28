@@ -1146,7 +1146,7 @@ def archive(mailbox_name):
     try:
         # create a temporary directory for us to work in securely
         tempfile.tempdir = None
-        new_temp_dir = tempfile.mkdtemp('archivemail')
+        new_temp_dir = tempfile.mkdtemp('.archivemail')
         assert new_temp_dir
         _stale.temp_dir = new_temp_dir
         tempfile.tempdir = new_temp_dir
